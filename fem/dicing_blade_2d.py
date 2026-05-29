@@ -274,22 +274,30 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def parametric_study(material=SiC):
+def parametric_study(material=SiC, base_cfg=None):
+    """Run full sweep; base_cfg overrides DEFAULT for shared params (num_cpus etc.)."""
     tag     = material["name"].replace("-", "").replace(" ", "")
     results = []
     for d in SWEEP_CUT_DEPTHS_UM:
         for bw in SWEEP_BLADE_WIDTHS_UM:
             p = DEFAULT.copy()
+            if base_cfg:   # apply shared overrides from run_config.json
+                for k in ("feed_speed_m_s", "mesh_global_um",
+                          "mesh_fine_um", "friction_coeff", "num_cpus"):
+                    if k in base_cfg:
+                        p[k] = base_cfg[k]
             p["material"]     = material
             p["cut_depth_um"] = d
             p["blade_W_um"]   = bw
             name = "dicing_%s_d%03d_bw%02d" % (tag, d, bw)
-            print("[->] %s" % name)
+            print("[->] %s  (cpus=%d, v=%.1fm/s)" % (
+                name, p["num_cpus"], p["feed_speed_m_s"]))
             build_and_submit(p=p, job_name=name)
             results.append({"material": tag, "cut_depth_um": d,
                             "blade_W_um": bw, "job": name})
     with open("jobs_%s.json" % tag, "w") as f:
         json.dump(results, f, indent=2)
+    print("[OK] Manifest saved: jobs_%s.json" % tag)
     return results
 
 
@@ -310,7 +318,7 @@ _mat_name = _cfg.get("material", "SiC")
 _mat      = ALL_MATERIALS.get(_mat_name, SiC)
 
 if _cfg.get("study", False):
-    parametric_study(material=_mat)
+    parametric_study(material=_mat, base_cfg=_cfg)
 else:
     _p = DEFAULT.copy()
     _p["material"] = _mat
