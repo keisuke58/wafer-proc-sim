@@ -1,38 +1,44 @@
 """
-2D plane-strain blade dicing FEM — ABAQUS/Explicit
-SiC (or Si) wafer, element deletion via ductile damage (brittle approximation).
+2D plane-strain blade dicing FEM — ABAQUS/Explicit (Accuracy v2)
+SiC/Si/GaN wafer, physically-based brittle fracture model.
+
+Accuracy improvements over v1:
+  Material : Drucker-Prager pressure-dependent plasticity (ceramics standard)
+             Triaxiality-dependent fracture strain table
+             Correct strength values: σ_t=350MPa, σ_c=3GPa (not hardness 21GPa)
+  Dynamics : Target DT=1e-8s injected into INP → stable quasi-static solution
+             v=0.5 m/s (realistic feed), double precision solver
+  Fracture : Energy-based softening calibrated from K_Ic (G_c=17.5 J/m² for SiC)
+  Contact  : Coulomb friction µ=0.3, hard normal contact
 
 Run:
-    abaqus cae noGUI=dicing_blade_2d.py
-    abaqus cae noGUI=dicing_blade_2d.py -- --study
-    abaqus cae noGUI=dicing_blade_2d.py -- --depth 30 --kerf 30
+    abaqus cae noGUI=dicing_blade_2d.py   (reads run_config.json in cwd)
 
-Physics note:
-    SiC is brittle (no real plasticity). We approximate brittle fracture by:
-    - Elastic-perfectly-plastic with yield stress = fracture stress (21 GPa)
-    - DUCTILE damage onset at small eps_eq, energy-based softening → element deletion
-    This approach is standard in ceramic machining FEM literature.
+run_config.json keys:
+    material, cut_depth_um, blade_W_um, feed_speed_m_s,
+    mesh_global_um, mesh_fine_um, num_cpus, study, job_name
 """
 
 import sys
 import os
 import json
-import argparse
+import re
 
-# ── Locate materials from ABAQUS sys.argv (-noGUI <script>) ──────────────────
+# ── Script path resolution (ABAQUS noGUI: __file__ undefined) ────────────────
 _abq_script = None
 for _i, _a in enumerate(sys.argv[:-1]):
     if _a == '-noGUI':
         _abq_script = os.path.abspath(sys.argv[_i + 1])
         break
 if _abq_script is None:
-    raise RuntimeError("Cannot locate -noGUI script in sys.argv: " + str(sys.argv))
-_mat_dir = os.path.normpath(os.path.join(os.path.dirname(_abq_script),
-                                          '..', 'data', 'materials'))
-sys.path.insert(0, _mat_dir)
-from material_properties import SiC, Si
+    raise RuntimeError("Cannot locate -noGUI script: " + str(sys.argv))
 
-# ── ABAQUS imports (all at module level) ──────────────────────────────────────
+_mat_dir = os.path.normpath(
+    os.path.join(os.path.dirname(_abq_script), '..', 'data', 'materials'))
+sys.path.insert(0, _mat_dir)
+from material_properties import SiC, Si, GaN, ALL_MATERIALS
+
+# ── ABAQUS module imports (must be at module level) ───────────────────────────
 from abaqus import mdb, backwardCompatibility
 backwardCompatibility.setValues(reportDeprecated=False)
 from abaqusConstants import *
@@ -47,11 +53,12 @@ DEFAULT = {
     "wafer_H_um":      200.0,
     "cut_depth_um":     30.0,
     "blade_W_um":       30.0,
-    "feed_speed_m_s":    0.05,
+    "feed_speed_m_s":    0.5,    # realistic; mass scaling handles quasi-statics
     "mesh_global_um":    5.0,
-    "mesh_fine_um":      2.0,
+    "mesh_fine_um":      1.5,    # finer than v1 for better fracture resolution
+    "target_dt_s":       1e-8,   # injected into INP mass scaling keyword
     "friction_coeff":    0.3,
-    "num_cpus":          4,
+    "num_cpus":          1,
 }
 
 SWEEP_CUT_DEPTHS_UM   = [20, 30, 40, 50, 60]
@@ -59,7 +66,17 @@ SWEEP_BLADE_WIDTHS_UM = [20, 30, 40]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
+def _abq_name(s):
+    """Make string a valid ABAQUS name (letters/digits/underscore, start letter)."""
+    s = re.sub(r'[^A-Za-z0-9_]', '_', str(s))
+    if s and s[0].isdigit():
+        s = 'M_' + s
+    return s
+
+
+def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
+    """Build ABAQUS CAE model and write INP. Returns job_name."""
+
     W   = p["wafer_W_um"]      * 1e-6
     H   = p["wafer_H_um"]      * 1e-6
     d   = p["cut_depth_um"]    * 1e-6
@@ -74,20 +91,10 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
     travel    = W * 0.8
     t_plunge  = d / v
     t_feed    = travel / v
-    t_total   = t_plunge + t_feed
-    G_c       = mat["K_Ic"] ** 2 / mat["E"]   # fracture energy J/m²
     chamfer   = bw * 0.15
+    mat_name  = _abq_name(mat["name"])
 
-    # ABAQUS names: letters/digits/underscore only, must start with letter
-    import re as _re
-    def _abq_name(s):
-        s = _re.sub(r'[^A-Za-z0-9_]', '_', str(s))
-        if s and s[0].isdigit():
-            s = 'M_' + s
-        return s
-    mat_name = _abq_name(mat["name"])
-
-    # ── Model ─────────────────────────────────────────────────────────────────
+    # ── Create / reset model ──────────────────────────────────────────────────
     if job_name in mdb.models:
         del mdb.models[job_name]
     model = mdb.Model(name=job_name)
@@ -101,8 +108,7 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
                        type=DEFORMABLE_BODY)
     wafer.BaseShell(sketch=sk_w)
 
-    # Partition → two vertical lines to isolate fine-mesh zone
-    # PartitionFaceByShortestPath is more reliable than sketch-based for 2D planar
+    # Vertical partitions isolating fine-mesh zone around cut center
     wafer.PartitionFaceByShortestPath(
         point1=(xc - fine_half, 0.0, 0.0),
         point2=(xc - fine_half, H,   0.0),
@@ -112,28 +118,54 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
         point2=(xc + fine_half, H,   0.0),
         faces=wafer.faces[:])
 
-    # ═══ MATERIAL ═════════════════════════════════════════════════════════════
+    # ═══ MATERIAL (Drucker-Prager + triaxiality-dependent fracture) ═══════════
     m = model.Material(name=mat_name)
     m.Elastic(table=((mat["E"], mat["nu"]),))
     m.Density(table=((mat["density"],),))
 
-    # Brittle fracture via Max Principal Stress criterion
-    # MaxpsDamageInitiation: damage onset when sigma_max > sigma_fracture
-    # DamageEvolution: energy-based linear softening → element deletion at D=1
-    m.MaxpsDamageInitiation(table=((mat["sigma_y"],),))
-    m.maxpsDamageInitiation.DamageEvolution(
-        type=ENERGY, softening=LINEAR, table=((G_c,),))
+    # Drucker-Prager pressure-dependent plasticity (ceramics standard)
+    # β = friction angle, K_dp = yield ratio, ψ = dilation angle
+    m.DruckerPrager(
+        shearCriterion=LINEAR,
+        eccentricity=0.1,
+        testData=OFF,
+        temperatureDependency=OFF,
+        dependencies=0,
+        table=((mat["dp_friction_angle"],
+                mat["K_dp"],
+                mat["dp_dilation_angle"]),))
+
+    # Perfectly-plastic hardening: yield stress = dp_cohesion at eps_p = 0
+    # DruckerPragerHardening is a child of druckerPrager (lowercase attribute)
+    m.druckerPrager.DruckerPragerHardening(
+        type=SHEAR,
+        temperatureDependency=OFF,
+        dependencies=0,
+        table=((mat["dp_cohesion_Pa"], 0.0),))
+
+    # Triaxiality-dependent ductile damage initiation
+    # fracture_table: ((eps_f, triaxiality, strain_rate), ...)
+    m.DuctileDamageInitiation(
+        table=mat["fracture_table"],
+        temperatureDependency=OFF,
+        dependencies=0)
+
+    # Energy-based linear softening calibrated from K_Ic
+    m.ductileDamageInitiation.DamageEvolution(
+        type=ENERGY,
+        softening=LINEAR,
+        table=((mat["G_c"],),))
 
     # ═══ SECTION ══════════════════════════════════════════════════════════════
-    model.HomogeneousSolidSection(name="WaferSec",
-                                   material=mat_name, thickness=1.0e-6)
+    model.HomogeneousSolidSection(
+        name="WaferSec", material=mat_name, thickness=1.0e-6)
     wafer_all = wafer.Set(faces=wafer.faces[:], name="WaferAll")
-    wafer.SectionAssignment(region=wafer_all, sectionName="WaferSec",
-                            offset=0.0, offsetType=MIDDLE_SURFACE,
-                            offsetField="",
-                            thicknessAssignment=FROM_SECTION)
+    wafer.SectionAssignment(
+        region=wafer_all, sectionName="WaferSec",
+        offset=0.0, offsetType=MIDDLE_SURFACE,
+        offsetField="", thicknessAssignment=FROM_SECTION)
 
-    # ═══ PART: Blade (discrete rigid) ═════════════════════════════════════════
+    # ═══ PART: Blade (discrete rigid, trapezoidal tip) ════════════════════════
     half  = bw / 2
     sk_b  = model.ConstrainedSketch(name="blade_sk", sheetSize=W * 4)
     sk_b.Line(point1=(-half,              0.0),
@@ -146,7 +178,6 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
     blade = model.Part(name="Blade", dimensionality=TWO_D_PLANAR,
                        type=DISCRETE_RIGID_SURFACE)
     blade.BaseWire(sketch=sk_b)
-    # DISCRETE_RIGID_SURFACE parts do not need a section assignment in CAE
     blade.ReferencePoint(point=(0.0, 0.0, 0.0))
     blade_rp_key = list(blade.referencePoints.keys())[-1]
 
@@ -155,10 +186,11 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
     a.DatumCsysByDefault(CARTESIAN)
     wafer_inst = a.Instance(name="Wafer-1", part=wafer, dependent=ON)
     blade_inst = a.Instance(name="Blade-1", part=blade, dependent=ON)
-    # Start blade at left edge, above wafer
     a.translate(instanceList=("Blade-1",), vector=(bw, H + chamfer, 0.0))
 
-    # ═══ STEPS ════════════════════════════════════════════════════════════════
+    # ═══ STEPS (mass scaling table placeholder — DT injected into INP later) ══
+    # Use SEMI_AUTOMATIC, MODEL, AT_BEGINNING as placeholder
+    # The actual DT is added by _inject_mass_scaling_dt()
     ms_table = ((SEMI_AUTOMATIC, MODEL, AT_BEGINNING,
                  0.0, 0.0, BELOW_MIN, 1, 0, 0.0, 0.0, 0, None),)
 
@@ -166,7 +198,6 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
         name="Plunge", previous="Initial",
         timePeriod=t_plunge, massScaling=ms_table,
         improvedDtMethod=ON)
-
     model.ExplicitDynamicsStep(
         name="Feed", previous="Plunge",
         timePeriod=t_feed, massScaling=ms_table,
@@ -186,17 +217,10 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
 
     blade_rp_inst = a.instances["Blade-1"].referencePoints[blade_rp_key]
     blade_region  = regionToolset.Region(referencePoints=(blade_rp_inst,))
-
-    # Fix rotation throughout
     model.DisplacementBC(name="BladeRot", createStepName="Initial",
                          region=blade_region, ur3=0.0)
-
-    # Plunge: move down by cut depth, hold horizontal
     model.DisplacementBC(name="BladeMotion", createStepName="Plunge",
                          region=blade_region, u1=0.0, u2=-d)
-
-    # Feed: modify same BC → horizontal travel, maintain depth
-    # setValuesInStep updates BC in Feed step without creating a new one
     model.boundaryConditions["BladeMotion"].setValuesInStep(
         stepName="Feed", u1=travel, u2=-d)
 
@@ -221,8 +245,7 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
         name="BladeCut", createStepName="Plunge",
         main=a.surfaces["BladeSurf"],
         secondary=a.surfaces["WaferTop"],
-        sliding=FINITE,
-        interactionProperty="FricContact")
+        sliding=FINITE, interactionProperty="FricContact")
 
     # ═══ MESH ═════════════════════════════════════════════════════════════════
     elem_quad = ElemType(elemCode=CPE4R, elemLibrary=EXPLICIT,
@@ -236,7 +259,7 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
 
     fine_edges = wafer.edges.getByBoundingBox(
         xMin=xc - fine_half * 1.05, xMax=xc + fine_half * 1.05,
-        yMin=H - d * 5,             yMax=H + mf)
+        yMin=H - d * 6,             yMax=H + mf)
     if len(fine_edges) > 0:
         wafer.seedEdgeBySize(edges=fine_edges, size=mf, constraint=FINER)
     wafer.generateMesh()
@@ -250,72 +273,119 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
 
     # ═══ OUTPUT ═══════════════════════════════════════════════════════════════
     model.fieldOutputRequests["F-Output-1"].setValues(
-        variables=("S", "U", "STATUS", "PEEQ", "ENER"),
-        timeInterval=t_total / 50)
+        variables=("S", "U", "STATUS", "PEEQ", "ENER", "SDV"),
+        timeInterval=(t_plunge + t_feed) / 50)
     model.HistoryOutputRequest(
         name="BladeForce", createStepName="Plunge",
         region=blade_region,
         variables=("RF1", "RF2", "U1", "U2"),
-        numIntervals=200)
+        numIntervals=300)
 
-    # ═══ SAVE + SUBMIT ════════════════════════════════════════════════════════
-    mdb.saveAs(pathName=job_name + ".cae")
-    print("[Model saved] %s.cae" % job_name)
-
+    # ═══ WRITE INP (do NOT submit yet) ════════════════════════════════════════
     job = mdb.Job(
         name=job_name, model=job_name,
-        numCpus=p.get("num_cpus", 4), numDomains=p.get("num_cpus", 4),
+        numCpus=p.get("num_cpus", 1),
+        numDomains=p.get("num_cpus", 1),
         memory=80, memoryUnits=PERCENTAGE,
-        explicitPrecision=SINGLE, nodalOutputPrecision=SINGLE)
+        explicitPrecision=DOUBLE,          # double precision (important!)
+        nodalOutputPrecision=FULL)
+    job.writeInput(consistencyChecking=OFF)
+    print("[INP] Written: %s.inp" % job_name)
+    return job_name
+
+
+def _inject_mass_scaling_dt(inp_path, target_dt):
+    """
+    Replace *Fixed Mass Scaling with DT-specified version in the INP file.
+    This is the reliable way to set target time increment in ABAQUS Python.
+    """
+    with open(inp_path, "r") as f:
+        content = f.read()
+
+    # Replace all occurrences of *Fixed Mass Scaling (no DT) with DT version
+    pattern  = r'\*Fixed Mass Scaling\s*\n'
+    replacement = '*Fixed Mass Scaling, dt=%.2e, type=BELOW MIN\n' % target_dt
+    new_content, n = re.subn(pattern, replacement, content)
+
+    if n == 0:
+        print("[WARN] No '*Fixed Mass Scaling' found in INP — mass scaling not set")
+    else:
+        with open(inp_path, "w") as f:
+            f.write(new_content)
+        print("[INP] Injected DT=%.2e into %d mass scaling block(s)" % (target_dt, n))
+    return n
+
+
+def submit_and_wait(job_name, num_cpus=1):
+    """Submit pre-written INP file and wait for completion."""
+    job = mdb.JobFromInputFile(
+        name=job_name + "_run",
+        inputFileName=job_name + ".inp",
+        numCpus=num_cpus, numDomains=num_cpus,
+        memory=80, memoryUnits=PERCENTAGE,
+        explicitPrecision=DOUBLE,
+        nodalOutputPrecision=FULL)
     job.submit(consistencyChecking=OFF)
     job.waitForCompletion()
-    print("[OK] Job completed: %s" % job_name)
+
+    # Rename ODB to match job_name (JobFromInputFile appends _run)
+    run_odb = job_name + "_run.odb"
+    out_odb = job_name + ".odb"
+    if os.path.exists(run_odb) and not os.path.exists(out_odb):
+        os.rename(run_odb, out_odb)
+    print("[OK] Completed: %s" % job_name)
+    return job_name
+
+
+def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
+    """Build model, inject mass scaling DT into INP, submit, wait."""
+    build_model(p=p, job_name=job_name)
+
+    inp_path = os.path.join(os.getcwd(), job_name + ".inp")
+    _inject_mass_scaling_dt(inp_path, p.get("target_dt_s", 1e-8))
+
+    submit_and_wait(job_name, num_cpus=p.get("num_cpus", 1))
     return job_name
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 def parametric_study(material=SiC, base_cfg=None):
-    """Run full sweep; base_cfg overrides DEFAULT for shared params (num_cpus etc.)."""
+    """Run full sweep; base_cfg overrides DEFAULT for shared params."""
     tag     = material["name"].replace("-", "").replace(" ", "")
     results = []
     for d in SWEEP_CUT_DEPTHS_UM:
         for bw in SWEEP_BLADE_WIDTHS_UM:
             p = DEFAULT.copy()
-            if base_cfg:   # apply shared overrides from run_config.json
-                for k in ("feed_speed_m_s", "mesh_global_um",
-                          "mesh_fine_um", "friction_coeff", "num_cpus"):
+            if base_cfg:
+                for k in ("feed_speed_m_s", "mesh_global_um", "mesh_fine_um",
+                          "friction_coeff", "num_cpus", "target_dt_s"):
                     if k in base_cfg:
                         p[k] = base_cfg[k]
             p["material"]     = material
             p["cut_depth_um"] = d
             p["blade_W_um"]   = bw
             name = "dicing_%s_d%03d_bw%02d" % (tag, d, bw)
-            print("[->] %s  (cpus=%d, v=%.1fm/s)" % (
-                name, p["num_cpus"], p["feed_speed_m_s"]))
+            print("\n[->] %s  (depth=%dum kerf=%dum v=%.1fm/s DT=%.0e)" % (
+                name, d, bw, p["feed_speed_m_s"], p.get("target_dt_s", 1e-8)))
             build_and_submit(p=p, job_name=name)
             results.append({"material": tag, "cut_depth_um": d,
                             "blade_W_um": bw, "job": name})
-    with open("jobs_%s.json" % tag, "w") as f:
+
+    manifest = "jobs_%s.json" % tag
+    with open(manifest, "w") as f:
         json.dump(results, f, indent=2)
-    print("[OK] Manifest saved: jobs_%s.json" % tag)
+    print("[OK] Manifest: %s" % manifest)
     return results
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ABAQUS drops args after noGUI=script.py, so we use run_config.json instead.
-# Create run_config.json in cwd before running:
-#   {"cut_depth_um": 30, "blade_W_um": 30, "study": false}
+# Read run_config.json from cwd
 # ─────────────────────────────────────────────────────────────────────────────
 _config_path = os.path.join(os.getcwd(), "run_config.json")
-if os.path.exists(_config_path):
-    with open(_config_path) as _f:
-        _cfg = json.load(_f)
-else:
-    _cfg = {}
+_cfg = json.load(open(_config_path)) if os.path.exists(_config_path) else {}
 
 from material_properties import ALL_MATERIALS
-_mat_name = _cfg.get("material", "SiC")
-_mat      = ALL_MATERIALS.get(_mat_name, SiC)
+_mat = ALL_MATERIALS.get(_cfg.get("material", "SiC"), SiC)
 
 if _cfg.get("study", False):
     parametric_study(material=_mat, base_cfg=_cfg)
@@ -323,7 +393,8 @@ else:
     _p = DEFAULT.copy()
     _p["material"] = _mat
     for _k in ("cut_depth_um", "blade_W_um", "feed_speed_m_s",
-                "mesh_global_um", "mesh_fine_um", "friction_coeff", "num_cpus"):
+                "mesh_global_um", "mesh_fine_um", "friction_coeff",
+                "num_cpus", "target_dt_s"):
         if _k in _cfg:
             _p[_k] = _cfg[_k]
     _tag  = _mat["name"].replace("-", "").replace(" ", "")
