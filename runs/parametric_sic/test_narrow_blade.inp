@@ -1,0 +1,102 @@
+** Narrow blade contact test: 23µm-wide R2D2 blade (RIGHT→LEFT sketch, SPOS=downward)
+** vs 500µm-wide CPE4R block (same as test_contact_minimal but narrow blade)
+** Confirms: SPOS for right→left R2D2 is correct (downward) and detects contact
+*Heading
+Narrow blade RIGHT-TO-LEFT contact test (SPOS=downward)
+**
+** ── PARTS ──────────────────────────────────────────────────────────────────
+*Part, name=Block
+*Node
+    1, 0.0,      0.0
+    2, 500e-6,   0.0
+    3, 500e-6,   200e-6
+    4, 0.0,      200e-6
+*Element, type=CPE4R
+    1, 1, 2, 3, 4
+*Solid Section, elset=All, material=SiCElastic
+  1.0,
+*Elset, elset=All
+  1,
+*Nset, nset=Bottom
+  1, 2
+*Nset, nset=Top
+  3, 4
+*End Part
+**
+** Narrow blade: 23µm wide, sketched RIGHT→LEFT (node1=right, node2=left)
+** For RIGHT→LEFT R2D2:  tangent = -x → SPOS = CCW(-x) = -y = DOWNWARD  ✓
+*Part, name=Blade
+*Node
+    1,  11.5e-6, 0.0
+    2, -11.5e-6, 0.0
+    3,  0.0,     0.0
+*Element, type=R2D2
+    1, 1, 2
+*Elset, elset=BladeEdge
+  1,
+*Rigid Body, ref node=3, elset=BladeEdge
+*Nset, nset=RP
+  3,
+*End Part
+**
+** ── ASSEMBLY ────────────────────────────────────────────────────────────────
+*Assembly, name=Assembly
+**
+*Instance, name=Block-1, part=Block
+*End Instance
+**
+** Blade centered at x=250µm (middle of block), 5µm above block top
+*Instance, name=Blade-1, part=Blade
+250e-6, 205e-6, 0.
+*End Instance
+**
+*Elset, elset=_TopElems, instance=Block-1
+  1,
+*Surface, type=ELEMENT, name=BlockTop
+_TopElems, S3
+**
+*Elset, elset=_BladeElems, instance=Blade-1
+  1,
+*Surface, type=ELEMENT, name=BladeSurf
+_BladeElems, SPOS
+**
+*Nset, nset=BladeRP, instance=Blade-1
+  3,
+**
+*End Assembly
+**
+*Material, name=SiCElastic
+*Elastic
+  450e9, 0.17
+*Density
+  3200.,
+**
+** ── STEP ────────────────────────────────────────────────────────────────────
+*Step, name=Plunge, nlgeom=NO
+*Dynamic, Explicit
+, 1.2e-5
+*Fixed Mass Scaling, dt=1e-8, type=BELOW MIN
+**
+*Boundary
+Block-1.Bottom, ENCASTRE
+*Boundary, type=VELOCITY
+BladeRP, 1, 1
+BladeRP, 2, 2, -1.0
+BladeRP, 6, 6
+**
+*Contact Pair, interaction=FricContact, mechanical constraint=PENALTY
+BladeSurf, BlockTop
+*Surface Interaction, name=FricContact
+*Friction
+  0.3,
+*Surface Behavior, pressure-overclosure=HARD
+**
+*Output, history, time interval=1e-7
+*Node Output, nset=BladeRP
+U2, RF2
+*Node Output, nset=Block-1.Top
+U2
+*Output, field, number interval=5
+*Node Output
+U,
+*End Step

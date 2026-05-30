@@ -195,7 +195,9 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     # Zero-clearance starts (blade exactly touching wafer) can miss penetration
     # with small DT and PENALTY contact — the gap forces an explicit first contact event.
     _CLEARANCE = 2e-6
-    a.translate(instanceList=("Blade-1",), vector=(bw, H + chamfer + _CLEARANCE, 0.0))
+    # Place blade at wafer center x so it falls within the fine-mesh zone and
+    # overlaps the WaferTop surface (which covers only the centre top edge).
+    a.translate(instanceList=("Blade-1",), vector=(xc, H + chamfer + _CLEARANCE, 0.0))
 
     # ═══ STEPS (mass scaling table placeholder — DT injected into INP later) ══
     # Use SEMI_AUTOMATIC, MODEL, AT_BEGINNING as placeholder
@@ -240,8 +242,13 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
         stepName="Feed", v1=(travel / t_feed), v2=0.0)
 
     # ═══ CONTACT ══════════════════════════════════════════════════════════════
-    top_edge = wafer_inst.edges.findAt(((W/2, H, 0.0),))
-    a.Surface(side1Edges=(top_edge,), name="WaferTop")
+    # findAt with a single point only returns ONE edge segment (the partitioned wafer
+    # top is split into left/center/right at the zone boundaries). Collect all three
+    # segments so the full top surface is available as the slave contact surface.
+    top_edge_l = wafer_inst.edges.findAt(((W / 4,       H, 0.0),))
+    top_edge_c = wafer_inst.edges.findAt(((W / 2,       H, 0.0),))
+    top_edge_r = wafer_inst.edges.findAt(((3 * W / 4,   H, 0.0),))
+    a.Surface(side1Edges=(top_edge_l + top_edge_c + top_edge_r,), name="WaferTop")
     # side2Edges → SNEG (outward away from blade body = downward for bottom cutting face).
     # For master SNEG (↓): signed distance = (slave_y - master_y) · (↓) = -(H-(H-5nm)) = -5nm < 0
     # → penetration detected. Contact force = master_outward_normal direction (↓) = pushes wafer down. ✓
@@ -391,7 +398,9 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
     build_model(p=p, job_name=job_name)
 
     inp_path = os.path.join(os.getcwd(), job_name + ".inp")
-    _fix_blade_surface_normal(inp_path)
+    # NOTE: _fix_blade_surface_normal is NOT called here.
+    # The blade is sketched RIGHT→LEFT so SPOS = downward (correct for cutting).
+    # Applying SNEG would flip the normal upward, killing contact detection.
     _inject_mass_scaling_dt(inp_path, p.get("target_dt_s", 1e-8))
 
     submit_and_wait(job_name, num_cpus=p.get("num_cpus", 1))

@@ -52153,7 +52153,7 @@
 *End Instance
 **  
 *Instance, name=Blade-1, part=Blade
-     2.3e-05,   0.00045545,           0.
+     2.5e-04,   0.00045545,           0.
 *End Instance
 **  
 *Nset, nset=_PickedSet6, internal, instance=Wafer-1
@@ -52209,7 +52209,7 @@
 *Elset, elset=_BladeSurf_SPOS, internal, instance=Blade-1, generate
   1,  12,   1
 *Surface, type=ELEMENT, name=BladeSurf
-_BladeSurf_SPOS, SNEG
+_BladeSurf_SPOS, SPOS
 *Elset, elset=_WaferTop_S2, internal, instance=Wafer-1, generate
    225,  15525,    225
 *Surface, type=ELEMENT, name=WaferTop

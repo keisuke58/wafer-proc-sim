@@ -1,6 +1,5 @@
 #!/bin/bash
-# Submit 5 extended FEM jobs sequentially (1 CPU each)
-set -e
+# Submit 5 extended FEM jobs sequentially (1 CPU each, SPOS+center fix applied)
 ABQ=/home/nishioka/DassaultSystemes/SIMULIA/Commands/abaqus
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -13,9 +12,14 @@ JOBS=(
 )
 
 for JOB in "${JOBS[@]}"; do
+  ODB="${DIR}/${JOB}_run.odb"
+  if [ -f "$ODB" ]; then
+    echo "[SKIP] $JOB (ODB exists)"
+    continue
+  fi
   echo "[->] Submitting $JOB ..."
   cd "$DIR"
   $ABQ job="${JOB}_run" input="${JOB}.inp" cpus=1 interactive ask_delete=off
-  echo "[OK] $JOB done"
+  echo "[OK] $JOB"
 done
 echo "[ALL DONE]"
