@@ -1,0 +1,15 @@
+# Experimental data from Wu et al. (2023) Journal of Mechanics 39:191-198
+# DOI: 10.1093/jom/ufad018
+# Wafer: 300 mm diameter, ground 780→360 µm thickness
+# Two-stage grinding: Z1=rough, Z2=fine
+# Warpage measured as height difference at 4 positions (top/bottom/left/right) from center reference
+#
+# Notes on sign convention: negative wafer speed means counter-rotation to wheel
+# For surrogate training: use Z2 (fine grinding) as the "final" process condition
+cell,z1_wheel_speed_rpm,z1_wafer_speed_rpm,z1_feed_um_s,z2_wheel_speed_rpm,z2_wafer_speed_rpm,z2_feed_um_s,actual_warpage_mm,predicted_warpage_mm,error_pct
+1,2000,150,5.5,2200,250,0.25,0.75,0.72,4.00
+2,2000,250,1.5,2200,250,0.35,2.22,2.20,0.85
+3,2800,250,1.5,2200,250,0.35,0.63,0.63,0.80
+4,2800,250,5.5,1400,250,0.25,1.25,1.25,0.00
+5,2000,150,1.5,1400,250,0.25,0.63,0.58,0.58
+6,2800,150,5.5,1800,250,0.35,1.47,1.45,1.28

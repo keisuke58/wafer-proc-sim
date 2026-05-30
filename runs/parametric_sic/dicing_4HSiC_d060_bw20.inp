@@ -7,22 +7,22 @@
 **
 *Part, name=Blade
 *Node
-      1, -9.99999975e-06,           0.
-      2, -7.0000001e-06, -3.00000011e-06
-      3, 7.0000001e-06, -3.00000011e-06
-      4, 9.99999975e-06,           0.
-      5, -9.00000032e-06, -9.99999997e-07
-      6, -7.99999998e-06, -1.99999999e-06
-      7, -5.44444447e-06, -3.00000011e-06
-      8, -3.88888884e-06, -3.00000011e-06
-      9, -2.33333344e-06, -3.00000011e-06
-     10, -7.77777757e-07, -3.00000011e-06
-     11, 7.77777757e-07, -3.00000011e-06
-     12, 2.33333344e-06, -3.00000011e-06
-     13, 3.88888884e-06, -3.00000011e-06
-     14, 5.44444447e-06, -3.00000011e-06
-     15, 7.99999998e-06, -1.99999999e-06
-     16, 9.00000032e-06, -9.99999997e-07
+      1, 9.99999975e-06,           0.
+      2, 7.0000001e-06, -3.00000011e-06
+      3, -7.0000001e-06, -3.00000011e-06
+      4, -9.99999975e-06,           0.
+      5, 9.00000032e-06, -9.99999997e-07
+      6, 7.99999998e-06, -1.99999999e-06
+      7, 5.44444447e-06, -3.00000011e-06
+      8, 3.88888884e-06, -3.00000011e-06
+      9, 2.33333344e-06, -3.00000011e-06
+     10, 7.77777757e-07, -3.00000011e-06
+     11, -7.77777757e-07, -3.00000011e-06
+     12, -2.33333344e-06, -3.00000011e-06
+     13, -3.88888884e-06, -3.00000011e-06
+     14, -5.44444447e-06, -3.00000011e-06
+     15, -7.99999998e-06, -1.99999999e-06
+     16, -9.00000032e-06, -9.99999997e-07
 *Element, type=R2D2
 1, 1, 5
 2, 5, 6
@@ -41842,7 +41842,7 @@
      1,  20748,      1
 ** Section: WaferSec
 *Solid Section, elset=WaferAll, controls=EC-1, material=M_4H_SiC
-1e-06,
+1.,
 *End Part
 **  
 **
@@ -41899,7 +41899,7 @@
 *Elset, elset=_BladeSurf_SPOS, internal, instance=Blade-1, generate
   1,  15,   1
 *Surface, type=ELEMENT, name=BladeSurf
-_BladeSurf_SPOS, SPOS
+_BladeSurf_SPOS, SNEG
 *Elset, elset=_WaferTop_S2, internal, instance=Wafer-1, generate
    133,  10640,    133
 *Surface, type=ELEMENT, name=WaferTop
@@ -41915,16 +41915,6 @@ _WaferTop_S2, S2
 ** MATERIALS
 ** 
 *Material, name=M_4H_SiC
-*Damage Initiation, criterion=DUCTILE
-   0.01,       -2.,        0.
-  0.003,       -1.,        0.
-  0.001, -0.333333,        0.
- 0.0004,        0.,        0.
- 0.0002,  0.333333,        0.
- 0.0001,  0.666667,        0.
-  5e-05,        1.,        0.
-*Damage Evolution, type=ENERGY
- 17.5,
 *Density
 3210.,
 *Drucker Prager
@@ -41970,15 +41960,15 @@ _PickedSet8, 1, 1
 ** 
 ** BOUNDARY CONDITIONS
 ** 
-** Name: BladeMotion Type: Displacement/Rotation
-*Boundary
+** Name: BladeMotion Type: Velocity/Angular velocity
+*Boundary, type=VELOCITY
 _PickedSet10, 1, 1
-_PickedSet10, 2, 2, -6e-05
+_PickedSet10, 2, 2, -0.5
 ** 
 ** INTERACTIONS
 ** 
 ** Interaction: BladeCut
-*Contact Pair, interaction=FricContact, mechanical constraint=KINEMATIC, cpset=BladeCut
+*Contact Pair, interaction=FricContact, mechanical constraint=PENALTY, cpset=BladeCut
 BladeSurf, WaferTop
 ** 
 ** OUTPUT REQUESTS
@@ -42018,10 +42008,10 @@ RF1, RF2, U1, U2
 ** 
 ** BOUNDARY CONDITIONS
 ** 
-** Name: BladeMotion Type: Displacement/Rotation
-*Boundary
-_PickedSet10, 1, 1, 0.0004
-_PickedSet10, 2, 2, -6e-05
+** Name: BladeMotion Type: Velocity/Angular velocity
+*Boundary, type=VELOCITY
+_PickedSet10, 1, 1, 0.5
+_PickedSet10, 2, 2
 ** 
 ** OUTPUT REQUESTS
 ** 

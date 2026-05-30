@@ -17367,16 +17367,6 @@ _WaferTop_S2, S2
 ** MATERIALS
 ** 
 *Material, name=M_4H_SiC
-*Damage Initiation, criterion=DUCTILE
-   0.01,       -2.,        0.
-  0.003,       -1.,        0.
-  0.001, -0.333333,        0.
- 0.0004,        0.,        0.
- 0.0002,  0.333333,        0.
- 0.0001,  0.666667,        0.
-  5e-05,        1.,        0.
-*Damage Evolution, type=ENERGY
- 17.5,
 *Density
 3210.,
 *Drucker Prager

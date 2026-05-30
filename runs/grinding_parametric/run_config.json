@@ -1,0 +1,12 @@
+{
+  "material":           "Si",
+  "wafer_diameter_mm":  300,
+  "wafer_thickness_um": 500,
+  "mesh_global_um":     5000,
+  "mesh_fine_um":       500,
+  "t_ssd_um":           0,
+  "E_damage_factor":    0.5,
+  "num_cpus":           1,
+  "study":              true,
+  "inp_only":           true
+}

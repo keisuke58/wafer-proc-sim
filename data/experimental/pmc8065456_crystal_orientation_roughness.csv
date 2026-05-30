@@ -1,0 +1,17 @@
+# Experimental data from "Influence of Crystal Orientation on Subsurface Damage"
+# PMC: PMC8065456 | Journal: Materials (MDPI) 2021
+# Si wafer grinding: surface roughness Rz [µm] vs. grinding parameters
+# Wheel types: D15A (fine/15µm grit), D91 (medium/91µm grit), 80# (coarse)
+# Crystal orientations: <100> and <110>
+# Material constants (Table 3): E<100>=131 GPa, H<100>=10 GPa, Kc<100>=0.95 MPa·m^0.5
+#                                E<110>=169 GPa, Kc<110>=0.72 MPa·m^0.5
+sample,wheel_type,grit_size_um,wheel_speed_m_s,feed_rate_mm_min,cut_depth_um,rz_100_um,rz_110_um
+A1/B1,D15A,15,10,300,5,0.4071,0.3914
+A2/B2,D15A,15,20,1000,10,0.3061,0.3037
+A3/B3,D15A,15,40,3000,15,0.2933,0.4486
+A4/B4,D91,91,10,1000,15,5.4685,6.9261
+A5/B5,D91,91,20,3000,5,6.0430,6.9867
+A6/B6,D91,91,40,300,10,3.2484,3.6750
+A7/B7,80#,~250,10,3000,10,11.6924,12.9087
+A8/B8,80#,~250,20,300,15,6.3651,6.6319
+A9/B9,80#,~250,40,1000,5,7.9160,6.7404

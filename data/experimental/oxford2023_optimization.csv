@@ -1,0 +1,6 @@
+# Optimization results from Wu et al. (2023) Table 3
+# DOI: 10.1093/jom/ufad018
+# 37.7% warpage reduction achieved by optimizing parameters
+condition,z1_wheel_speed_rpm,z1_feed_um_s,z1_wafer_speed_rpm,z2_wheel_speed_rpm,z2_feed_um_s,z2_wafer_speed_rpm,warpage_mm
+standard,2400,3.5,150,1800,0.30,300,0.69
+optimized,2800,1.5,100,2200,0.25,250,0.43
