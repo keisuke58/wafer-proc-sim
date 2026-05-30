@@ -23,7 +23,7 @@ from matplotlib.collections import PolyCollection
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ODB_PATH   = os.path.join(SCRIPT_DIR, "dicing_4HSiC_d360_bw23.odb")
+ODB_PATH   = os.path.join(SCRIPT_DIR, "dicing_4HSiC_d360_bw23_run.odb")
 OUT_DIR    = os.path.join(SCRIPT_DIR, "..", "..", "results", "d360_frames")
 os.makedirs(OUT_DIR, exist_ok=True)
 

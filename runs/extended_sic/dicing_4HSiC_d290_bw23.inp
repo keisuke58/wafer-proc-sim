@@ -52580,7 +52580,7 @@ _WaferTop_S4, S4
    0.005,  0.333333,        0.
   0.0025,  0.666667,        0.
  0.00125,        1.,        0.
-*Damage Evolution, type=ENERGY, max degradation=0.99
+*Damage Evolution, type=ENERGY
  17.5,
 *Density
 3210.,
@@ -52607,7 +52607,7 @@ _WaferTop_S4, S4
 ** 
 ** Name: BladeLateral Type: Displacement/Rotation
 *Boundary
-_PickedSet9, 1, 1
+_PickedSet9, 6, 6
 ** Name: WaferBottom Type: Symmetry/Antisymmetry/Encastre
 *Boundary
 _PickedSet6, ENCASTRE

@@ -52607,7 +52607,7 @@ _WaferTop_S4, S4
 ** 
 ** Name: BladeLateral Type: Displacement/Rotation
 *Boundary
-_PickedSet9, 1, 1
+_PickedSet9, 6, 6
 ** Name: WaferBottom Type: Symmetry/Antisymmetry/Encastre
 *Boundary
 _PickedSet6, ENCASTRE
@@ -52630,7 +52630,7 @@ _PickedSet8, 1, 1
 *Dynamic, Explicit
 , 0.000724
 *Bulk Viscosity
-0.06, 1.2
+0.12, 1.2
 ** Mass Scaling: Semi-Automatic
 **               Whole Model
 *Fixed Mass Scaling, dt=1.00e-08, type=BELOW MIN
@@ -52679,7 +52679,7 @@ RF1, RF2, U1, U2
 *Dynamic, Explicit
 , 0.0008
 *Bulk Viscosity
-0.06, 1.2
+0.12, 1.2
 ** Mass Scaling: Semi-Automatic
 **               Whole Model
 *Fixed Mass Scaling, dt=1.00e-08, type=BELOW MIN
