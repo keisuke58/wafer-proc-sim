@@ -92,8 +92,10 @@ class WaferProcPipeline:
         """
         print(f"[Pipeline] 初期化中 ← {csv_path}")
         df = pd.read_csv(csv_path)
+        from ml.surrogate_gp import resolve_target_cols
+        active_targets = resolve_target_cols(df)
         X  = df[FEATURE_COLS].values.astype(float)
-        Y  = df[TARGET_COLS].values.astype(float)
+        Y  = df[active_targets].values.astype(float)
 
         # 1. GP サロゲート
         self.gp = DicingGPSurrogate()
@@ -279,20 +281,21 @@ class WaferProcPipeline:
         # Step 1: 初期化
         self.initialize(csv_path)
 
-        # Step 2: 正常点の評価
+        # Step 2: 正常点の評価（実績値: cut=80µm, kerf=23µm → 削除率66%）
+        # GP予測と実測が近ければ正常、遠ければ異常フラグ
         print("--- [Demo 2] 正常点の評価 ---")
         self.evaluate(
-            x=np.array([30.0, 25.0]),
-            y_obs=np.array([0.025, 1.8e9]),
-            targets={"deletion_fraction": 0.05},
+            x=np.array([80.0, 23.0]),
+            y_obs=np.array([0.665, 2.3e6]),
+            targets={"deletion_fraction": 0.30},
         )
 
-        # Step 3: 異常点の評価 → 自動補正
+        # Step 3: 過加工 → レシピ補正（目標: 削除率10%以下に）
         print("\n--- [Demo 3] 異常点 → レシピ補正 ---")
         self.evaluate(
-            x=np.array([65.0, 45.0]),
-            y_obs=np.array([0.12, 3.5e9]),
-            targets={"deletion_fraction": 0.03},
+            x=np.array([290.0, 23.0]),
+            y_obs=np.array([0.45, 1.5e6]),
+            targets={"deletion_fraction": 0.10},
         )
 
         # Step 4: センサーデータ生成

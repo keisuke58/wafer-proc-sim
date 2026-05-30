@@ -71,8 +71,8 @@ class RecipeCorrector:
     """
 
     BOUNDS = {
-        "cut_depth_um": (10.0, 70.0),
-        "blade_W_um":   (15.0, 50.0),
+        "cut_depth_um": (20.0, 360.0),  # 実データ範囲に合わせる
+        "blade_W_um":   (20.0, 40.0),
     }
 
     def __init__(self):
