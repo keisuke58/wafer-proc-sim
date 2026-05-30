@@ -2,29 +2,26 @@
 不良検出・異常予兆モジュール
 
 3層の検出アプローチ:
-  Layer 1 — GP不確かさ:  |actual - GP_mean| / GP_std > threshold
-  Layer 2 — Isolation Forest: FEMデータで学習した密度ベース検出
-  Layer 3 — 管理図 (Shewhart): プロセスドリフトの時系列監視
+  Layer 1 — GP不確かさ:   |actual_chip - GP_mean| / GP_std > z_thresh
+             実験GP (gp_experimental.pkl) でチッピング[µm]を予測
+  Layer 2 — Isolation Forest: 入力パラメータ空間での外れ値検出
+  Layer 3 — Shewhart管理図:   プロセスドリフトの時系列監視
 
 Usage:
-    from ml.anomaly_detection import AnomalyDetector, ProcessMonitor
+    # 単一点の検査 (depth bw feed spindle [observed_chip_um])
+    python ml/anomaly_detection.py --csv results/parametric_summary_extended.csv \\
+        --check 80 23 1.0 30000 2.5
 
-    # 学習
-    detector = AnomalyDetector()
-    detector.fit(X_train, Y_train)          # X: params, Y: [chipping, stress]
+    # プロセス監視 (CSV全行を時系列として流す)
+    python ml/anomaly_detection.py --csv results/parametric_summary_extended.csv \\
+        --monitor
 
-    # 新規点の検査
-    result = detector.check(x_new, y_observed)
-    if result.is_anomaly:
-        print(result.cause, result.severity)
-
-    # プロセス監視（時系列）
-    monitor = ProcessMonitor(target_col="deletion_fraction", usl=0.05)
-    for y in production_stream:
-        alert = monitor.update(y)
+    # デモ: 正常→異常→ドリフトのシナリオ
+    python ml/anomaly_detection.py --demo
 """
 
 import os
+import sys
 import joblib
 import numpy as np
 import pandas as pd
@@ -33,14 +30,16 @@ from typing import Optional
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 
-# GP surrogate をインポート（既存モジュール）
-import sys
-sys.path.insert(0, os.path.dirname(__file__))
-from surrogate_gp import DicingGPSurrogate, FEATURE_COLS, TARGET_COLS, MODEL_PATH
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from ml.train_from_experimental import (
+    ExperimentalGPSurrogate, FEATURE_COLS, MODEL_PATH as EXP_GP_PATH,
+)
+from ml.surrogate_gp import resolve_target_cols, FEATURE_COLS as FEM_FEATURES
 
 ANOMALY_MODEL_PATH = os.path.join(
     os.path.dirname(__file__), "..", "results", "anomaly_model.pkl"
 )
+CHIP_USL = 15.0   # µm — 生産閾値
 
 
 # ── データクラス ───────────────────────────────────────────────────────────────
@@ -48,153 +47,138 @@ ANOMALY_MODEL_PATH = os.path.join(
 @dataclass
 class AnomalyResult:
     is_anomaly:  bool
-    severity:    float          # 0.0（正常）〜 1.0（重大異常）
-    layer_flags: dict           # {'gp': bool, 'iforest': bool, 'spc': bool}
-    cause:       str            # 原因の説明文
-    suggestions: list[str] = field(default_factory=list)
+    severity:    float          # 0.0（正常）〜 1.0（重大）
+    layer_flags: dict
+    cause:       str
+    suggestions: list = field(default_factory=list)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Layer 1: GP 不確かさベース検出
+# Layer 1: 実験GP不確かさベース検出（チッピング[µm]）
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class GPAnomalyLayer:
     """
-    GPサロゲートの予測値と実測値の乖離を z スコアで評価する。
-    |y_obs - mu| / sigma > z_thresh → 異常
+    実験GP (chipping_um) の予測値と観測値の z スコアで異常判定。
+    入力: 4特徴量 [cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]
+    観測: observed_chip_um [µm]
     """
 
     def __init__(self, z_thresh: float = 3.0):
         self.z_thresh = z_thresh
-        self.gp: Optional[DicingGPSurrogate] = None
+        self.gp: Optional[ExperimentalGPSurrogate] = None
 
-    def load_gp(self):
-        if os.path.exists(MODEL_PATH):
-            self.gp = DicingGPSurrogate.load()
+    def load(self):
+        if os.path.exists(EXP_GP_PATH):
+            self.gp = ExperimentalGPSurrogate.load(EXP_GP_PATH)
         else:
             raise FileNotFoundError(
-                f"GP model not found: {MODEL_PATH}\n"
-                "先に surrogate_gp.py を実行してモデルを学習してください。"
+                f"実験GPモデル未発見: {EXP_GP_PATH}\n"
+                "python ml/train_from_experimental.py を先に実行してください。"
             )
 
-    def check(self, x: np.ndarray, y_obs: np.ndarray) -> tuple[bool, float, str]:
+    def check(self, x4: np.ndarray,
+              observed_chip_um: float) -> tuple[bool, float, str]:
         """
-        x: (1, n_features), y_obs: (n_targets,)
-        Returns (is_anomaly, max_z, description)
+        x4: (4,) [cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]
+        observed_chip_um: 実測チッピング [µm]
         """
         if self.gp is None:
-            self.load_gp()
+            self.load()
 
-        mu, sigma = self.gp.predict(x.reshape(1, -1), return_std=True)
-        mu     = mu[0]
-        sigma  = sigma[0]
+        mu, sigma = self.gp.predict(x4.reshape(1, -1), return_std=True)
+        mu, sigma = float(mu[0]), float(sigma[0])
+        z = abs(observed_chip_um - mu) / max(sigma, 0.1)
+        is_anom = z > self.z_thresh
 
-        z_scores = np.abs(y_obs - mu) / np.maximum(sigma, 1e-9)
-        max_z    = float(z_scores.max())
-        worst_i  = int(z_scores.argmax())
-        is_anom  = max_z > self.z_thresh
-
-        col_name = TARGET_COLS[worst_i] if worst_i < len(TARGET_COLS) else f"target_{worst_i}"
         desc = (
-            f"GP z-score {max_z:.2f} > {self.z_thresh} on {col_name}: "
-            f"observed={y_obs[worst_i]:.4g}, predicted={mu[worst_i]:.4g}±{sigma[worst_i]:.4g}"
-            if is_anom else "GP: 正常範囲内"
+            f"GP z={z:.2f} > {self.z_thresh}: "
+            f"observed={observed_chip_um:.1f}µm, predicted={mu:.1f}±{sigma:.1f}µm"
+            if is_anom else
+            f"GP 正常 (z={z:.2f}, pred={mu:.1f}±{sigma:.1f}µm)"
         )
-        return is_anom, max_z / self.z_thresh, desc
+        return is_anom, min(z / self.z_thresh, 5.0), desc
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Layer 2: Isolation Forest（密度ベース外れ値検出）
+# Layer 2: Isolation Forest（入力パラメータ空間）
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class IForestLayer:
     """
-    FEMパラメトリックスタディ結果で学習した Isolation Forest。
-    入力空間での外れ値を検出する（物理的に有り得ない条件を弾く）。
+    FEMスタディのパラメータ範囲で学習した Isolation Forest。
+    物理的に有り得ない条件（範囲外）を弾く。
     """
 
-    def __init__(self, contamination: float = 0.05, n_estimators: int = 100):
-        self.contamination = contamination
-        self.n_estimators  = n_estimators
+    def __init__(self, contamination: float = 0.1, n_estimators: int = 100):
         self.iforest = IsolationForest(
             contamination=contamination,
             n_estimators=n_estimators,
             random_state=42,
         )
-        self.scaler  = StandardScaler()
+        self.scaler    = StandardScaler()
         self.is_fitted = False
 
     def fit(self, X: np.ndarray):
-        """X: (N, n_features)"""
         Xs = self.scaler.fit_transform(X)
         self.iforest.fit(Xs)
         self.is_fitted = True
         return self
 
     def check(self, x: np.ndarray) -> tuple[bool, float, str]:
-        """x: (1, n_features)"""
         if not self.is_fitted:
             return False, 0.0, "IForest: 未学習（スキップ）"
         Xs    = self.scaler.transform(x.reshape(1, -1))
-        pred  = self.iforest.predict(Xs)[0]          # 1=normal, -1=outlier
-        score = -self.iforest.score_samples(Xs)[0]   # 高いほど異常
+        pred  = self.iforest.predict(Xs)[0]      # 1=正常, -1=外れ値
+        score = float(-self.iforest.score_samples(Xs)[0])
         is_anom = (pred == -1)
         desc = (
-            f"IForest: 外れ値検出（anomaly score={score:.3f}）"
-            if is_anom else f"IForest: 正常（score={score:.3f}）"
+            f"IForest 外れ値 (score={score:.3f})"
+            if is_anom else
+            f"IForest 正常 (score={score:.3f})"
         )
         return is_anom, float(np.clip(score, 0, 1)), desc
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Layer 3: 管理図（Shewhart X-bar / Individual）
+# Layer 3: Shewhart 管理図（時系列監視）
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ShewhartChart:
-    """
-    個値管理図 (Individuals Chart, I-chart)。
-    ウォームアップ期間のデータから UCL/LCL を自動推定。
-    ルール: 1点が3σ外, 8点連続して中心線の片側。
-    """
+    """個値管理図 (I-chart): ウォームアップ後に UCL/LCL を自動設定"""
 
     def __init__(self, warmup: int = 20, sigma_mult: float = 3.0):
         self.warmup     = warmup
         self.sigma_mult = sigma_mult
-        self.history: list[float] = []
-        self.ucl: Optional[float] = None
-        self.lcl: Optional[float] = None
-        self.cl:  Optional[float] = None
+        self.history: list = []
+        self.ucl = self.lcl = self.cl = None
 
     def update(self, value: float) -> tuple[bool, str]:
         self.history.append(value)
 
         if len(self.history) == self.warmup:
-            arr        = np.array(self.history)
-            self.cl    = float(arr.mean())
-            # MR (Moving Range) ベースの sigma 推定
-            mr         = np.abs(np.diff(arr))
-            sigma_est  = float(mr.mean()) / 1.128
-            self.ucl   = self.cl + self.sigma_mult * sigma_est
-            self.lcl   = self.cl - self.sigma_mult * sigma_est
+            arr       = np.array(self.history)
+            self.cl   = float(arr.mean())
+            mr        = np.abs(np.diff(arr))
+            sigma_est = float(mr.mean()) / 1.128
+            self.ucl  = self.cl + self.sigma_mult * sigma_est
+            self.lcl  = self.cl - self.sigma_mult * sigma_est
 
         if self.ucl is None:
-            return False, "管理図: ウォームアップ中"
+            return False, f"管理図: ウォームアップ中 ({len(self.history)}/{self.warmup})"
 
-        # ルール1: 1点が UCL/LCL 外
         if value > self.ucl:
-            return True, f"管理図: UCL={self.ucl:.4g} 超過（{value:.4g}）"
+            return True, f"管理図 UCL={self.ucl:.2f} 超過 ({value:.2f})"
         if value < self.lcl:
-            return True, f"管理図: LCL={self.lcl:.4g} 下回り（{value:.4g}）"
-
-        # ルール2: 8点連続して中心線の片側
+            return True, f"管理図 LCL={self.lcl:.2f} 下回り ({value:.2f})"
         if len(self.history) >= 8:
             last8 = self.history[-8:]
             if all(v > self.cl for v in last8):
-                return True, "管理図: 8点連続して中心線上側（ドリフト）"
+                return True, "管理図: 8点連続して中心線上側（上昇ドリフト）"
             if all(v < self.cl for v in last8):
-                return True, "管理図: 8点連続して中心線下側（ドリフト）"
+                return True, "管理図: 8点連続して中心線下側（下降ドリフト）"
 
-        return False, "管理図: 管理状態"
+        return False, f"管理図: 管理状態 (CL={self.cl:.2f})"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -202,148 +186,152 @@ class ShewhartChart:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AnomalyDetector:
-    """3層の検出器を統合したクラス"""
 
-    def __init__(self,
-                 z_thresh: float = 3.0,
-                 contamination: float = 0.05):
+    def __init__(self, z_thresh: float = 3.0, contamination: float = 0.1):
         self.gp_layer  = GPAnomalyLayer(z_thresh=z_thresh)
         self.if_layer  = IForestLayer(contamination=contamination)
         self.is_fitted = False
 
-    def fit(self, X: np.ndarray, Y: np.ndarray):
-        """
-        X: (N, n_features) — process parameters
-        Y: (N, n_targets)  — FEM outputs
-        """
-        # IForest は X（入力パラメータ空間）で学習
+    def fit(self, X: np.ndarray):
+        """X: (N, 2) [cut_depth_um, blade_W_um] — FEM パラメータ範囲"""
         self.if_layer.fit(X)
-        # GP は surrogate_gp.py で別途学習済みを前提（load で取得）
         try:
-            self.gp_layer.load_gp()
-        except FileNotFoundError:
-            print("[Warn] GPモデル未発見。Layer1はスキップされます。")
+            self.gp_layer.load()
+        except FileNotFoundError as e:
+            print(f"[Warn] {e}")
         self.is_fitted = True
         return self
 
-    def check(self, x: np.ndarray,
-              y_obs: Optional[np.ndarray] = None) -> AnomalyResult:
+    def check(self, x4: np.ndarray,
+              observed_chip_um: Optional[float] = None) -> AnomalyResult:
         """
-        x     : (n_features,) 処理条件
-        y_obs : (n_targets,)  実測結果（任意）
+        x4             : [cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]
+        observed_chip_um: 実測チッピング [µm]（任意）
         """
-        x = np.asarray(x, dtype=float).reshape(1, -1)
-        flags = {}
-        scores = []
-        descs  = []
+        x4 = np.asarray(x4, dtype=float).ravel()
+        x2 = x4[:2]   # IForest は depth + blade_W のみ
+        flags, scores, descs = {}, [], []
 
-        # Layer 2: IForest（y_obs 不要）
-        anom2, score2, desc2 = self.if_layer.check(x)
-        flags["iforest"] = anom2
-        scores.append(score2)
-        descs.append(desc2)
+        # Layer 2: IForest
+        a2, s2, d2 = self.if_layer.check(x2)
+        flags["iforest"] = a2; scores.append(s2); descs.append(d2)
 
-        # Layer 1: GP（y_obs が必要）
-        if y_obs is not None:
-            try:
-                y_obs_arr = np.asarray(y_obs, dtype=float).reshape(-1)
-                anom1, score1, desc1 = self.gp_layer.check(x, y_obs_arr)
-                flags["gp"] = anom1
-                scores.append(score1)
-                descs.append(desc1)
-            except Exception as e:
-                flags["gp"] = False
-                descs.append(f"GP: スキップ ({e})")
+        # Layer 1: GP
+        if observed_chip_um is not None and self.gp_layer.gp is not None:
+            a1, s1, d1 = self.gp_layer.check(x4, observed_chip_um)
+            flags["gp"] = a1; scores.append(s1); descs.append(d1)
+
+            # 硬判定: USL 超過
+            if observed_chip_um > CHIP_USL:
+                flags["usl"] = True
+                descs.append(f"USL={CHIP_USL}µm 超過: {observed_chip_um:.1f}µm")
+                scores.append(1.0)
         else:
             flags["gp"] = False
 
-        flags["spc"] = False  # SPC は ProcessMonitor で管理
+        flags["spc"] = False
 
-        # 総合判定：いずれかの層で異常 → 異常
-        is_anom   = any(flags.values())
-        severity  = float(np.max(scores)) if scores else 0.0
-        cause     = " | ".join(descs)
+        is_anom  = any(flags.values())
+        severity = float(np.max(scores)) if scores else 0.0
+        cause    = " | ".join(descs)
 
-        # 対処提案
         suggestions = []
-        if flags.get("gp"):
-            suggestions.append("測定値とモデル予測の乖離が大きい — キャリブレーション実施を推奨")
+        if flags.get("usl"):
+            suggestions.append("即時停止 — チッピングが生産閾値超過。刃の交換を推奨")
+        if flags.get("gp") and not flags.get("usl"):
+            suggestions.append("GPモデルとの乖離大 — センサー校正またはGP再学習を検討")
         if flags.get("iforest"):
-            suggestions.append("加工条件が通常の範囲外 — run_config.json のパラメータを確認")
-        if not suggestions and is_anom:
-            suggestions.append("プロセス状態を確認し、直近の加工条件変更を記録してください")
+            suggestions.append("パラメータが学習範囲外 — run_config.json を確認")
 
         return AnomalyResult(
-            is_anomaly  = is_anom,
-            severity    = severity,
-            layer_flags = flags,
-            cause       = cause,
-            suggestions = suggestions,
+            is_anomaly=is_anom, severity=severity,
+            layer_flags=flags, cause=cause, suggestions=suggestions,
         )
 
-    def save(self, path: str = ANOMALY_MODEL_PATH):
+    def save(self, path=ANOMALY_MODEL_PATH):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         joblib.dump(self, path)
-        print(f"[✓] AnomalyDetector saved → {path}")
+        print(f"[✓] AnomalyDetector → {path}")
 
     @staticmethod
-    def load(path: str = ANOMALY_MODEL_PATH) -> "AnomalyDetector":
-        model = joblib.load(path)
-        print(f"[✓] AnomalyDetector loaded ← {path}")
-        return model
+    def load(path=ANOMALY_MODEL_PATH):
+        return joblib.load(path)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ProcessMonitor: 時系列監視（プロダクション用）
+# ProcessMonitor: プロダクション時系列監視
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ProcessMonitor:
-    """
-    プロダクション投入時の連続監視。
-    各 lot の結果を受け取り、管理図で異常を検知する。
-    """
 
-    def __init__(self, target_col: str = "deletion_fraction",
-                 usl: float = 0.05, lsl: float = 0.0,
-                 warmup: int = 20):
-        self.target_col = target_col
-        self.usl        = usl
-        self.lsl        = lsl
-        self.chart      = ShewhartChart(warmup=warmup)
-        self.log: list[dict] = []
+    def __init__(self, usl=CHIP_USL, warmup=15):
+        self.usl   = usl
+        self.chart = ShewhartChart(warmup=warmup)
+        self.log: list = []
 
-    def update(self, value: float, lot_id: str = "") -> Optional[AnomalyResult]:
-        """
-        新しい lot 結果を投入。異常があれば AnomalyResult を返す。
-        """
-        # USL/LSL ハードチェック
-        if value > self.usl:
+    def update(self, chip_um: float, lot_id: str = "") -> Optional[AnomalyResult]:
+        if chip_um > self.usl:
             result = AnomalyResult(
-                is_anomaly  = True,
-                severity    = 1.0,
-                layer_flags = {"spc": True, "gp": False, "iforest": False},
-                cause       = f"USL={self.usl} 超過: {self.target_col}={value:.4g}",
-                suggestions = ["即時停止・刃の交換またはパラメータ再調整を推奨"],
+                is_anomaly=True, severity=1.0,
+                layer_flags={"spc": True},
+                cause=f"USL={self.usl}µm 超過: chip={chip_um:.1f}µm",
+                suggestions=["即時停止 — 刃の交換またはパラメータ再調整を推奨"],
             )
         else:
-            is_anom, desc = self.chart.update(value)
+            is_anom, desc = self.chart.update(chip_um)
             result = AnomalyResult(
-                is_anomaly  = is_anom,
-                severity    = 0.5 if is_anom else 0.0,
-                layer_flags = {"spc": is_anom, "gp": False, "iforest": False},
-                cause       = desc,
-                suggestions = ["管理図ドリフト — プロセス安定化の確認"] if is_anom else [],
+                is_anomaly=is_anom, severity=0.5 if is_anom else 0.0,
+                layer_flags={"spc": is_anom},
+                cause=desc,
+                suggestions=["管理図ドリフト — プロセス安定化の確認"] if is_anom else [],
             ) if is_anom else None
 
-        self.log.append({
-            "lot_id": lot_id,
-            "value":  value,
-            "anomaly": result.is_anomaly if result else False,
-        })
+        self.log.append({"lot_id": lot_id, "chip_um": chip_um,
+                         "anomaly": result.is_anomaly if result else False})
         return result
 
-    def summary(self) -> pd.DataFrame:
+    def summary(self):
         return pd.DataFrame(self.log)
+
+
+# ── デモ ──────────────────────────────────────────────────────────────────────
+
+def run_demo():
+    """正常 → 徐々に悪化 → USL超過 のシナリオデモ"""
+    import numpy as np
+    rng = np.random.default_rng(42)
+
+    detector = AnomalyDetector()
+    detector.fit(np.array([[80., 23.], [150., 23.], [220., 23.],
+                            [290., 23.], [360., 23.]]))
+
+    monitor = ProcessMonitor(usl=CHIP_USL, warmup=10)
+    print("\n=== デモ: 正常運転 → 刃摩耗 → 異常 ===")
+    print(f"  {'Lot':>5}  {'条件(depth,bw,feed,rpm)':>26}  {'chip':>6}  {'状態':}")
+
+    scenarios = (
+        [(200., 23., 1.0, 30000., rng.uniform(3, 5))] * 15 +  # 正常
+        [(200., 23., 1.0, 30000., v) for v in np.linspace(5, 14, 8)] +  # ドリフト
+        [(300., 23., 2.0, 30000., rng.uniform(16, 20))] * 3    # 異常
+    )
+    alert_count = 0
+    for i, (d, bw, f, rpm, chip) in enumerate(scenarios):
+        x4 = np.array([d, bw, f, rpm])
+        result = detector.check(x4, observed_chip_um=chip)
+        mon    = monitor.update(chip, lot_id=f"lot_{i:03d}")
+
+        is_alert = result.is_anomaly or (mon is not None)
+        if is_alert:
+            alert_count += 1
+        status = "⚠ ALERT" if is_alert else "✓ OK"
+        print(f"  {i:>4}   ({d:.0f}µm,{bw:.0f}µm,{f:.1f},{rpm:.0f})  "
+              f"{chip:>5.1f}µm  {status}")
+        if is_alert and result.suggestions:
+            print(f"         → {result.suggestions[0]}")
+
+    print(f"\n  合計アラート: {alert_count}/{len(scenarios)}件")
+    df = monitor.summary()
+    print(f"  管理図異常率: {df['anomaly'].mean():.0%}")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -351,39 +339,35 @@ class ProcessMonitor:
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="不良検出・異常予兆")
-    parser.add_argument("--csv",     required=True,
-                        help="parametric_summary.csv のパス")
+    parser.add_argument("--csv",     help="parametric_summary_extended.csv のパス")
     parser.add_argument("--check",   nargs="+", type=float,
-                        help="単一条件を検査: cut_depth_um blade_W_um [chipping stress]")
+                        help="depth bw feed spindle [chip_um]")
     parser.add_argument("--monitor", action="store_true",
-                        help="全 CSV 行を時系列監視として流す")
+                        help="CSV全行を時系列監視（chip列を使用）")
+    parser.add_argument("--demo",    action="store_true",
+                        help="正常→ドリフト→異常のシナリオデモ")
     args = parser.parse_args()
 
-    df = pd.read_csv(args.csv)
-    from surrogate_gp import FEATURE_COLS, TARGET_COLS
+    if args.demo:
+        run_demo()
+        return
 
-    # CSVに存在する列のみ使用（列名が異なる場合の互換処理）
-    available_targets = [c for c in TARGET_COLS if c in df.columns]
-    if not available_targets:
-        # フォールバック: 数値列でFEATURE_COLS以外の最初の列を使用
-        num_cols = df.select_dtypes(include="number").columns.tolist()
-        available_targets = [c for c in num_cols
-                             if c not in FEATURE_COLS][:2]
-        print(f"[Warn] TARGET_COLS {TARGET_COLS} が見つからない。"
-              f"代替: {available_targets}")
-    X = df[FEATURE_COLS].values.astype(float)
-    Y = df[available_targets].values.astype(float)
+    if not args.csv:
+        parser.error("--csv が必要です（--demo を除く）")
+
+    df = pd.read_csv(args.csv)
+    X  = df[FEM_FEATURES].values.astype(float)
 
     detector = AnomalyDetector()
-    detector.fit(X, Y)
+    detector.fit(X)
     detector.save()
     print(f"[✓] AnomalyDetector 学習完了 ({len(X)} サンプル)")
 
     if args.check:
         vals = args.check
-        x_new = np.array(vals[:len(FEATURE_COLS)])
-        y_obs = np.array(vals[len(FEATURE_COLS):]) if len(vals) > len(FEATURE_COLS) else None
-        result = detector.check(x_new, y_obs)
+        x4   = np.array(vals[:4] if len(vals) >= 4 else vals + [1.0, 30000.][:4-len(vals)])
+        chip = vals[4] if len(vals) > 4 else None
+        result = detector.check(x4, observed_chip_um=chip)
         print(f"\n=== 異常検査結果 ===")
         print(f"  異常: {'⚠ YES' if result.is_anomaly else '✓ NO'}")
         print(f"  深刻度: {result.severity:.2f}")
@@ -392,15 +376,18 @@ def main():
             print(f"  → {s}")
 
     if args.monitor:
-        monitor = ProcessMonitor(target_col=TARGET_COLS[0], usl=0.10, warmup=10)
-        print(f"\n=== 時系列監視 ({TARGET_COLS[0]}) ===")
-        for i, val in enumerate(Y[:, 0]):
-            alert = monitor.update(val, lot_id=f"lot_{i:03d}")
+        # deletion_fraction を簡易チッピングプロキシとして使用
+        target_col = resolve_target_cols(df)[0]
+        vals = df[target_col].values
+        monitor = ProcessMonitor(usl=0.10, warmup=min(10, len(vals)//2))
+        print(f"\n=== 時系列監視 ({target_col}) ===")
+        for i, val in enumerate(vals):
+            alert = monitor.update(float(val), lot_id=f"lot_{i:03d}")
             if alert:
                 print(f"  lot_{i:03d}: ⚠ {alert.cause}")
-        summary = monitor.summary()
-        anomaly_rate = summary["anomaly"].mean()
-        print(f"\n  異常率: {anomaly_rate:.1%} ({summary['anomaly'].sum()}/{len(summary)}件)")
+        s = monitor.summary()
+        print(f"  異常率: {s['anomaly'].mean():.1%} "
+              f"({s['anomaly'].sum()}/{len(s)}件)")
 
 
 if __name__ == "__main__":
