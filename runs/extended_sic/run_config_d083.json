@@ -1,0 +1,15 @@
+{
+  "material":           "SiC",
+  "cut_depth_um":       80,
+  "blade_W_um":         23,
+  "feed_speed_m_s":     0.5,
+  "mesh_global_um":     8.0,
+  "mesh_fine_um":       2.0,
+  "target_dt_s":        1e-9,
+  "friction_coeff":     0.3,
+  "num_cpus":           1,
+  "eps_fracture_scale": 25.0,
+  "velocity_ramp_frac": 0.10,
+  "job_name":           "dicing_4HSiC_d083_bw23",
+  "study":              false
+}

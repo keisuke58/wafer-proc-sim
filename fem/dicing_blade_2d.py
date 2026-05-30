@@ -177,28 +177,44 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
         offset=0.0, offsetType=MIDDLE_SURFACE,
         offsetField="", thicknessAssignment=FROM_SECTION)
 
-    # ═══ PART: Blade (analytical rigid, trapezoidal tip) ════════════════════════
-    # ANALYTICAL_RIGID_SURFACE avoids the R2D2 "collapsed faces" issue that
-    # silently prevents general contact from detecting the blade surface.
-    half  = bw / 2
-    sk_b  = model.ConstrainedSketch(name="blade_sk", sheetSize=W * 4)
-    # Sketch drawn RIGHT→LEFT so that the R2D2 element tangent points in -x.
-    # Abaqus CCW-rotates the tangent for SPOS: CCW(-x) = -y = DOWNWARD.
-    # With SPOS↓ as master outward normal, wafer top nodes (above blade after
-    # blade plunges down) have signed_distance < 0 → detected as penetrating
-    # → PENALTY force in ↓ direction → wafer follows blade down. ✓
-    sk_b.Line(point1=( half,              0.0),
-              point2=( half - chamfer, -chamfer))
-    sk_b.Line(point1=( half - chamfer, -chamfer),
-              point2=(-half + chamfer, -chamfer))
-    sk_b.Line(point1=(-half + chamfer, -chamfer),
-              point2=(-half,              0.0))
+    # ═══ PART: Blade (deformable solid, trapezoidal tip, BladeResin) ═══════════
+    # Deformable blade (E=60 GPa resin-bond) limits PENALTY contact stiffness to
+    # K = 0.025 × E_blade ≈ 1.5 GPa vs 11.2 GPa for rigid-on-wafer contact.
+    # This reduces the initial contact force by ~7.5× and suppresses wave-induced
+    # global damage that plagued the rigid-blade models (d080–d082).
+    # The blade hub (top edge) is velocity-controlled; the tip deforms elastically.
+    # Elastic wave travel time in blade body ≈ H_blade/c_blade ≈ 28 µs, providing
+    # a natural force-ramp that supplements the SMOOTH STEP amplitude.
+    H_blade = bw * 5   # 115 µm body height above trapezoidal tip
+    half    = bw / 2
+
+    # Closed solid trapezoid: top flat → right side → right chamfer →
+    #   bottom flat → left chamfer → left side → back to top
+    sk_b = model.ConstrainedSketch(name="blade_sk", sheetSize=W * 4)
+    sk_b.Line(point1=(-half,            H_blade), point2=( half,            H_blade))
+    sk_b.Line(point1=( half,            H_blade), point2=( half,            0.0))
+    sk_b.Line(point1=( half,            0.0),     point2=( half - chamfer, -chamfer))
+    sk_b.Line(point1=( half - chamfer, -chamfer), point2=(-half + chamfer, -chamfer))
+    sk_b.Line(point1=(-half + chamfer, -chamfer), point2=(-half,            0.0))
+    sk_b.Line(point1=(-half,            0.0),     point2=(-half,            H_blade))
 
     blade = model.Part(name="Blade", dimensionality=TWO_D_PLANAR,
-                       type=DISCRETE_RIGID_SURFACE)
-    blade.BaseWire(sketch=sk_b)
-    blade.ReferencePoint(point=(0.0, 0.0, 0.0))
-    blade_rp_key = list(blade.referencePoints.keys())[-1]
+                       type=DEFORMABLE_BODY)
+    blade.BaseShell(sketch=sk_b)
+
+    # BladeResin material (resin-bond Ni blade, E=60 GPa)
+    from material_properties import BladeResin as _br
+    blade_mat_name = _abq_name(_br["name"])
+    bm = model.Material(name=blade_mat_name)
+    bm.Elastic(table=((_br["E"], _br["nu"]),))
+    bm.Density(table=((_br["density"],),))
+
+    model.HomogeneousSolidSection(name="BladeSec", material=blade_mat_name, thickness=1.0)
+    blade_face_set = blade.Set(faces=blade.faces[:], name="BladeAll")
+    blade.SectionAssignment(
+        region=blade_face_set, sectionName="BladeSec",
+        offset=0.0, offsetType=MIDDLE_SURFACE,
+        offsetField="", thicknessAssignment=FROM_SECTION)
 
     # ═══ ASSEMBLY ═════════════════════════════════════════════════════════════
     a = model.rootAssembly
@@ -240,15 +256,18 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     model.DisplacementBC(name="WaferRight", createStepName="Initial",
                          region=regionToolset.Region(edges=rgt_edge), u1=0.0)
 
-    blade_rp_inst = a.instances["Blade-1"].referencePoints[blade_rp_key]
-    blade_region  = regionToolset.Region(referencePoints=(blade_rp_inst,))
-    # Fix rotation only in Initial; translational DOFs left free until Plunge
-    model.DisplacementBC(name="BladeRot", createStepName="Initial",
-                         region=blade_region, ur3=0.0)
-    # Use VelocityBC — Abaqus Explicit applies displacement BCs with a
-    # "jump correction" when first introduced in a non-Initial step, which
-    # silently zeroes out the prescribed motion. Velocity BCs have no such
-    # restriction and are the correct way to drive a rigid body in Explicit.
+    # Blade top edge: in the assembly frame at y = H + H_blade + chamfer + _CLEARANCE
+    blade_top_y   = H + H_blade + chamfer + _CLEARANCE
+    blade_top_asm = a.instances["Blade-1"].edges.getByBoundingBox(
+        xMin=xc - bw, xMax=xc + bw,
+        yMin=blade_top_y - mg * 0.5, yMax=blade_top_y + mg * 0.5)
+    blade_region = regionToolset.Region(edges=blade_top_asm)
+
+    # VelocityBC on top edge: blade hub moves at prescribed velocity.
+    # v1=0 in Plunge and v2=0 in Feed constrains lateral/vertical DOFs respectively,
+    # so no separate DisplacementBC is needed in the Initial step.
+    # Tip lags behind hub by ~28 µs (blade elastic wave travel time),
+    # creating a natural force ramp even before the SMOOTH STEP amplitude activates.
     model.VelocityBC(name="BladeMotion", createStepName="Plunge",
                      region=blade_region,
                      v1=0.0, v2=-v)
@@ -267,7 +286,13 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     # For master SNEG (↓): signed distance = (slave_y - master_y) · (↓) = -(H-(H-5nm)) = -5nm < 0
     # → penetration detected. Contact force = master_outward_normal direction (↓) = pushes wafer down. ✓
     # side1Edges = SPOS = outward normal. With R→L sketch, SPOS = downward. ✓
-    a.Surface(side1Edges=blade_inst.edges[:], name="BladeSurf")
+    # Blade contact surface: trapezoidal bottom face (chamfer + flat tip edges).
+    # In assembly frame: yMin = H + _CLEARANCE - chamfer, yMax = H + _CLEARANCE.
+    blade_tip_edges = blade_inst.edges.getByBoundingBox(
+        xMin=xc - bw * 1.1, xMax=xc + bw * 1.1,
+        yMin=H + _CLEARANCE - chamfer - mf * 0.5,
+        yMax=H + _CLEARANCE + mf * 0.5)
+    a.Surface(side1Edges=blade_tip_edges, name="BladeSurf")
 
     model.ContactProperty("FricContact")
     model.interactionProperties["FricContact"].TangentialBehavior(
@@ -281,15 +306,15 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     model.interactionProperties["FricContact"].NormalBehavior(
         pressureOverclosure=HARD, allowSeparation=ON)
 
-    # *CONTACT PAIR: works in 2D with R2D2 rigid elements. The "failure element"
-    # STA warning is advisory — it does not disable the contact. General contact
-    # (*CONTACT) cannot be used in 2D because Abaqus treats R2D2 elements as
-    # "collapsed faces" and ignores the rigid surface entirely.
-    # PENALTY constraint is more robust than KINEMATIC for failure-material slaves.
+    # Deformable-to-deformable contact: blade=slave so PENALTY stiffness is
+    # K = 0.025 × E_blade = 1.5 GPa (vs 11.2 GPa for wafer-as-slave).
+    # This reduces the initial contact force spike by ~7.5×, suppressing
+    # the wave-induced global damage observed in d080–d082.
+    # wafer=master (stiffer, finer mesh in contact zone).
     model.SurfaceToSurfaceContactExp(
         name="BladeCut", createStepName="Plunge",
-        main=a.surfaces["BladeSurf"],
-        secondary=a.surfaces["WaferTop"],
+        main=a.surfaces["WaferTop"],
+        secondary=a.surfaces["BladeSurf"],
         sliding=FINITE, interactionProperty="FricContact",
         mechanicalConstraint=PENALTY)
 
@@ -310,11 +335,18 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
         wafer.seedEdgeBySize(edges=fine_edges, size=mf, constraint=FINER)
     wafer.generateMesh()
 
-    blade_r2d2 = ElemType(elemCode=R2D2, elemLibrary=EXPLICIT)
+    # Blade mesh: CPE4R throughout, fine at tip to match wafer contact resolution.
     blade.setElementType(
-        regions=regionToolset.Region(edges=blade.edges[:]),
-        elemTypes=(blade_r2d2,))
-    blade.seedPart(size=mf)
+        regions=regionToolset.Region(faces=blade.faces[:]),
+        elemTypes=(ElemType(elemCode=CPE4R, elemLibrary=EXPLICIT,
+                            hourglassControl=ENHANCED, distortionControl=ON),
+                   ElemType(elemCode=CPE3, elemLibrary=EXPLICIT)))
+    blade.seedPart(size=mg, deviationFactor=0.1, minSizeFactor=0.1)
+    blade_tip_part_edges = blade.edges.getByBoundingBox(
+        xMin=-half * 1.1, xMax=half * 1.1,
+        yMin=-chamfer * 1.1, yMax=mf * 0.5)
+    if len(blade_tip_part_edges) > 0:
+        blade.seedEdgeBySize(edges=blade_tip_part_edges, size=mf, constraint=FINER)
     blade.generateMesh()
 
     # ═══ OUTPUT ═══════════════════════════════════════════════════════════════
@@ -518,7 +550,8 @@ else:
     _p["material"] = _mat
     for _k in ("cut_depth_um", "blade_W_um", "feed_speed_m_s",
                 "mesh_global_um", "mesh_fine_um", "friction_coeff",
-                "num_cpus", "target_dt_s"):
+                "num_cpus", "target_dt_s",
+                "eps_fracture_scale", "velocity_ramp_frac"):
         if _k in _cfg:
             _p[_k] = _cfg[_k]
     _tag  = _mat["name"].replace("-", "").replace(" ", "")
