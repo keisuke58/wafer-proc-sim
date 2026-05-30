@@ -8,13 +8,39 @@ and is shared across all concurrent user sessions.
 import os
 import sys
 
+
+class _AbsPath(list):
+    """sys.path drop-in that canonicalizes every entry and rejects duplicates.
+
+    All 30+ project modules do sys.path.insert(0, "../..") style calls with
+    non-normalized paths. Python 3.14 treats "/a/b/.." and "/a" as different
+    strings, causing KeyError in _find_and_load_unlocked. This wrapper makes
+    every insertion idempotent and canonical.
+    """
+    def insert(self, i, item):
+        if isinstance(item, str):
+            item = os.path.abspath(item)
+            if item in self:
+                return
+        super().insert(i, item)
+
+    def append(self, item):
+        if isinstance(item, str):
+            item = os.path.abspath(item)
+            if item in self:
+                return
+        super().append(item)
+
+
+# Replace sys.path before ANY project imports
+_root = os.path.abspath(os.path.dirname(__file__))
+sys.path = _AbsPath(
+    dict.fromkeys(os.path.abspath(p) for p in [_root] + sys.path if p)
+)
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-
-_root = os.path.abspath(os.path.dirname(__file__))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
 
 from dashboard.simulator import get_simulator
 
