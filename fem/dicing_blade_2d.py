@@ -50,19 +50,20 @@ from mesh import ElemType
 DEFAULT = {
     "material":        SiC,
     "wafer_W_um":      500.0,
-    "wafer_H_um":      200.0,
-    "cut_depth_um":     30.0,
-    "blade_W_um":       30.0,
-    "feed_speed_m_s":    0.5,    # realistic; mass scaling handles quasi-statics
-    "mesh_global_um":    5.0,
-    "mesh_fine_um":      1.5,    # finer than v1 for better fracture resolution
-    "target_dt_s":       1e-8,   # injected into INP mass scaling keyword
+    "wafer_H_um":      450.0,    # 450µm ≥ max cut depth 360µm (Micro2026 range)
+    "cut_depth_um":    150.0,
+    "blade_W_um":       23.0,    # Micro2026 blade (Ni-bond, 23µm kerf)
+    "feed_speed_m_s":    0.5,
+    "mesh_global_um":    8.0,
+    "mesh_fine_um":      2.0,
+    "target_dt_s":       1e-8,
     "friction_coeff":    0.3,
-    "num_cpus":          1,
+    "num_cpus":          4,
 }
 
-SWEEP_CUT_DEPTHS_UM   = [20, 30, 40, 50, 60]
-SWEEP_BLADE_WIDTHS_UM = [20, 30, 40]
+# Depth sweep matches Micro2026 experimental range (80–360µm)
+SWEEP_CUT_DEPTHS_UM   = [80, 150, 220, 290, 360]
+SWEEP_BLADE_WIDTHS_UM = [23]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -89,7 +90,8 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     xc        = W / 2
     fine_half = bw * 3
     travel    = W * 0.8
-    t_plunge  = d / v
+    _CLEARANCE = 2e-6                    # must match assembly translation above
+    t_plunge  = (d + _CLEARANCE) / v    # extra time to close the 2µm gap
     t_feed    = travel / v
     chamfer   = bw * 0.15
     mat_name  = _abq_name(mat["name"])
@@ -143,37 +145,40 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
         dependencies=0,
         table=((mat["dp_cohesion_Pa"], 0.0),))
 
-    # Triaxiality-dependent ductile damage initiation
-    # fracture_table: ((eps_f, triaxiality, strain_rate), ...)
     m.DuctileDamageInitiation(
         table=mat["fracture_table"],
         temperatureDependency=OFF,
         dependencies=0)
-
-    # Energy-based linear softening calibrated from K_Ic
     m.ductileDamageInitiation.DamageEvolution(
-        type=ENERGY,
-        softening=LINEAR,
-        table=((mat["G_c"],),))
+        type=ENERGY, softening=LINEAR, table=((mat["G_c"],),))
 
     # ═══ SECTION ══════════════════════════════════════════════════════════════
+    # thickness=1.0 (unity) for 2D plane-strain; non-unity causes contact
+    # force mismatch: surface interaction defaults to t=1.0 while element uses t≠1.
     model.HomogeneousSolidSection(
-        name="WaferSec", material=mat_name, thickness=1.0e-6)
+        name="WaferSec", material=mat_name, thickness=1.0)
     wafer_all = wafer.Set(faces=wafer.faces[:], name="WaferAll")
     wafer.SectionAssignment(
         region=wafer_all, sectionName="WaferSec",
         offset=0.0, offsetType=MIDDLE_SURFACE,
         offsetField="", thicknessAssignment=FROM_SECTION)
 
-    # ═══ PART: Blade (discrete rigid, trapezoidal tip) ════════════════════════
+    # ═══ PART: Blade (analytical rigid, trapezoidal tip) ════════════════════════
+    # ANALYTICAL_RIGID_SURFACE avoids the R2D2 "collapsed faces" issue that
+    # silently prevents general contact from detecting the blade surface.
     half  = bw / 2
     sk_b  = model.ConstrainedSketch(name="blade_sk", sheetSize=W * 4)
-    sk_b.Line(point1=(-half,              0.0),
-              point2=(-half + chamfer, -chamfer))
-    sk_b.Line(point1=(-half + chamfer, -chamfer),
+    # Sketch drawn RIGHT→LEFT so that the R2D2 element tangent points in -x.
+    # Abaqus CCW-rotates the tangent for SPOS: CCW(-x) = -y = DOWNWARD.
+    # With SPOS↓ as master outward normal, wafer top nodes (above blade after
+    # blade plunges down) have signed_distance < 0 → detected as penetrating
+    # → PENALTY force in ↓ direction → wafer follows blade down. ✓
+    sk_b.Line(point1=( half,              0.0),
               point2=( half - chamfer, -chamfer))
     sk_b.Line(point1=( half - chamfer, -chamfer),
-              point2=( half,              0.0))
+              point2=(-half + chamfer, -chamfer))
+    sk_b.Line(point1=(-half + chamfer, -chamfer),
+              point2=(-half,              0.0))
 
     blade = model.Part(name="Blade", dimensionality=TWO_D_PLANAR,
                        type=DISCRETE_RIGID_SURFACE)
@@ -186,7 +191,11 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     a.DatumCsysByDefault(CARTESIAN)
     wafer_inst = a.Instance(name="Wafer-1", part=wafer, dependent=ON)
     blade_inst = a.Instance(name="Blade-1", part=blade, dependent=ON)
-    a.translate(instanceList=("Blade-1",), vector=(bw, H + chamfer, 0.0))
+    # 2µm initial clearance ensures contact is detected in the first time step.
+    # Zero-clearance starts (blade exactly touching wafer) can miss penetration
+    # with small DT and PENALTY contact — the gap forces an explicit first contact event.
+    _CLEARANCE = 2e-6
+    a.translate(instanceList=("Blade-1",), vector=(bw, H + chamfer + _CLEARANCE, 0.0))
 
     # ═══ STEPS (mass scaling table placeholder — DT injected into INP later) ══
     # Use SEMI_AUTOMATIC, MODEL, AT_BEGINNING as placeholder
@@ -217,16 +226,26 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
 
     blade_rp_inst = a.instances["Blade-1"].referencePoints[blade_rp_key]
     blade_region  = regionToolset.Region(referencePoints=(blade_rp_inst,))
+    # Fix rotation only in Initial; translational DOFs left free until Plunge
     model.DisplacementBC(name="BladeRot", createStepName="Initial",
                          region=blade_region, ur3=0.0)
-    model.DisplacementBC(name="BladeMotion", createStepName="Plunge",
-                         region=blade_region, u1=0.0, u2=-d)
+    # Use VelocityBC — Abaqus Explicit applies displacement BCs with a
+    # "jump correction" when first introduced in a non-Initial step, which
+    # silently zeroes out the prescribed motion. Velocity BCs have no such
+    # restriction and are the correct way to drive a rigid body in Explicit.
+    model.VelocityBC(name="BladeMotion", createStepName="Plunge",
+                     region=blade_region,
+                     v1=0.0, v2=-v)
     model.boundaryConditions["BladeMotion"].setValuesInStep(
-        stepName="Feed", u1=travel, u2=-d)
+        stepName="Feed", v1=(travel / t_feed), v2=0.0)
 
     # ═══ CONTACT ══════════════════════════════════════════════════════════════
     top_edge = wafer_inst.edges.findAt(((W/2, H, 0.0),))
     a.Surface(side1Edges=(top_edge,), name="WaferTop")
+    # side2Edges → SNEG (outward away from blade body = downward for bottom cutting face).
+    # For master SNEG (↓): signed distance = (slave_y - master_y) · (↓) = -(H-(H-5nm)) = -5nm < 0
+    # → penetration detected. Contact force = master_outward_normal direction (↓) = pushes wafer down. ✓
+    # side1Edges = SPOS = outward normal. With R→L sketch, SPOS = downward. ✓
     a.Surface(side1Edges=blade_inst.edges[:], name="BladeSurf")
 
     model.ContactProperty("FricContact")
@@ -241,11 +260,17 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     model.interactionProperties["FricContact"].NormalBehavior(
         pressureOverclosure=HARD, allowSeparation=ON)
 
+    # *CONTACT PAIR: works in 2D with R2D2 rigid elements. The "failure element"
+    # STA warning is advisory — it does not disable the contact. General contact
+    # (*CONTACT) cannot be used in 2D because Abaqus treats R2D2 elements as
+    # "collapsed faces" and ignores the rigid surface entirely.
+    # PENALTY constraint is more robust than KINEMATIC for failure-material slaves.
     model.SurfaceToSurfaceContactExp(
         name="BladeCut", createStepName="Plunge",
         main=a.surfaces["BladeSurf"],
         secondary=a.surfaces["WaferTop"],
-        sliding=FINITE, interactionProperty="FricContact")
+        sliding=FINITE, interactionProperty="FricContact",
+        mechanicalConstraint=PENALTY)
 
     # ═══ MESH ═════════════════════════════════════════════════════════════════
     elem_quad = ElemType(elemCode=CPE4R, elemLibrary=EXPLICIT,
@@ -292,6 +317,30 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     job.writeInput(consistencyChecking=OFF)
     print("[INP] Written: %s.inp" % job_name)
     return job_name
+
+
+def _fix_blade_surface_normal(inp_path):
+    """
+    Abaqus CAE always writes R2D2 rigid wire surfaces as SPOS (outward = upward
+    for a left-to-right element), even when side2Edges is requested.  For a
+    downward-cutting blade the contact normal must point downward (SNEG) so that
+    wafer-top nodes above the blade are detected as penetrating.
+    This function patches the INP: BladeSurf SPOS → SNEG.
+    """
+    with open(inp_path, "r") as f:
+        content = f.read()
+    # Replace the specific surface line for BladeSurf
+    old = "_BladeSurf_SPOS, SPOS"
+    new = "_BladeSurf_SPOS, SNEG"
+    n = content.count(old)
+    if n == 0:
+        print("[WARN] BladeSurf SPOS pattern not found — normal not patched")
+    else:
+        content = content.replace(old, new)
+        with open(inp_path, "w") as f:
+            f.write(content)
+        print("[INP] Patched BladeSurf SPOS→SNEG (%d occurrence(s))" % n)
+    return n
 
 
 def _inject_mass_scaling_dt(inp_path, target_dt):
@@ -342,6 +391,7 @@ def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
     build_model(p=p, job_name=job_name)
 
     inp_path = os.path.join(os.getcwd(), job_name + ".inp")
+    _fix_blade_surface_normal(inp_path)
     _inject_mass_scaling_dt(inp_path, p.get("target_dt_s", 1e-8))
 
     submit_and_wait(job_name, num_cpus=p.get("num_cpus", 1))

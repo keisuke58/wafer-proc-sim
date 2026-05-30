@@ -38,29 +38,57 @@ import numpy as np
 # ── Chipping width data ───────────────────────────────────────────────────────
 CHIPPING_DATA = [
 
-    # ── Micromachines 2026 (4H-SiC, full-depth cut, blade_W=23µm) ───────────
-    # Feed speed sweep (depth fixed ~400µm, spindle=30,000 rpm)
-    # Backside chipping from Fig. 8 (estimated from description)
+    # ── Micromachines 2026 (4H-SiC, blade_W=23µm) ── digitized from figures ──
+    # Depth of cut sweep (front chipping, feed=1mm/s, spindle=30,000rpm)
+    # Incomplete cuts (partial penetration, analogous to our simulation)
     {"source": "Micro2026", "material": "4H-SiC",
-     "blade_W_um": 23, "cut_depth_um": 400, "feed_mm_s": 0.5,
-     "spindle_rpm": 30000, "chipping_um": 8.0,  "chipping_std_um": None,
-     "notes": "estimated from relative trend; 0.5 mm/s is lowest feed"},
+     "blade_W_um": 23, "cut_depth_um":  80, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 2.5, "chipping_std_um": 0.5,
+     "notes": "digitized from Fig depth sweep; front chipping"},
     {"source": "Micro2026", "material": "4H-SiC",
-     "blade_W_um": 23, "cut_depth_um": 400, "feed_mm_s": 1.0,
-     "spindle_rpm": 30000, "chipping_um": 12.0, "chipping_std_um": None,
-     "notes": "estimated"},
+     "blade_W_um": 23, "cut_depth_um": 150, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 3.5, "chipping_std_um": 0.5,
+     "notes": "digitized from Fig depth sweep; front chipping"},
     {"source": "Micro2026", "material": "4H-SiC",
-     "blade_W_um": 23, "cut_depth_um": 400, "feed_mm_s": 1.5,
-     "spindle_rpm": 30000, "chipping_um": 17.0, "chipping_std_um": None,
-     "notes": "estimated"},
+     "blade_W_um": 23, "cut_depth_um": 220, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 4.5, "chipping_std_um": 0.5,
+     "notes": "digitized from Fig depth sweep; front chipping"},
     {"source": "Micro2026", "material": "4H-SiC",
-     "blade_W_um": 23, "cut_depth_um": 400, "feed_mm_s": 2.0,
-     "spindle_rpm": 30000, "chipping_um": 21.0, "chipping_std_um": None,
-     "notes": "estimated"},
+     "blade_W_um": 23, "cut_depth_um": 290, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 6.0, "chipping_std_um": 1.0,
+     "notes": "digitized from Fig depth sweep; front chipping"},
     {"source": "Micro2026", "material": "4H-SiC",
-     "blade_W_um": 23, "cut_depth_um": 400, "feed_mm_s": 2.5,
-     "spindle_rpm": 30000, "chipping_um": 26.0, "chipping_std_um": None,
-     "notes": "explicitly reported: backside chipping = 26 µm at 2.5 mm/s"},
+     "blade_W_um": 23, "cut_depth_um": 360, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 7.5, "chipping_std_um": 1.0,
+     "notes": "digitized from Fig depth sweep; front chipping"},
+
+    # Feed speed sweep (depth=390µm, spindle=30,000rpm) — front chipping
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 0.5,
+     "spindle_rpm": 30000, "chipping_um": 8.0,  "chipping_std_um": 1.0,
+     "notes": "digitized from Fig feed sweep; front chipping"},
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 10.0, "chipping_std_um": 1.0,
+     "notes": "digitized; front chipping"},
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 2.5,
+     "spindle_rpm": 30000, "chipping_um": 15.0, "chipping_std_um": 2.0,
+     "notes": "digitized; front chipping (backside=26µm explicitly stated)"},
+
+    # Spindle speed sweep (depth=390µm, feed=1mm/s) — front chipping
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 1.0,
+     "spindle_rpm": 22000, "chipping_um": 12.0, "chipping_std_um": 1.5,
+     "notes": "digitized; front chipping"},
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 1.0,
+     "spindle_rpm": 30000, "chipping_um": 10.0, "chipping_std_um": 1.0,
+     "notes": "digitized; front chipping"},
+    {"source": "Micro2026", "material": "4H-SiC",
+     "blade_W_um": 23, "cut_depth_um": 390, "feed_mm_s": 1.0,
+     "spindle_rpm": 38000, "chipping_um": 9.0,  "chipping_std_um": 1.0,
+     "notes": "digitized; front chipping (higher spindle = less chipping)"},
 
     # ── Mat2022 (SiC, 0.048mm=48µm blade, depth sweep) ───────────────────────
     # Chipping < 15 µm = production acceptable threshold

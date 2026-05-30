@@ -27,12 +27,18 @@ from ml.surrogate_gp import DicingGPSurrogate, FEATURE_COLS, MODEL_PATH
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), '..', 'results')
 
-# ── Parameter bounds (normalised to [0,1] internally) ────────────────────────
+# ── Parameter bounds for FEM-based GP (2-feature) ────────────────────────────
 PARAM_BOUNDS = np.array([
     [10.0, 70.0],   # cut_depth_um
     [15.0, 50.0],   # blade_W_um
 ])
 N_PARAMS = 2
+
+# ── Parameter bounds for experimental GP (depth + feed, blade/spindle fixed) ─
+EXP_PARAM_BOUNDS = np.array([
+    [60.0,   420.0],   # cut_depth_um
+    [0.3,    3.2],     # feed_mm_s
+])
 
 
 # ── Log-likelihood: how well params explain observed chipping ─────────────────
@@ -68,10 +74,14 @@ def tmcmc(log_likelihood_fn,
           n_samples:    int   = 1000,
           n_steps:      int   = 20,
           cov_scale:    float = 0.2,
-          random_seed:  int   = 42) -> dict:
+          random_seed:  int   = 42,
+          param_bounds: np.ndarray = None) -> dict:
     """
     Transitional MCMC (Ching & Chen 2007).
 
+    Args:
+        param_bounds: (n_params, 2) array of [lo, hi] for initial prior sampling.
+                      Defaults to PARAM_BOUNDS (FEM 2-feature bounds).
     Returns:
         samples  : (n_samples, n_params) final posterior samples
         weights  : (n_samples,) normalised importance weights
@@ -79,11 +89,14 @@ def tmcmc(log_likelihood_fn,
     """
     rng = np.random.default_rng(random_seed)
 
+    bounds = PARAM_BOUNDS if param_bounds is None else np.asarray(param_bounds)
+    n_p    = bounds.shape[0]
+
     # ── Stage 0: sample from prior ────────────────────────────────────────────
     samples = rng.uniform(
-        low  = PARAM_BOUNDS[:, 0],
-        high = PARAM_BOUNDS[:, 1],
-        size = (n_samples, N_PARAMS))
+        low  = bounds[:, 0],
+        high = bounds[:, 1],
+        size = (n_samples, n_p))
 
     log_likes = np.array([log_likelihood_fn(s) for s in samples])
     log_evidence = 0.0
@@ -128,7 +141,7 @@ def tmcmc(log_likelihood_fn,
         log_likes = log_likes[idx]
 
         # ── MCMC move (Gaussian proposal, adaptive cov) ───────────────────────
-        cov = np.cov(samples.T) * cov_scale ** 2 + np.eye(N_PARAMS) * 1e-6
+        cov = np.cov(samples.T) * cov_scale ** 2 + np.eye(n_p) * 1e-6
         L   = np.linalg.cholesky(cov)
 
         for i in range(n_samples):
@@ -153,6 +166,123 @@ def tmcmc(log_likelihood_fn,
         "log_evidence": log_evidence,
         "beta_final":   beta,
     }
+
+
+# ── Experimental-GP calibration: infer (depth, feed) from observed chipping ──
+
+def calibrate_experimental(observed_chip_um: float,
+                            blade_W_um:  float = 23.0,
+                            spindle_rpm: float = 30000.0,
+                            n_samples:   int   = 1000,
+                            sigma_obs:   float = 1.5) -> dict:
+    """
+    TMCMC inference over (cut_depth_um, feed_mm_s) given observed chipping.
+
+    Loads ExperimentalGPSurrogate from results/gp_experimental.pkl.
+    blade_W_um and spindle_rpm are fixed (Micro2026 reference by default).
+    """
+    from scipy.stats import norm as sp_norm
+    from ml.train_from_experimental import (
+        ExperimentalGPSurrogate, FEATURE_COLS,
+        MODEL_PATH as EXP_MODEL_PATH,
+    )
+
+    exp_model_path = os.path.join(
+        os.path.dirname(__file__), "..", "results", "gp_experimental.pkl"
+    )
+    model = ExperimentalGPSurrogate.load(exp_model_path)
+
+    print("[*] TMCMC calibration (experimental GP)")
+    print("    observed chipping = %.1f µm" % observed_chip_um)
+    print("    fixed: blade_W=%.0fµm  spindle=%.0frpm" % (blade_W_um, spindle_rpm))
+
+    def log_likelihood_exp(theta):
+        depth, feed = theta
+        X = np.array([[depth, blade_W_um, feed, spindle_rpm]])
+        mu, std = model.predict(X, return_std=True)
+        total_std = float(np.sqrt(std[0] ** 2 + sigma_obs ** 2))
+        return float(sp_norm.logpdf(observed_chip_um, loc=mu[0], scale=total_std))
+
+    def log_prior_exp(theta):
+        if np.all(theta >= EXP_PARAM_BOUNDS[:, 0]) and np.all(theta <= EXP_PARAM_BOUNDS[:, 1]):
+            return 0.0
+        return -np.inf
+
+    result = tmcmc(
+        log_likelihood_exp, log_prior_exp,
+        n_samples=n_samples, param_bounds=EXP_PARAM_BOUNDS,
+    )
+    samples = result["samples"]
+    weights = result["weights"]
+    mean_p  = np.average(samples, weights=weights, axis=0)
+    var_p   = np.average((samples - mean_p) ** 2, weights=weights, axis=0)
+    std_p   = np.sqrt(var_p)
+    map_idx = np.argmax(weights)
+
+    summary = {
+        "observed_chip_um":  observed_chip_um,
+        "blade_W_um":        blade_W_um,
+        "spindle_rpm":       spindle_rpm,
+        "mean_cut_depth_um": float(mean_p[0]),
+        "mean_feed_mm_s":    float(mean_p[1]),
+        "std_cut_depth_um":  float(std_p[0]),
+        "std_feed_mm_s":     float(std_p[1]),
+        "map_cut_depth_um":  float(samples[map_idx, 0]),
+        "map_feed_mm_s":     float(samples[map_idx, 1]),
+        "log_evidence":      float(result["log_evidence"]),
+    }
+
+    print("\n[Results] Posterior mean:")
+    print("  cut_depth = %.1f ± %.1f µm" % (mean_p[0], std_p[0]))
+    print("  feed      = %.3f ± %.3f mm/s" % (mean_p[1], std_p[1]))
+    print("  MAP: depth=%.1f µm,  feed=%.3f mm/s" % (
+        samples[map_idx, 0], samples[map_idx, 1]))
+
+    _save_and_plot_exp(samples, weights, summary)
+    return summary
+
+
+def _save_and_plot_exp(samples, weights, summary, tag="exp_calibrate"):
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    np.save(os.path.join(RESULTS_DIR, "tmcmc_%s_samples.npy" % tag), samples)
+    np.save(os.path.join(RESULTS_DIR, "tmcmc_%s_weights.npy" % tag), weights)
+    with open(os.path.join(RESULTS_DIR, "tmcmc_%s_summary.json" % tag), "w") as f:
+        json.dump(summary, f, indent=2)
+
+    try:
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+        ax = axes[0]
+        sc = ax.scatter(samples[:, 0], samples[:, 1],
+                        c=weights, cmap="plasma", s=12, alpha=0.7)
+        plt.colorbar(sc, ax=ax, label="Posterior weight")
+        ax.scatter(summary["mean_cut_depth_um"], summary["mean_feed_mm_s"],
+                   c="lime", s=200, marker="*", zorder=5, label="Posterior mean")
+        ax.set_xlabel("Cut Depth [µm]")
+        ax.set_ylabel("Feed Speed [mm/s]")
+        ax.set_title("TMCMC Posterior\nobserved chipping = %.1f µm" % summary["observed_chip_um"])
+        ax.legend(fontsize=9)
+
+        ax = axes[1]
+        ax.hist(samples[:, 0], bins=30, weights=weights, density=True,
+                alpha=0.6, label="Cut depth [µm]", color="#2166ac")
+        ax2 = ax.twinx()
+        ax2.hist(samples[:, 1], bins=30, weights=weights, density=True,
+                 alpha=0.5, color="#d6604d", label="Feed [mm/s]")
+        ax.set_xlabel("Parameter value")
+        ax.set_title("Posterior Marginals")
+        ax.legend(loc="upper left", fontsize=9)
+        ax2.legend(loc="upper right", fontsize=9)
+
+        plt.suptitle("TMCMC Calibration — Experimental GP (Micro2026)", fontsize=11)
+        plt.tight_layout()
+        path = os.path.join(RESULTS_DIR, "tmcmc_%s_posterior.png" % tag)
+        plt.savefig(path, dpi=150, bbox_inches="tight")
+        plt.close()
+        print("[✓] Plot → %s" % path)
+    except ImportError:
+        pass
 
 
 # ── Calibration: infer params from observed chipping ─────────────────────────

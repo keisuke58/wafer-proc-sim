@@ -1,0 +1,12 @@
+{
+  "observed_chip_um": 10.0,
+  "blade_W_um": 23.0,
+  "spindle_rpm": 30000.0,
+  "mean_cut_depth_um": 330.50945829094525,
+  "mean_feed_mm_s": 1.731914001919227,
+  "std_cut_depth_um": 59.68412040698303,
+  "std_feed_mm_s": 0.6146986187160035,
+  "map_cut_depth_um": 382.2974555327219,
+  "map_feed_mm_s": 1.0882341815843763,
+  "log_evidence": -1.2294415548247624
+}

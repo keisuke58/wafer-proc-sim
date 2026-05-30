@@ -1,0 +1,7 @@
+[
+  {"material": "4HSiC", "cut_depth_um":  80, "blade_W_um": 23, "job": "dicing_4HSiC_d080_bw23"},
+  {"material": "4HSiC", "cut_depth_um": 150, "blade_W_um": 23, "job": "dicing_4HSiC_d150_bw23"},
+  {"material": "4HSiC", "cut_depth_um": 220, "blade_W_um": 23, "job": "dicing_4HSiC_d220_bw23"},
+  {"material": "4HSiC", "cut_depth_um": 290, "blade_W_um": 23, "job": "dicing_4HSiC_d290_bw23"},
+  {"material": "4HSiC", "cut_depth_um": 360, "blade_W_um": 23, "job": "dicing_4HSiC_d360_bw23"}
+]
