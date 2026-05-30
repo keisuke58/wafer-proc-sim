@@ -32,11 +32,9 @@ WAFER_W_UM  = 500.0
 BLADE_W_UM  = 23.0
 BLADE_H_UM  = 60.0   # visual height above wafer top
 WAFER_H_UM  = 450.0
-PLUNGE_V    = -0.5e3  # µm/s downward (STEP 1)
-FEED_V      =  0.5e3  # µm/s rightward (STEP 2)
-# Step durations
-T_PLUNGE    = 0.000724  # s
-T_FEED      = 0.0008    # s
+PLUNGE_V    = -500000.0  # µm/s downward (0.5 m/s in SI → µm/s)
+FEED_V      =  500000.0  # µm/s rightward (0.5 m/s in SI → µm/s)
+PEEQ_MAX    = 0.06       # colorbar upper limit (actual values ~0.04)
 
 
 def wafer_instance(odb):
@@ -67,11 +65,11 @@ def blade_rect(t_global, t_plunge_end, origin_x_um=250.0, wafer_top_um=WAFER_H_U
     """Return (x0, y0, width, height) of blade in µm at global time t_global."""
     if t_global <= t_plunge_end:
         # Plunge: blade moves down
-        plunge_depth = (t_global * abs(PLUNGE_V))  # µm from top
+        plunge_depth = t_global * abs(PLUNGE_V)  # µm
         y_bottom = wafer_top_um - plunge_depth
     else:
         # Feed: blade at full depth, moves right
-        plunge_depth = T_PLUNGE * abs(PLUNGE_V)
+        plunge_depth = t_plunge_end * abs(PLUNGE_V)
         y_bottom = wafer_top_um - plunge_depth
         feed_dx = (t_global - t_plunge_end) * FEED_V
         origin_x_um = origin_x_um + feed_dx
@@ -105,7 +103,7 @@ def render_frame(node_xy, elem_conn, status_map, peeq_map,
     if polys_alive:
         peeq_arr = np.array(peeq_vals)
         col_alive = PolyCollection(polys_alive, array=peeq_arr,
-                                   cmap="plasma", clim=(0, 0.3),
+                                   cmap="plasma", clim=(0, PEEQ_MAX),
                                    edgecolors="none", linewidths=0)
         ax.add_collection(col_alive)
         plt.colorbar(col_alive, ax=ax, label="PEEQ", fraction=0.03, pad=0.02)
@@ -162,9 +160,10 @@ for sn in step_names:
     step_origin[sn] = t_acc
     t_acc += odb.steps[sn].timePeriod
 
-# Identify plunge step (first step)
+# Identify plunge step (first step) — read duration from ODB
 plunge_step_name = step_names[0]
 t_plunge_end = step_origin[plunge_step_name] + odb.steps[plunge_step_name].timePeriod
+print(f"     Plunge end: {t_plunge_end*1e6:.1f} µs  (depth ~{t_plunge_end*abs(PLUNGE_V):.0f} µm)")
 
 frame_idx = 0
 # Subsample: take every Nth frame to keep ~30 images total
