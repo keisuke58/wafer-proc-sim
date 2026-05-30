@@ -14,13 +14,15 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 |-----------|--------|------------|
 | Experimental data (Micro2026 + Mat2022) | ✅ Done | 26 data points, 4 features |
 | 4-feature GP surrogate | ✅ Done | LOO-RMSE = 2.56 µm, R² = 0.55 |
+| Fusion GP (exp + FEM) | ✅ Done | LOO-RMSE = 2.38 µm, R² = 0.64 (+16%) |
 | Data pipeline + recipe correction | ✅ Done | `pipeline/data_pipeline.py`, BOUNDS 20–360 µm |
 | Sensitivity analysis (Sobol) | ✅ Done | depth > feed >> blade_W >> spindle |
 | Pareto optimisation (chipping vs MRR) | ✅ Done | 97.5% of parameter space safe |
 | TMCMC calibration | ✅ Done | MAP error < 2% vs ground truth |
-| 2D FEM — shallow cuts (20–60 µm) | ✅ Done | Drucker-Prager, 15-job sweep |
-| 2D FEM — deep cuts (80–360 µm) | 🔄 Running | Contact fix + fracture model enabled |
-| GP re-training with FEM data | ⏳ After FEM | FEM + experimental data fusion |
+| 2D FEM — deep cuts (80–360 µm) | ✅ Done | 5 jobs completed, BC fix + Bulk Viscosity tuned |
+| FEM cutting force validation | ✅ Done | RF2 65→48 kN (deeper = lower resistance ✓) |
+| Cutting animation (d=360 µm) | ✅ Done | 25-frame GIF, Plunge step, PEEQ + fracture |
+| FEM fracture calibration | 🔄 Next | del_frac non-monotonic → Gc recalibration needed |
 
 ---
 
@@ -37,12 +39,21 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 
 → Depth dominates chipping (78% of variance). Feed is the secondary lever. Spindle speed is negligible.
 
-### GP Surrogate (v2, 26 data points)
+### FEM vs Experimental Comparison
+
+![FEM vs Experimental](results/fem_exp_comparison.png)
+
+- **Cutting force (RF2)**: monotonically decreases with depth (65→48 kN), matching the physical expectation that deeper cuts encounter less fresh material resistance.
+- **Fusion GP** improves LOO R² from 0.55 → 0.64 by incorporating FEM-derived fracture proxy.
+- **Known limitation**: element deletion fraction non-monotonic vs depth — Gc recalibration in progress.
+
+### GP Surrogate (v2 → fusion, 26+5 data points)
 
 | Version | N | LOO-RMSE | R² |
 |---------|---|----------|----|
 | v1 | 18 | 2.81 µm | 0.58 |
 | v2 | 26 | 2.56 µm | 0.55 |
+| fusion | 26+5 | **2.38 µm** | **0.64** |
 
 Kernel: Anisotropic RBF + WhiteKernel. Features: `[cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]`.
 
