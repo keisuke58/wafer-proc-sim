@@ -94,6 +94,13 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
     mg  = p["mesh_global_um"]  * 1e-6
     mf  = p["mesh_fine_um"]    * 1e-6
     mat = p["material"]
+    if "gc_override" in p or "dp_cohesion_override" in p:
+        import copy
+        mat = copy.deepcopy(mat)
+        if "gc_override" in p:
+            mat["G_c"] = float(p["gc_override"])
+        if "dp_cohesion_override" in p:
+            mat["dp_cohesion_Pa"] = float(p["dp_cohesion_override"])
 
     xc        = W / 2
     fine_half = bw * 3
@@ -551,7 +558,8 @@ else:
     for _k in ("cut_depth_um", "blade_W_um", "feed_speed_m_s",
                 "mesh_global_um", "mesh_fine_um", "friction_coeff",
                 "num_cpus", "target_dt_s",
-                "eps_fracture_scale", "velocity_ramp_frac"):
+                "eps_fracture_scale", "velocity_ramp_frac",
+                "gc_override", "dp_cohesion_override"):
         if _k in _cfg:
             _p[_k] = _cfg[_k]
     _tag  = _mat["name"].replace("-", "").replace(" ", "")
