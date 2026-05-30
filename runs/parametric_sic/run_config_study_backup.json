@@ -1,0 +1,9 @@
+{
+  "material":        "SiC",
+  "feed_speed_m_s":   0.5,
+  "mesh_global_um":   5.0,
+  "mesh_fine_um":     1.5,
+  "target_dt_s":      1e-8,
+  "num_cpus":         1,
+  "study":           true
+}

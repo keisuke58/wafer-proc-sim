@@ -1,0 +1,12 @@
+{
+  "material":        "SiC",
+  "cut_depth_um":    150,
+  "blade_W_um":      23,
+  "feed_speed_m_s":   0.5,
+  "mesh_global_um":   8.0,
+  "mesh_fine_um":     2.0,
+  "target_dt_s":      1e-8,
+  "num_cpus":         1,
+  "study":           false,
+  "job_name":        "dicing_4HSiC_d150_bw23"
+}

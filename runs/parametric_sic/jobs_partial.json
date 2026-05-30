@@ -1,0 +1,50 @@
+[
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 20,
+    "blade_W_um": 20,
+    "job": "dicing_4HSiC_d020_bw20"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 20,
+    "blade_W_um": 30,
+    "job": "dicing_4HSiC_d020_bw30"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 30,
+    "blade_W_um": 20,
+    "job": "dicing_4HSiC_d030_bw20"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 30,
+    "blade_W_um": 30,
+    "job": "dicing_4HSiC_d030_bw30"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 30,
+    "blade_W_um": 40,
+    "job": "dicing_4HSiC_d030_bw40"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 40,
+    "blade_W_um": 20,
+    "job": "dicing_4HSiC_d040_bw20"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 40,
+    "blade_W_um": 30,
+    "job": "dicing_4HSiC_d040_bw30"
+  },
+  {
+    "material": "4HSiC",
+    "cut_depth_um": 40,
+    "blade_W_um": 40,
+    "job": "dicing_4HSiC_d040_bw40"
+  }
+]

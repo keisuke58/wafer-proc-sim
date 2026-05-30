@@ -1,0 +1,107 @@
+** Minimal 2D contact test: rigid tool (R2D2) plunging into elastic block (CPE4R)
+** Tool velocity: -1 m/s → should plunge 100μm into 200μm-tall elastic SiC block
+** If contact works: block top node moves down ≥ ~90μm after 1e-4 s
+*Heading
+Minimal 2D rigid-deformable contact test
+**
+** ── PARTS ──────────────────────────────────────────────────────────────────
+*Part, name=Block
+*Node
+   1, 0.0,    0.0
+   2, 500e-6, 0.0
+   3, 500e-6, 200e-6
+   4, 0.0,    200e-6
+*Element, type=CPE4R
+   1, 1, 2, 3, 4
+*Solid Section, elset=All, material=SiCElastic
+  1.0,
+*Elset, elset=All
+  1,
+*Nset, nset=Bottom
+  1, 2
+*Nset, nset=Top
+  3, 4
+*End Part
+**
+*Part, name=Tool
+*Node
+   1, -250e-6, 0.0
+   2,  250e-6, 0.0
+   3,  0.0,    0.0
+*Element, type=R2D2
+   1, 1, 2
+*Elset, elset=ToolEdge
+  1,
+*Rigid Body, ref node=3, elset=ToolEdge
+*Nset, nset=RP
+  3,
+*End Part
+**
+** ── ASSEMBLY ────────────────────────────────────────────────────────────────
+*Assembly, name=Assembly
+**
+*Instance, name=Block-1, part=Block
+*End Instance
+**
+*Instance, name=Tool-1, part=Tool
+** Translate: blade bottom at y = 200e-6 + 5e-6 = 205e-6 (5μm gap above block)
+0., 205e-6, 0.
+*End Instance
+**
+** BlockTop = S3 (top face of CCW CPE4R: nodes n3-n4 at y=200μm)
+*Elset, elset=_TopElems, instance=Block-1
+  1,
+*Surface, type=ELEMENT, name=BlockTop
+_TopElems, S3
+**
+** ToolBottom = SNEG (downward outward normal for R2D2 going L→R)
+*Elset, elset=_ToolElems, instance=Tool-1
+  1,
+*Surface, type=ELEMENT, name=ToolBottom
+_ToolElems, SNEG
+**
+*Nset, nset=ToolRP, instance=Tool-1
+  3,
+**
+*End Assembly
+**
+** ── MATERIAL ────────────────────────────────────────────────────────────────
+*Material, name=SiCElastic
+*Elastic
+  450e9, 0.17
+*Density
+  3200.,
+**
+** ── STEP ────────────────────────────────────────────────────────────────────
+*Step, name=Plunge, nlgeom=NO
+*Dynamic, Explicit
+, 1.2e-5
+** Mass scaling: target DT=1e-8
+*Fixed Mass Scaling, dt=1e-8, type=BELOW MIN
+**
+** Tool: V2=-1 m/s, no rotation, no lateral motion
+*Boundary
+Block-1.Bottom, ENCASTRE
+*Boundary, type=VELOCITY
+ToolRP, 1, 1
+ToolRP, 2, 2, -1.0
+ToolRP, 6, 6
+**
+** Contact pair: ToolBottom (master, rigid) vs BlockTop (slave, deformable)
+*Contact Pair, interaction=FricContact, mechanical constraint=PENALTY
+ToolBottom, BlockTop
+*Surface Interaction, name=FricContact
+*Friction
+  0.3,
+*Surface Behavior, pressure-overclosure=HARD
+**
+** Output
+*Output, history, time interval=1e-7
+*Node Output, nset=ToolRP
+U2, RF2
+*Node Output, nset=Block-1.Top
+U2
+*Output, field, number interval=5
+*Node Output
+U,
+*End Step

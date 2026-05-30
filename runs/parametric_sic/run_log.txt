@@ -1,0 +1,5 @@
+Successfully checked out QAE/1 from DSLS server 172.17.36.96
+Successfully checked out QAX/1 from DSLS server 172.17.36.96
+Abaqus License Manager checked out the following license:
+"QAE" from DSLS server 172.17.36.96
+<0 out of 1 licenses remain available>.

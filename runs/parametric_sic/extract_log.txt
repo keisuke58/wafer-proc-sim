@@ -1,0 +1,19 @@
+[->] dicing_4HSiC_d020_bw20
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d020_bw30
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d030_bw20
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d030_bw30
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d030_bw40
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d040_bw20
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d040_bw30
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+[->] dicing_4HSiC_d040_bw40
+  chip=0.0000  RF1=0.00N  RF2=0.00N  PEEQ=0.0000
+
+[OK] parametric_summary.csv -> /home/nishioka/git/wafer-proc-sim/runs/parametric_sic/../../results/parametric_summary.csv
+Rows: 8
