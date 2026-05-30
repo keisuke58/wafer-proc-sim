@@ -1,0 +1,32 @@
+# Die strength data from Kim et al. (2023) Micro and Nano Systems Letters 11:16
+# DOI: 10.1186/s40486-023-00183-w  (Open Access)
+# Wafer: 200mm Si, die size 10×10mm², three-point bending test (SEMI G86-0303)
+# n=15 samples per condition
+#
+# Methods:
+#   BDBG: Blade DBG — DISCO DAD3350, 30,000 rpm
+#         feed=15mm/s (100/200µm target), 30mm/s (300µm target)
+#         half-cut depths: 150/250/350µm
+#   SDBG: Stealth DBG — DISCO DFL7341, 320mm/s feed, 90kHz, 0.9W
+#         SD layer at 50µm from surface; 2nd layer at 150µm for 300µm target
+#   PDBG: Plasma DBG — 2500W, 250°C, 120s
+#
+# Grinding (common): DISCO DGP8760
+#   Z1 rough: to 270/370/470µm for 100/200/300µm final
+#   Z2 fine:  to final+45µm
+#   Z3 dry polish: 183s, 210N force
+#
+# Surface roughness Sz (peak-to-valley) on diced sidewall:
+#   BDBG: 10743nm | SDBG: 9461nm | PDBG: 1728nm
+# Topside chipping:
+#   BDBG: ~10µm | SDBG: 0 (no chip, but internal voids 1µm wide, 3µm pitch) | PDBG: ~0
+method,target_thickness_um,die_strength_MPa,notes
+BDBG,100,1023,blade 30000rpm feed15mm/s
+BDBG,200,724,blade 30000rpm feed15mm/s
+BDBG,300,502,blade 30000rpm feed30mm/s
+SDBG,100,333,SD layer at 50um depth
+SDBG,200,293,SD layer at 50um depth
+SDBG,300,354,two SD layers (50+150um)
+PDBG,100,1584,plasma 2500W 250C 120s
+PDBG,200,1344,plasma 2500W 250C 120s
+PDBG,300,1052,plasma 2500W 250C 120s

@@ -24,7 +24,23 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "results", "gp_model.
 
 # ── Feature / target columns ──────────────────────────────────────────────────
 FEATURE_COLS = ["cut_depth_um", "blade_W_um"]
+# max_principal_stress_Pa は FEM結果CSVでは max_RF2_N (推力) に対応。
+# どちらか存在する方を使う（後方互換のため両方定義）
 TARGET_COLS  = ["deletion_fraction", "max_principal_stress_Pa"]
+TARGET_COLS_ALT = ["deletion_fraction", "max_RF2_N"]  # parametric_summary.csv の実列名
+
+
+def resolve_target_cols(df) -> list[str]:
+    """CSVに合わせて TARGET_COLS を動的解決する"""
+    import pandas as pd
+    if all(c in df.columns for c in TARGET_COLS):
+        return TARGET_COLS
+    if all(c in df.columns for c in TARGET_COLS_ALT):
+        return TARGET_COLS_ALT
+    # フォールバック: 数値列でFEATURE_COLS以外の最初の2列
+    num_cols = df.select_dtypes(include="number").columns.tolist()
+    available = [c for c in num_cols if c not in FEATURE_COLS][:2]
+    return available
 
 
 def build_kernel():
@@ -159,10 +175,12 @@ def main():
 
     df = pd.read_csv(args.csv)
     print(f"[*] Loaded {len(df)} samples from {args.csv}")
-    print(df[FEATURE_COLS + TARGET_COLS].describe())
+    active_targets = resolve_target_cols(df)
+    print(f"[*] Using targets: {active_targets}")
+    print(df[FEATURE_COLS + active_targets].describe())
 
     X = df[FEATURE_COLS].values.astype(float)
-    Y = df[TARGET_COLS].values.astype(float)
+    Y = df[active_targets].values.astype(float)
 
     # Normalize stress to GPa-scale for numerical stability
     Y_fit = Y.copy()
