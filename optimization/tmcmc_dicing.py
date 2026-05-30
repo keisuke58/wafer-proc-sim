@@ -141,11 +141,12 @@ def tmcmc(log_likelihood_fn,
         log_likes = log_likes[idx]
 
         # ── MCMC move (Gaussian proposal, adaptive cov) ───────────────────────
-        cov = np.cov(samples.T) * cov_scale ** 2 + np.eye(n_p) * 1e-6
+        raw_cov = np.cov(samples.T) if n_p > 1 else np.array([[np.var(samples)]])
+        cov = raw_cov * cov_scale ** 2 + np.eye(n_p) * 1e-6
         L   = np.linalg.cholesky(cov)
 
         for i in range(n_samples):
-            proposal  = samples[i] + L @ rng.standard_normal(N_PARAMS)
+            proposal  = samples[i] + L @ rng.standard_normal(n_p)
             lp_prop   = log_prior_fn(proposal)
             if lp_prop == -np.inf:
                 continue
