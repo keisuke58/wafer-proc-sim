@@ -15,10 +15,6 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
 from ml.sensor_fusion import NOMINAL, SENSOR_CONFIG, strategy_A_weighted, strategy_D_majority
 
 MAX_HISTORY = 300
