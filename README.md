@@ -12,8 +12,9 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 
 | Component | Status | Key result |
 |-----------|--------|------------|
-| Experimental data (Micro2026 + Mat2022) | ✅ Done | 18 data points, 4 features |
-| 4-feature GP surrogate | ✅ Done | LOO-RMSE = 2.81 µm, R² = 0.58 |
+| Experimental data (Micro2026 + Mat2022) | ✅ Done | 26 data points, 4 features |
+| 4-feature GP surrogate | ✅ Done | LOO-RMSE = 2.56 µm, R² = 0.55 |
+| Data pipeline + recipe correction | ✅ Done | `pipeline/data_pipeline.py`, BOUNDS 20–360 µm |
 | Sensitivity analysis (Sobol) | ✅ Done | depth > feed >> blade_W >> spindle |
 | Pareto optimisation (chipping vs MRR) | ✅ Done | 97.5% of parameter space safe |
 | TMCMC calibration | ✅ Done | MAP error < 2% vs ground truth |
@@ -35,6 +36,15 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 | Spindle speed | 0.000 | 0.000 |
 
 → Depth dominates chipping (78% of variance). Feed is the secondary lever. Spindle speed is negligible.
+
+### GP Surrogate (v2, 26 data points)
+
+| Version | N | LOO-RMSE | R² |
+|---------|---|----------|----|
+| v1 | 18 | 2.81 µm | 0.58 |
+| v2 | 26 | 2.56 µm | 0.55 |
+
+Kernel: Anisotropic RBF + WhiteKernel. Features: `[cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]`.
 
 ### TMCMC Calibration
 
@@ -81,21 +91,25 @@ wafer-proc-sim/
 │   │                             # Drucker-Prager + DuctileDamageInitiation
 │   ├── dicing_blade_3d.py       # 3D coarse validation model
 │   └── kabra_thermal_2d.py      # TAIKO® back-grinding thermal model
+├── pipeline/
+│   └── data_pipeline.py         # End-to-end runner: load → GP → optimize → report
 ├── ml/
-│   ├── surrogate_gp.py          # GP surrogate (FEM output: deletion_fraction)
-│   ├── train_from_experimental.py  # GP trained on experimental chipping data
+│   ├── surrogate_gp.py          # GP surrogate with dynamic TARGET_COLS resolution
+│   ├── train_from_experimental.py  # GP trained on experimental chipping data (26 pts)
 │   ├── sensitivity_analysis.py  # Sobol indices + gradient sensitivity
 │   └── surrogate_fno.py         # FNO stress-field surrogate (planned)
 ├── optimization/
+│   ├── recipe_correction.py     # GP-guided recipe correction (BOUNDS: 20–360 µm)
 │   ├── bayesian_opt.py          # Expected Improvement + constraint
 │   ├── pareto_front.py          # Chipping vs MRR Pareto curve
 │   └── tmcmc_dicing.py          # TMCMC: infer process params from observation
 ├── validation/
-│   └── experimental_data.py     # Digitised Micro2026 + Mat2022 chipping data
+│   └── experimental_data.py     # Digitised Micro2026 + Mat2022 chipping data (26 pts)
 ├── notebooks/
 │   └── demo_sic_dicing.ipynb    # End-to-end demo: data → GP → TMCMC
 └── results/                     # Trained models + plots (committed)
     ├── gp_experimental.pkl
+    ├── parametric_summary_all.csv   # All FEM + experimental samples (13 pts)
     ├── gp_experimental_sweeps.png
     ├── gp_experimental_heatmap.png
     ├── sensitivity_analysis.png
@@ -112,7 +126,10 @@ git clone https://github.com/keisuke58/wafer-proc-sim.git
 cd wafer-proc-sim
 pip install scikit-learn joblib numpy pandas matplotlib scipy
 
-# Train GP on experimental data
+# Full end-to-end pipeline (data → GP → recipe correction → report)
+python pipeline/data_pipeline.py
+
+# Train GP on experimental data (26 pts)
 python ml/train_from_experimental.py --loo --plot
 
 # Sensitivity analysis
@@ -120,6 +137,9 @@ python ml/sensitivity_analysis.py --plot
 
 # Pareto front (chipping vs MRR)
 python optimization/pareto_front.py --plot
+
+# GP-guided recipe correction
+python optimization/recipe_correction.py
 
 # TMCMC calibration: infer (depth, feed) from observed chipping
 python -c "
