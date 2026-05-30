@@ -1,0 +1,9 @@
+material,cut_depth_um,blade_W_um,job,deletion_fraction,deleted_elements,total_elements,max_RF1_N,max_RF2_N,max_PEEQ
+4HSiC,20,20,dicing_4HSiC_d020_bw20,0.0,0,0,0.0,0.0,0.0
+4HSiC,20,30,dicing_4HSiC_d020_bw30,0.0,0,0,0.0,0.0,0.0
+4HSiC,30,20,dicing_4HSiC_d030_bw20,0.0,0,0,0.0,0.0,0.0
+4HSiC,30,30,dicing_4HSiC_d030_bw30,0.0,0,0,0.0,0.0,0.0
+4HSiC,30,40,dicing_4HSiC_d030_bw40,0.0,0,0,0.0,0.0,0.0
+4HSiC,40,20,dicing_4HSiC_d040_bw20,0.0,0,0,0.0,0.0,0.0
+4HSiC,40,30,dicing_4HSiC_d040_bw30,0.0,0,0,0.0,0.0,0.0
+4HSiC,40,40,dicing_4HSiC_d040_bw40,0.0,0,0,0.0,0.0,0.0

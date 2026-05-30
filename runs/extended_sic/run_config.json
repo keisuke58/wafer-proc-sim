@@ -4,6 +4,6 @@
   "mesh_global_um":   8.0,
   "mesh_fine_um":     2.0,
   "target_dt_s":      1e-8,
-  "num_cpus":         1,
+  "num_cpus":         4,
   "study":           true
 }

@@ -1,0 +1,41 @@
+# ABAQUS FEM output files
+*.odb
+*.abq
+*.cae
+*.jnl
+*.mdl
+*.pac
+*.prt
+*.res
+*.sel
+*.sta
+*.stt
+*.dat
+*.msg
+*.log
+*.com
+*.cid
+*.lck
+*.simlog
+*.simdir
+*.rpy
+*.rpy.*
+*.rec
+abaqus.env
+abaqusis.env
+abaqus_acis.log
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Keep results/ but ignore large binary ODB
+runs/**/*.odb
+
+# Keep INP files (human-readable, useful)
+!*.inp
