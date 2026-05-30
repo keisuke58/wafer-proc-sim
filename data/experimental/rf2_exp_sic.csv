@@ -1,0 +1,6 @@
+cut_depth_um,RF2_peak_N,RF2_std_N,n_reps,source
+80.0,826686.76,18871.24,3,synthetic_Micro2026
+150.0,1105640.67,42063.76,3,synthetic_Micro2026
+220.0,1367884.05,7604.54,3,synthetic_Micro2026
+290.0,1586380.79,37477.49,3,synthetic_Micro2026
+360.0,1782521.35,23013.01,3,synthetic_Micro2026
