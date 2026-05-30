@@ -169,7 +169,7 @@ def live_panel():
         for col, (key, (title, nom, usl)) in zip(cols, row_pair):
             col.plotly_chart(
                 _sensor_chart(df, key, title, nom, usl),
-                use_container_width=True,
+                width="stretch",
             )
 
     st.divider()
@@ -177,7 +177,7 @@ def live_panel():
     # Fusion timeline + running metrics
     left, right = st.columns([3, 1])
     with left:
-        st.plotly_chart(_fusion_chart(df), use_container_width=True)
+        st.plotly_chart(_fusion_chart(df), width="stretch")
     with right:
         truth  = df["is_anomaly"].astype(int).values
         pred_A = df["fusion_flag"].astype(int).values
