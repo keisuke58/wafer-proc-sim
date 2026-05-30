@@ -52580,7 +52580,7 @@ _WaferTop_S4, S4
    0.005,  0.333333,        0.
   0.0025,  0.666667,        0.
  0.00125,        1.,        0.
-*Damage Evolution, type=ENERGY
+*Damage Evolution, type=ENERGY, max degradation=0.99
  17.5,
 *Density
 3210.,
@@ -52630,7 +52630,7 @@ _PickedSet8, 1, 1
 *Dynamic, Explicit
 , 0.000444
 *Bulk Viscosity
-0.06, 1.2
+0.12, 1.2
 ** Mass Scaling: Semi-Automatic
 **               Whole Model
 *Fixed Mass Scaling, dt=1.00e-08, type=BELOW MIN
@@ -52679,7 +52679,7 @@ RF1, RF2, U1, U2
 *Dynamic, Explicit
 , 0.0008
 *Bulk Viscosity
-0.06, 1.2
+0.12, 1.2
 ** Mass Scaling: Semi-Automatic
 **               Whole Model
 *Fixed Mass Scaling, dt=1.00e-08, type=BELOW MIN

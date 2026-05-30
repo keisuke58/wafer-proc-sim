@@ -1,5 +1,6 @@
 #!/bin/bash
-# Submit 5 extended FEM jobs sequentially (1 CPU each, SPOS+center fix applied)
+# Submit extended FEM jobs sequentially (1 CPU each, SPOS+center fix applied)
+# Skip jobs whose _run.sta already shows "HAS COMPLETED SUCCESSFULLY"
 ABQ=/home/nishioka/DassaultSystemes/SIMULIA/Commands/abaqus
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -12,9 +13,9 @@ JOBS=(
 )
 
 for JOB in "${JOBS[@]}"; do
-  ODB="${DIR}/${JOB}_run.odb"
-  if [ -f "$ODB" ]; then
-    echo "[SKIP] $JOB (ODB exists)"
+  STA="${DIR}/${JOB}_run.sta"
+  if [ -f "$STA" ] && grep -q "HAS COMPLETED SUCCESSFULLY" "$STA"; then
+    echo "[SKIP] $JOB (already completed)"
     continue
   fi
   echo "[->] Submitting $JOB ..."

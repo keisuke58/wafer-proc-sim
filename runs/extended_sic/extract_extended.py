@@ -24,7 +24,9 @@ for job_info in jobs:
     job = job_info["job"]
     odb_path = os.path.join(ODB_DIR, job + "_run.odb")
     if not os.path.exists(odb_path):
-        print("[!] Missing: " + odb_path)
+        odb_path = os.path.join(ODB_DIR, job + ".odb")
+    if not os.path.exists(odb_path):
+        print("[!] Missing: " + job)
         continue
 
     print("[->] " + job)
