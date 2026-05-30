@@ -77,8 +77,9 @@ def build_model_3d(p=DEFAULT_3D, job_name="dicing3d_sic_d030"):
     mat = p["material"]
     Lz  = p["lz_factor"] * bw   # out-of-plane extent
 
+    _CLEARANCE = 2e-6          # initial gap to ensure explicit contact detection
     travel   = W * 0.8
-    t_plunge = d / v
+    t_plunge = (d + _CLEARANCE) / v
     t_feed   = travel / v
     chamfer  = bw * 0.15
     half     = bw / 2
@@ -145,9 +146,10 @@ def build_model_3d(p=DEFAULT_3D, job_name="dicing3d_sic_d030"):
     wafer_inst = a.Instance(name="Wafer-1", part=wafer, dependent=ON)
     blade_inst = a.Instance(name="Blade-1", part=blade, dependent=ON)
 
-    # Position blade: center at X=bw (entry), top at Y=H+chamfer, Z aligned with wafer
+    # Centre blade at X=W/2 (within wafer top face) with 2µm clearance above wafer.
+    # X=bw (left edge) was outside the fine-mesh zone and caused contact miss.
     a.translate(instanceList=("Blade-1",),
-                vector=(bw, H + chamfer, 0.0))
+                vector=(W / 2, H + chamfer + _CLEARANCE, 0.0))
 
     # ═══ STEPS ════════════════════════════════════════════════════════════════
     ms_table = ((SEMI_AUTOMATIC, MODEL, AT_BEGINNING,
@@ -181,15 +183,17 @@ def build_model_3d(p=DEFAULT_3D, job_name="dicing3d_sic_d030"):
     model.DisplacementBC(name="WaferZmax", createStepName="Initial",
                          region=regionToolset.Region(faces=zmax_face), u3=0.0)
 
-    # Blade: fix rotation and Z-translation; drive X-Y
+    # Blade: fix rotation and Z-translation; drive X-Y via VelocityBC.
+    # DisplacementBC on rigid body RP is silently ignored in ABAQUS/Explicit
+    # when applied in a non-Initial step — always use VelocityBC instead.
     blade_rp_inst = a.instances["Blade-1"].referencePoints[blade_rp_key]
     blade_region  = regionToolset.Region(referencePoints=(blade_rp_inst,))
     model.DisplacementBC(name="BladeRot", createStepName="Initial",
                          region=blade_region, ur1=0.0, ur2=0.0, ur3=0.0, u3=0.0)
-    model.DisplacementBC(name="BladeMotion", createStepName="Plunge",
-                         region=blade_region, u1=0.0, u2=-d)
+    model.VelocityBC(name="BladeMotion", createStepName="Plunge",
+                     region=blade_region, v1=0.0, v2=-v)
     model.boundaryConditions["BladeMotion"].setValuesInStep(
-        stepName="Feed", u1=travel, u2=-d)
+        stepName="Feed", v1=(travel / t_feed), v2=0.0)
 
     # ═══ CONTACT ══════════════════════════════════════════════════════════════
     top_face = wafer_inst.faces.findAt(((W/2, H, Lz/2),))
@@ -212,7 +216,8 @@ def build_model_3d(p=DEFAULT_3D, job_name="dicing3d_sic_d030"):
         name="BladeCut", createStepName="Plunge",
         main=a.surfaces["BladeSurf"],
         secondary=a.surfaces["WaferTop"],
-        sliding=FINITE, interactionProperty="FricContact")
+        sliding=FINITE, interactionProperty="FricContact",
+        mechanicalConstraint=PENALTY)
 
     # ═══ MESH ═════════════════════════════════════════════════════════════════
     elem_hex  = ElemType(elemCode=C3D8R, elemLibrary=EXPLICIT,
