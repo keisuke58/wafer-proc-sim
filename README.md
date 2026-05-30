@@ -75,18 +75,23 @@ Given observed chipping = 10.0 µm (Micro2026 reference: depth=390 µm, feed=1.0
 ## Pipeline
 
 ```
-Experimental data          ABAQUS FEM
-(Micro2026, Mat2022)   ←→  2D plane-strain, CPE4R
-        │                   Drucker-Prager plasticity
-        ▼                   DuctileDamageInitiation
- GP Surrogate               STATUS + RF field outputs
- [cut_depth, blade_W,           │
-  feed, spindle] → chipping     ▼
-        │               parametric_summary.csv
-        ├── Sensitivity analysis (Sobol)
-        ├── Pareto front (chipping vs MRR)
-        └── TMCMC inference
-            [depth, feed] ← observed chipping
+Experimental data          ABAQUS FEM (2D + 3D)
+(Micro2026, Mat2022)   ←→  Drucker-Prager + DuctileDamageInitiation
+        │                   5 jobs: depth 80–360 µm
+        ▼                        │
+ GP Surrogate (4-feat)      parametric_summary_extended.csv
+ LOO-RMSE = 2.38 µm              │
+ R² = 0.64 (fusion)        ──────┘
+        │
+        ├── Sensitivity analysis (Sobol)   depth ≫ feed >> blade_W
+        ├── Pareto front (chipping vs MRR) 97.5% safe zone
+        ├── Active Learning (EI)           → next FEM conditions
+        ├── TMCMC inference                depth,feed ← observed chipping
+        ├── Real-time recipe correction    sensor → TMCMC → GP → machine
+        ├── Anomaly detection (3-layer)    GP | IForest | Shewhart
+        ├── TAIKO® grinding GP             warpage ← grind params (BO)
+        ├── Multi-fidelity GP (AR1)        FEM + experiment co-kriging
+        └── FNO surrogate                  params → full 2D stress field
 ```
 
 ---
@@ -103,21 +108,28 @@ wafer-proc-sim/
 │   ├── dicing_blade_3d.py       # 3D coarse validation model
 │   └── kabra_thermal_2d.py      # TAIKO® back-grinding thermal model
 ├── pipeline/
-│   └── data_pipeline.py         # End-to-end runner: load → GP → optimize → report
+│   └── data_pipeline.py              # End-to-end runner: load → GP → optimize → report
 ├── ml/
-│   ├── surrogate_gp.py          # GP surrogate with dynamic TARGET_COLS resolution
-│   ├── train_from_experimental.py  # GP trained on experimental chipping data (26 pts)
-│   ├── sensitivity_analysis.py  # Sobol indices + gradient sensitivity
-│   └── surrogate_fno.py         # FNO stress-field surrogate (planned)
+│   ├── train_from_experimental.py    # GP on experimental chipping (26 pts, LOO R²=0.55)
+│   ├── train_fusion_gp.py            # Fusion GP: exp + FEM (LOO R²=0.64)
+│   ├── multifidelity_gp.py           # AR1 co-kriging: FEM(LF) + exp(HF), ρ=138
+│   ├── active_learning.py            # EI-based next experiment suggestion
+│   ├── taiko_grinding_gp.py          # TAIKO® warpage GP + BO (Oxford 2023)
+│   ├── anomaly_detection.py          # 3-layer: GP z-score | IForest | Shewhart
+│   ├── sensor_simulation.py          # Synthetic sensor stream with anomaly injection
+│   ├── sensitivity_analysis.py       # Sobol indices (depth 78%, feed 25%)
+│   ├── surrogate_fno_demo.py         # Spectral FNO: params → 2D stress field (0.07ms)
+│   └── surrogate_gp.py              # FEM GP (deletion_fraction, max_RF2_N)
 ├── optimization/
-│   ├── recipe_correction.py     # GP-guided recipe correction (BOUNDS: 20–360 µm)
-│   ├── bayesian_opt.py          # Expected Improvement + constraint
-│   ├── pareto_front.py          # Chipping vs MRR Pareto curve
-│   └── tmcmc_dicing.py          # TMCMC: infer process params from observation
+│   ├── realtime_recipe.py            # Sensor → TMCMC → GP → corrected recipe
+│   ├── recipe_correction.py          # GP-guided recipe correction
+│   ├── bayesian_opt.py               # Expected Improvement + constraint
+│   ├── pareto_front.py               # Chipping vs MRR Pareto (97.5% safe)
+│   └── tmcmc_dicing.py               # TMCMC: MAP error < 2%
 ├── validation/
-│   └── experimental_data.py     # Digitised Micro2026 + Mat2022 chipping data (26 pts)
+│   └── experimental_data.py          # Digitised Micro2026 + Mat2022 (26 pts)
 ├── notebooks/
-│   └── demo_sic_dicing.ipynb    # End-to-end demo: data → GP → TMCMC
+│   └── demo_sic_dicing.ipynb         # End-to-end demo: data → GP → TMCMC → AL
 └── results/                     # Trained models + plots (committed)
     ├── gp_experimental.pkl
     ├── parametric_summary_all.csv   # All FEM + experimental samples (13 pts)
@@ -143,14 +155,32 @@ python pipeline/data_pipeline.py
 # Train GP on experimental data (26 pts)
 python ml/train_from_experimental.py --loo --plot
 
-# Sensitivity analysis
+# Fusion GP: experimental + FEM (LOO R²=0.64)
+python ml/train_fusion_gp.py --loo --plot
+
+# Sensitivity analysis (Sobol)
 python ml/sensitivity_analysis.py --plot
 
 # Pareto front (chipping vs MRR)
 python optimization/pareto_front.py --plot
 
-# GP-guided recipe correction
-python optimization/recipe_correction.py
+# Active Learning: suggest next FEM/experiment conditions
+python ml/active_learning.py --n-suggest 5 --plot
+
+# Real-time recipe correction (sensor → TMCMC → GP → machine)
+python optimization/realtime_recipe.py --chip 10.0 --plot
+
+# Anomaly detection demo (normal → drift → USL breach)
+python ml/anomaly_detection.py --demo
+
+# TAIKO® grinding warpage GP + BO recipe optimisation
+python ml/taiko_grinding_gp.py --loo --plot --optimise
+
+# FNO stress field surrogate (0.07 ms/field, 6000× faster than FEM)
+python ml/surrogate_fno_demo.py
+
+# Multi-fidelity GP (AR1 co-kriging)
+python ml/multifidelity_gp.py --loo --plot
 
 # TMCMC calibration: infer (depth, feed) from observed chipping
 python -c "

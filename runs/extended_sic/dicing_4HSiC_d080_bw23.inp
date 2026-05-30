@@ -52581,7 +52581,7 @@ _WaferTop_S4, S4
   0.0025,  0.666667,        0.
  0.00125,        1.,        0.
 *Damage Evolution, type=ENERGY
- 17.5,
+ 8.0,
 *Density
 3210.,
 *Drucker Prager

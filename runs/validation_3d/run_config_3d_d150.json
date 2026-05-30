@@ -1,0 +1,14 @@
+{
+  "material_name": "4H-SiC",
+  "wafer_W_um":    300.0,
+  "wafer_H_um":    200.0,
+  "lz_factor":     3.0,
+  "cut_depth_um":  150.0,
+  "blade_W_um":    23.0,
+  "feed_speed_m_s": 0.5,
+  "mesh_global_um": 5.0,
+  "target_dt_s":   1e-8,
+  "friction_coeff": 0.3,
+  "num_cpus":      1,
+  "job_name":      "dicing_3d_d150_bw23"
+}
