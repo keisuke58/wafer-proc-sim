@@ -39,3 +39,4 @@ runs/**/*.odb
 
 # Keep INP files (human-readable, useful)
 !*.inp
+*.mov
