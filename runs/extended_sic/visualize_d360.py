@@ -121,20 +121,27 @@ def render_frame(node_xy, elem_conn, status_map, peeq_map,
                                      linewidth=0.8, zorder=5)
     ax.add_patch(blade_patch)
 
-    ax.set_xlim(0, WAFER_W_UM)
-    ax.set_ylim(-20, WAFER_H_UM + BLADE_H_UM + 10)
+    # Fixed view: ±160µm around blade center, full wafer height + blade above
+    x_center = 250.0
+    ax.set_xlim(x_center - 160, x_center + 160)
+    ax.set_ylim(60, WAFER_H_UM + BLADE_H_UM + 10)  # fixed → same size all frames
     ax.set_aspect("equal")
-    ax.set_xlabel("x [µm]")
-    ax.set_ylabel("y [µm]")
-    ax.set_title(f"d360 — {step_name}  t={step_time*1e6:.0f} µs\n"
-                 f"Deleted: {len(polys_dead)}/{len(elem_conn)} elements "
-                 f"({100*len(polys_dead)/max(len(elem_conn),1):.1f}%)")
+    ax.set_xlabel("x [µm]", fontsize=11)
+    ax.set_ylabel("y [µm]", fontsize=11)
 
-    dead_patch  = mpatches.Patch(color="#d62728", label="Deleted (STATUS=0)")
-    alive_patch = mpatches.Patch(color="#9ecae1", label="Alive (PEEQ-colored)")
-    blade_p     = mpatches.Patch(color="#636363", label="Blade")
+    plunge_pct = min(100, t_global / t_plunge_end * 100) if t_plunge_end > 0 else 0
+    ax.set_title(
+        f"4H-SiC Blade Dicing (d=360 µm)  —  Plunge  {plunge_pct:.0f}%\n"
+        f"t = {t_global*1e6:.0f} µs   |   Deleted: {len(polys_dead)} / {len(elem_conn)} "
+        f"elements  ({100*len(polys_dead)/max(len(elem_conn),1):.1f}%)",
+        fontsize=10,
+    )
+
+    dead_patch  = mpatches.Patch(color="#d62728", label="Fractured (STATUS=0)")
+    alive_patch = mpatches.Patch(color="#9ecae1", label="Intact (PEEQ-colored)")
+    blade_p     = mpatches.Patch(color="#636363", label="Blade (23 µm kerf)")
     ax.legend(handles=[dead_patch, alive_patch, blade_p],
-              loc="upper right", fontsize=8)
+              loc="lower right", fontsize=8)
 
     out = os.path.join(OUT_DIR, f"frame_{frame_idx:04d}.png")
     plt.tight_layout()
@@ -166,12 +173,12 @@ t_plunge_end = step_origin[plunge_step_name] + odb.steps[plunge_step_name].timeP
 print(f"     Plunge end: {t_plunge_end*1e6:.1f} µs  (depth ~{t_plunge_end*abs(PLUNGE_V):.0f} µm)")
 
 frame_idx = 0
-# Subsample: take every Nth frame to keep ~30 images total
-total_frames = sum(len(odb.steps[s].frames) for s in step_names)
-stride = max(1, total_frames // 30)
-print(f"     Total frames: {total_frames}, stride: {stride}")
+# Plunge ステップのみ出力（Feedは変化がないため除外）
+plunge_frames = len(odb.steps[plunge_step_name].frames)
+stride = max(1, plunge_frames // 24)  # ~24 frames for smooth GIF
+print(f"     Plunge frames: {plunge_frames}, stride: {stride} (~{plunge_frames//stride} output)")
 
-for sname in step_names:
+for sname in [plunge_step_name]:   # Plunge only
     step = odb.steps[sname]
     for fi, frame in enumerate(step.frames):
         if fi % stride != 0 and fi != len(step.frames) - 1:
