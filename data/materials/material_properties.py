@@ -47,6 +47,9 @@ def _sic_fracture_table(eps_f_tension, n_pts=7):
 # ── Silicon (Si) ───────────────────────────────────────────────────────────────
 Si = {
     "name":              "Silicon",
+    # Grinding specific force coefficient Ct [N/m] for Ft/b = Ct*(vf/vs)^0.6*ap^0.4
+    # Ref: Malkin & Guo (2008) Grinding Technology, Ch.3 (Si backgrind)
+    "C_t_grinding":      1200.0,
     "density":           2330.0,      # kg/m³
     "E":                 130e9,       # Pa  [100] direction
     "nu":                0.28,
@@ -74,6 +77,8 @@ Si["G_c"] = Si["K_Ic"]**2 / Si["E"]   # fracture energy [J/m²]
 # ── Silicon Carbide (4H-SiC) ───────────────────────────────────────────────────
 SiC = {
     "name":              "4H-SiC",
+    # SiC is ~3× harder than Si → higher grinding forces
+    "C_t_grinding":      3500.0,
     "density":           3210.0,      # kg/m³
     "E":                 448e9,       # Pa
     "nu":                0.21,
@@ -101,6 +106,7 @@ SiC["G_c"] = SiC["K_Ic"]**2 / SiC["E"]
 # ── Gallium Nitride (GaN) ──────────────────────────────────────────────────────
 GaN = {
     "name":              "GaN",
+    "C_t_grinding":      2000.0,
     "density":           6150.0,
     "E":                 295e9,
     "nu":                0.23,
@@ -132,4 +138,19 @@ BladeResin = {
     "concentration": 75,
 }
 
-ALL_MATERIALS = {"Si": Si, "SiC": SiC, "GaN": GaN, "BladeResin": BladeResin}
+# ── Damaged Si (ground surface layer) ─────────────────────────────────────────
+# Microcrack network from grinding reduces effective stiffness.
+# E_damaged / E_bulk ≈ 0.3–0.7 depending on grit/depth.
+# Ref: Chen & Wolf (2003) Semicond. Sci. Technol. 18:261
+# Default factor 0.5 used; override via run_config "E_damage_factor".
+import copy as _copy
+Si_damaged = _copy.copy(Si)
+Si_damaged["name"]          = "Silicon_damaged"
+Si_damaged["E"]             = Si["E"] * 0.5
+Si_damaged["C_t_grinding"]  = Si["C_t_grinding"]  # unchanged
+
+ALL_MATERIALS = {
+    "Si": Si, "SiC": SiC, "GaN": GaN,
+    "Si_damaged": Si_damaged,
+    "BladeResin": BladeResin,
+}

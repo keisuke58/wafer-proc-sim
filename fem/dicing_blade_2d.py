@@ -48,17 +48,25 @@ from mesh import ElemType
 
 # ── Default parameters ────────────────────────────────────────────────────────
 DEFAULT = {
-    "material":        SiC,
-    "wafer_W_um":      500.0,
-    "wafer_H_um":      450.0,    # 450µm ≥ max cut depth 360µm (Micro2026 range)
-    "cut_depth_um":    150.0,
-    "blade_W_um":       23.0,    # Micro2026 blade (Ni-bond, 23µm kerf)
-    "feed_speed_m_s":    0.5,
-    "mesh_global_um":    8.0,
-    "mesh_fine_um":      2.0,
-    "target_dt_s":       1e-8,
-    "friction_coeff":    0.3,
-    "num_cpus":          4,
+    "material":           SiC,
+    "wafer_W_um":         500.0,
+    "wafer_H_um":         450.0,    # 450µm ≥ max cut depth 360µm (Micro2026 range)
+    "cut_depth_um":       150.0,
+    "blade_W_um":          23.0,    # Micro2026 blade (Ni-bond, 23µm kerf)
+    "feed_speed_m_s":       0.5,
+    "mesh_global_um":       8.0,
+    "mesh_fine_um":         2.0,
+    "target_dt_s":          1e-8,
+    "friction_coeff":       0.3,
+    "num_cpus":             4,
+    # Fracture calibration (d082): scale eps_fracture table to suppress
+    # wave-induced far-field deletion (far-field PEEQ ~1-2% vs blade ~8%).
+    # 25× baseline keeps blade zone (η≈-1, PEEQ≈8%) just above threshold
+    # while sparing far-field (η≈-0.4, PEEQ≈0.7-2%).
+    "eps_fracture_scale":  25.0,
+    # Smooth velocity ramp: fraction of plunge time over which blade
+    # accelerates from 0 to full speed (prevents initial contact impulse).
+    "velocity_ramp_frac":   0.10,
 }
 
 # Depth sweep matches Micro2026 experimental range (80–360µm)
@@ -145,8 +153,14 @@ def build_model(p=DEFAULT, job_name="dicing_sic_d030"):
         dependencies=0,
         table=((mat["dp_cohesion_Pa"], 0.0),))
 
+    # Scale fracture table by eps_fracture_scale (calibrated vs wave-induced PEEQ)
+    frac_scale = p.get("eps_fracture_scale", 1.0)
+    frac_table = tuple(
+        (eps * frac_scale, eta, edot)
+        for eps, eta, edot in mat["fracture_table"]
+    )
     m.DuctileDamageInitiation(
-        table=mat["fracture_table"],
+        table=frac_table,
         temperatureDependency=OFF,
         dependencies=0)
     m.ductileDamageInitiation.DamageEvolution(
@@ -372,6 +386,50 @@ def _inject_mass_scaling_dt(inp_path, target_dt):
     return n
 
 
+def _inject_smooth_ramp(inp_path, t_ramp, v_plunge):
+    """
+    Patch the INP to add a SMOOTH STEP amplitude for the plunge velocity BC.
+    Prevents the impulsive contact force spike at step start.
+      t_ramp    : ramp duration [s] (typically 10% of plunge time)
+      v_plunge  : target plunge speed [m/s] (positive scalar)
+    """
+    with open(inp_path, "r") as f:
+        content = f.read()
+
+    amp_block = (
+        "**\n** AMPLITUDE\n**\n"
+        "*Amplitude, name=BladeRamp, definition=SMOOTH STEP\n"
+        "0., 0., %.4e, 1.\n" % t_ramp
+    )
+    plunge_marker = "*Step, name=Plunge, nlgeom=YES\n"
+    if plunge_marker not in content:
+        print("[WARN] Plunge step marker not found — ramp not injected")
+        return 0
+
+    # Old plunge velocity BC: both X=0 and Y=-v on same *Boundary block
+    old_vel = (
+        "*Boundary, type=VELOCITY\n"
+        "_PickedSet10, 1, 1\n"
+        "_PickedSet10, 2, 2, -%.1f\n" % v_plunge
+    )
+    new_vel = (
+        "*Boundary, type=VELOCITY\n"
+        "_PickedSet10, 1, 1\n"
+        "*Boundary, type=VELOCITY, AMPLITUDE=BladeRamp\n"
+        "_PickedSet10, 2, 2, -%.1f\n" % v_plunge
+    )
+    if old_vel not in content:
+        print("[WARN] Plunge velocity BC pattern not found — ramp not injected")
+        return 0
+
+    content = content.replace(plunge_marker, amp_block + plunge_marker, 1)
+    content = content.replace(old_vel, new_vel, 1)
+    with open(inp_path, "w") as f:
+        f.write(content)
+    print("[INP] Injected SMOOTH STEP ramp (t_ramp=%.2e s)" % t_ramp)
+    return 1
+
+
 def submit_and_wait(job_name, num_cpus=1):
     """Submit pre-written INP file and wait for completion."""
     job = mdb.JobFromInputFile(
@@ -394,14 +452,21 @@ def submit_and_wait(job_name, num_cpus=1):
 
 
 def build_and_submit(p=DEFAULT, job_name="dicing_sic_d030"):
-    """Build model, inject mass scaling DT into INP, submit, wait."""
+    """Build model, patch INP (mass scaling DT + velocity ramp), submit, wait."""
     build_model(p=p, job_name=job_name)
 
     inp_path = os.path.join(os.getcwd(), job_name + ".inp")
-    # NOTE: _fix_blade_surface_normal is NOT called here.
-    # The blade is sketched RIGHT→LEFT so SPOS = downward (correct for cutting).
-    # Applying SNEG would flip the normal upward, killing contact detection.
     _inject_mass_scaling_dt(inp_path, p.get("target_dt_s", 1e-8))
+
+    ramp_frac = p.get("velocity_ramp_frac", 0.0)
+    if ramp_frac > 0.0:
+        d  = p.get("cut_depth_um", 150.0) * 1e-6
+        v  = p.get("feed_speed_m_s", 0.5)
+        _CLEARANCE = 2e-6
+        t_plunge = (d + _CLEARANCE) / v
+        _inject_smooth_ramp(inp_path,
+                            t_ramp=t_plunge * ramp_frac,
+                            v_plunge=v)
 
     submit_and_wait(job_name, num_cpus=p.get("num_cpus", 1))
     return job_name

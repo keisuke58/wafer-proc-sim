@@ -52226,13 +52226,13 @@ _WaferTop_S2, S2
 ** 
 *Material, name=M_4H_SiC
 *Damage Initiation, criterion=DUCTILE
-  5.0000e-02, -2., 0.
-  1.5000e-02, -1., 0.
-  5.0000e-03, -0.333333, 0.
-  2.0000e-03, 0., 0.
-  1.0000e-03, 0.333333, 0.
-  5.0000e-04, 0.666667, 0.
-  2.5000e-04, 1., 0.
+  2.5000e-01, -2., 0.
+  7.5000e-02, -1., 0.
+  2.5000e-02, -0.333333, 0.
+  1.0000e-02, 0., 0.
+  5.0000e-03, 0.333333, 0.
+  2.5000e-03, 0.666667, 0.
+  1.2500e-03, 1., 0.
 *Damage Evolution, type=ENERGY
  17.5,
 *Density
@@ -52269,6 +52269,11 @@ _PickedSet8, 1, 1
 ** 
 ** STEP: Plunge
 ** 
+**
+** AMPLITUDE
+**
+*Amplitude, name=BladeRamp, definition=SMOOTH STEP
+0., 0., 1.64e-05, 1.
 *Step, name=Plunge, nlgeom=YES
 *Dynamic, Explicit
 , 0.000164
@@ -52283,6 +52288,7 @@ _PickedSet8, 1, 1
 ** Name: BladeMotion Type: Velocity/Angular velocity
 *Boundary, type=VELOCITY
 _PickedSet10, 1, 1
+*Boundary, type=VELOCITY, AMPLITUDE=BladeRamp
 _PickedSet10, 2, 2, -0.5
 ** 
 ** INTERACTIONS
