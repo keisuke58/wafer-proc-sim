@@ -12,7 +12,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-sys.path.insert(0, os.path.dirname(__file__))
+_root = os.path.abspath(os.path.dirname(__file__))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 
 from dashboard.simulator import get_simulator
 
