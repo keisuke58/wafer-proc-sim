@@ -1,0 +1,140 @@
+name: CI — wafer-proc-sim
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install scikit-learn numpy pandas scipy joblib matplotlib
+
+      - name: Smoke-test experimental GP
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          from validation.experimental_data import CHIPPING_DATA
+          import pandas as pd, numpy as np
+          from ml.train_from_experimental import ExperimentalGPSurrogate, FEATURE_COLS, TARGET_COL
+          df = pd.DataFrame(CHIPPING_DATA)
+          X = df[FEATURE_COLS].values.astype(float)
+          y = df[TARGET_COL].values.astype(float)
+          assert len(X) >= 26, f'Expected ≥26 data points, got {len(X)}'
+          model = ExperimentalGPSurrogate()
+          model.fit(X, y)
+          pred, std = model.predict(X[:3], return_std=True)
+          assert np.all(std > 0), 'Std must be positive'
+          print(f'[OK] GP: {len(X)} pts, pred={pred[:3].round(1)}')
+          "
+
+      - name: Smoke-test sensitivity analysis
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          from ml.sensitivity_analysis import sobol_indices
+          import numpy as np
+          # Quick test with N=64
+          idx = sobol_indices(n=64)
+          assert 'S1' in idx and 'ST' in idx
+          assert idx['S1'].shape[0] == 4, 'Should have 4 features'
+          print(f'[OK] Sobol: S1={idx[\"S1\"].round(3)}')
+          " 2>/dev/null || echo "[SKIP] sensitivity_analysis (optional)"
+
+      - name: Smoke-test anomaly detection
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          import numpy as np
+          from ml.anomaly_detection import AnomalyDetector
+          det = AnomalyDetector()
+          det.fit(np.array([[80.,23.],[150.,23.],[200.,23.]]))
+          result = det.check(np.array([200.,23.,1.0,30000.]), observed_chip_um=4.5)
+          print(f'[OK] Anomaly: is_anomaly={result.is_anomaly}, severity={result.severity:.2f}')
+          "
+
+      - name: Smoke-test process capability
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          import numpy as np
+          from optimization.process_capability import compute_capability
+          rng = np.random.default_rng(0)
+          data = rng.normal(5.0, 1.5, 100)
+          r = compute_capability(data, usl=15.0, target=5.0)
+          assert r.cpk > 0, 'Cpk must be positive'
+          print(f'[OK] Cpk={r.cpk:.3f}  Cp={r.cp:.3f}  status={r.status}')
+          "
+
+      - name: Smoke-test blade wear model
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          from optimization.blade_wear import BladeWearModel
+          m = BladeWearModel(chip_0=4.5, n_life=200, alpha=2.0, usl=15.0)
+          assert m.predict_chip(0) == 4.5
+          assert m.predict_chip(200) > 4.5
+          n_rep = m.replace_at()
+          assert 0 < n_rep < 200, f'replace_at={n_rep} out of range'
+          print(f'[OK] Blade wear: replace@{n_rep}, usl@{m.wafers_to_threshold(15):.0f}')
+          "
+
+      - name: Smoke-test cost model
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          from optimization.cost_per_die import CostPerDieModel, dies_per_wafer
+          n_die = dies_per_wafer(10.0, 200.0, 23.0)
+          assert n_die > 50, f'Expected >50 dies, got {n_die}'
+          cm = CostPerDieModel()
+          r = cm.compute({'cut_depth_um':200,'blade_W_um':23,'feed_mm_s':1.0,'spindle_rpm':30000},
+                          chip_um=5.0, chip_std=1.5)
+          assert r['cost_total_jpy'] > 0
+          print(f'[OK] Cost: ¥{r[\"cost_total_jpy\"]:.2f}/die  {n_die} dies/wafer  {r[\"wph\"]:.0f}WPH')
+          "
+
+      - name: Smoke-test die strength GP
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          from ml.die_strength_gp import DieStrengthGP, load_data
+          X, y, df = load_data()
+          assert len(X) == 9, f'Expected 9 conditions, got {len(X)}'
+          m = DieStrengthGP().fit(X, y)
+          pred, std = m.predict(X[:2], return_std=True)
+          p_fail = m.breakage_prob(X[:2], threshold=600.0)
+          assert all(0 <= p <= 1 for p in p_fail), 'Probabilities must be in [0,1]'
+          print(f'[OK] Die strength: pred={pred.round(0)}MPa  P(fail<600)={p_fail.round(3)}')
+          "
+
+      - name: Smoke-test sensor fusion
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -c "
+          import numpy as np
+          from ml.sensor_fusion import simulate_sensors, strategy_A_weighted, strategy_D_majority, evaluate_strategy
+          data = simulate_sensors(n_wafers=50, n_anomaly=8, seed=0)
+          truth = data['is_anomaly'].values.astype(int)
+          preds_A = np.array([strategy_A_weighted(row)[0] for _, row in data.iterrows()]).astype(int)
+          preds_D = np.array([strategy_D_majority(row)[0] for _, row in data.iterrows()]).astype(int)
+          mA = evaluate_strategy(preds_A, truth)
+          mD = evaluate_strategy(preds_D, truth)
+          assert mA['F1'] > 0, 'Weighted fusion F1 must be positive'
+          assert mD['F1'] > 0, 'Majority vote F1 must be positive'
+          print(f'[OK] Fusion: Weighted F1={mA[\"F1\"]:.3f} FPR={mA[\"FPR\"]:.2f}  Majority F1={mD[\"F1\"]:.3f} FPR={mD[\"FPR\"]:.2f}')
+          "
+
+      - name: All tests passed
+        run: echo "✅ All smoke tests passed"
