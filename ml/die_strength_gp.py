@@ -26,6 +26,7 @@ Usage:
 """
 
 import argparse
+import math
 import os
 import sys
 import warnings
@@ -224,13 +225,146 @@ def plot_results(model, X, y, df, out_dir=RESULTS):
     return out
 
 
+# ── 2nm node: thin-die nano sweep ────────────────────────────────────────────
+
+def thin_die_nano_sweep(out_dir: str = RESULTS) -> str:
+    """
+    Extend die strength prediction to HBM4 range (20-50µm) using Weibull
+    extrapolation based on Griffith flaw mechanics.
+
+    Kim2023 data covers 100-300µm. Sub-80µm is extrapolated using the
+    die_strength_weibull() model from plasma_bosch_model with method-specific
+    HAZ and surface roughness assumptions:
+
+        BDBG: HAZ scales with blade scratch depth (grows with thinning)
+        SDBG: low HAZ (stealth laser, no blade contact)
+        PDBG: moderate HAZ (plasma ion damage)
+
+    2nm node targets (HBM4, JEDEC 2024):
+        Die thickness: 20-50µm
+        σ_B ≥ 600 MPa (HBM4 assembly stress ≈ 400 MPa + margin)
+        Yield loss < 1% at packaging
+    """
+    import matplotlib.pyplot as plt
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from fem.plasma_bosch_model import die_strength_weibull
+
+    thicknesses = np.concatenate([
+        np.linspace(20, 80, 25),    # nano regime (extrapolated)
+        np.linspace(80, 300, 30),   # Kim2023 overlap
+    ])
+
+    # Method-specific HAZ and Ra vs thickness
+    HAZ_FN = {
+        "BDBG (Blade)":   lambda t: 2.0 + 0.025 * t,   # blade scratch deepens with wafer
+        "SDBG (Stealth)": lambda t: 0.15 + 0.0008 * t,  # SD: near-zero HAZ
+        "PDBG (Plasma)":  lambda t: 0.4  + 0.003 * t,   # plasma ion damage
+    }
+    RA_FN = {
+        "BDBG (Blade)":   lambda t: 90 + 0.4 * t,
+        "SDBG (Stealth)": lambda t: 12 + 0.04 * t,
+        "PDBG (Plasma)":  lambda t: 20 + 0.08 * t,
+    }
+    SW_BY_METHOD = {"BDBG (Blade)": 23.0, "SDBG (Stealth)": 8.0, "PDBG (Plasma)": 8.0}
+    WEIBULL_M    = {"BDBG (Blade)": 4.0,  "SDBG (Stealth)": 7.0, "PDBG (Plasma)": 5.5}
+    COLORS = {"BDBG (Blade)": "#d62728", "SDBG (Stealth)": "#2166ac", "PDBG (Plasma)": "#2ca02c"}
+
+    os.makedirs(out_dir, exist_ok=True)
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+    # Panel 1: σ_B vs thickness
+    ax = axes[0]
+    for name, haz_fn in HAZ_FN.items():
+        strengths = []
+        for t in thicknesses:
+            sigma = die_strength_weibull(haz_fn(t), RA_FN[name](t), SW_BY_METHOD[name])
+            strengths.append(sigma)
+        strengths = np.array(strengths)
+        ax.plot(thicknesses, strengths, color=COLORS[name], lw=2.5, label=name)
+        nano_mask = thicknesses <= 80
+        ax.fill_between(thicknesses[nano_mask], strengths[nano_mask],
+                        alpha=0.12, color=COLORS[name])
+
+    ax.axhline(HBM_STRENGTH_THRESHOLD, color="purple", ls="--", lw=1.8,
+               label=f"HBM4 target {HBM_STRENGTH_THRESHOLD:.0f} MPa")
+    ax.axhline(PROD_STRENGTH_MIN, color="gray", ls=":", lw=1.2,
+               label=f"Min acceptable {PROD_STRENGTH_MIN:.0f} MPa")
+    ax.axvspan(20, 50, alpha=0.08, color="gold", label="HBM4 2nm node (20–50µm)")
+    ax.set_xlabel("Die Thickness [µm]", fontsize=11)
+    ax.set_ylabel("σ_B [MPa]  (P_f = 10%)", fontsize=11)
+    ax.set_title("Die Strength: 2nm Node Extension\nWeibull–Griffith extrapolation below 80µm",
+                 fontsize=10)
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.25)
+    ax.set_xlim(20, 300)
+    ax.set_ylim(0, 2000)
+
+    # Panel 2: yield loss % vs thickness × method
+    ax2 = axes[1]
+    for name, haz_fn in HAZ_FN.items():
+        yield_losses = []
+        m_W = WEIBULL_M[name]
+        for t in thicknesses:
+            sigma_p10 = die_strength_weibull(haz_fn(t), RA_FN[name](t), SW_BY_METHOD[name])
+            # Invert P_f=10% to get Weibull scale η, then evaluate at 600 MPa
+            eta = sigma_p10 / (math.log(1.0 / (1.0 - 0.10))) ** (1.0 / m_W)
+            p_fail = 1.0 - math.exp(-(HBM_STRENGTH_THRESHOLD / max(eta, 1.0)) ** m_W)
+            yield_losses.append(p_fail * 100.0)
+        ax2.plot(thicknesses, yield_losses, color=COLORS[name], lw=2.5, label=name)
+        nano_mask = thicknesses <= 80
+        ax2.fill_between(thicknesses[nano_mask],
+                         np.array(yield_losses)[nano_mask],
+                         alpha=0.10, color=COLORS[name])
+
+    ax2.axhline(1.0, color="red", ls="--", lw=1.8, label="1% yield loss limit")
+    ax2.axvspan(20, 50, alpha=0.08, color="gold", label="HBM4 2nm node (20–50µm)")
+    ax2.set_xlabel("Die Thickness [µm]", fontsize=11)
+    ax2.set_ylabel("P(σ_B < 600 MPa) [%]", fontsize=11)
+    ax2.set_title("Yield Loss Prediction — HBM4 (≥ 600 MPa)\n"
+                  "2nm node: <1% loss required (TSMC N2 spec)", fontsize=10)
+    ax2.legend(fontsize=8)
+    ax2.grid(alpha=0.25)
+    ax2.set_xlim(20, 300)
+    ax2.set_ylim(0, 80)
+
+    fig.suptitle(
+        "2nm Node Die Strength & Yield — HBM4 Stack (20–50µm)\n"
+        "BDBG vs SDBG vs PDBG — Griffith flaw model + Weibull weakest-link",
+        fontsize=11)
+    plt.tight_layout()
+    out_path = os.path.join(out_dir, "die_strength_nano_sweep.png")
+    plt.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"[✓] Nano sweep → {out_path}")
+
+    # Print 2nm node summary table
+    print(f"\n  {'Method':>16}  {'20µm σ_B':>10}  {'30µm σ_B':>10}  "
+          f"{'50µm σ_B':>10}  {'Yield@20µm':>12}")
+    for name, haz_fn in HAZ_FN.items():
+        m_W = WEIBULL_M[name]
+        row = []
+        for t in [20, 30, 50]:
+            row.append(die_strength_weibull(haz_fn(t), RA_FN[name](t), SW_BY_METHOD[name]))
+        eta20 = row[0] / (math.log(1.0 / 0.90)) ** (1.0 / m_W)
+        p20   = (1.0 - math.exp(-(HBM_STRENGTH_THRESHOLD / max(eta20, 1.0)) ** m_W)) * 100
+        print(f"  {name:>16}  {row[0]:>7.0f}MPa  {row[1]:>7.0f}MPa  "
+              f"{row[2]:>7.0f}MPa  {p20:>9.1f}%")
+    return out_path
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--plot",    action="store_true")
-    parser.add_argument("--predict", action="store_true")
+    parser.add_argument("--plot",       action="store_true")
+    parser.add_argument("--predict",    action="store_true")
+    parser.add_argument("--nano-sweep", action="store_true",
+                        help="2nm node thin-die yield prediction (20-50µm)")
     args = parser.parse_args()
+
+    if args.nano_sweep:
+        thin_die_nano_sweep()
+        return
 
     X, y, df = load_data()
     print(f"[*] Loaded {len(df)} conditions")

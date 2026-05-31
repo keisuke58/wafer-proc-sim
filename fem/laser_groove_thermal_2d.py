@@ -28,6 +28,7 @@ References:
     Rozanski et al. (2021) Appl Surf Sci — Bosch ARDE in SiC
 """
 
+import math
 import sys
 import os
 import re
@@ -148,6 +149,101 @@ def analytical_groove(p: dict) -> dict:
         "HAZ_depth_um":    round(float(HAZ_depth_um), 3),
         "F_peak_J_cm2":    round(float(F_peak), 4),
         "pulse_regime":    regime,
+    }
+
+
+# ── Stealth dicing model ─────────────────────────────────────────────────────
+def stealth_dicing(p: dict) -> dict:
+    """
+    Analytical model for stealth dicing (Hamamatsu SD technology, 2nm node streets).
+
+    Physics: pulsed IR beam (1064 nm) focused *inside* wafer at focal_depth_um.
+    Multi-photon ionization (MPI) creates a modified layer; SiC cleaves along
+    (0001) basal plane from the modified zone toward the surface.
+
+    Key advantage over surface ablation:
+    - No material removed from street surface during laser step
+    - Surface chipping from crack propagation << ablation groove width
+    - HAZ near-zero (beam passes through surface without absorbing)
+    - Enables sub-2µm chipping at < 30µm street width (2nm node target)
+
+    Parameters (p dict):
+        focal_depth_um      : beam focus depth below surface [µm] (default 100)
+        numerical_aperture  : objective NA (default 0.65, Disco DFL7162)
+        pulse_regime        : "ps" recommended (ns too long coherence length)
+        n_layers            : number of SD focus layers (default 2)
+
+    References:
+        Kumagai et al. (2007) IEEE Trans Adv Packaging — SD modified layer theory
+        Disco DFL7162/DFL7563 spec (1064 nm, NA 0.65/0.85)
+        Baumgart et al. (2023) J Micromech — hybrid SD+plasma SiC 2nm node
+    """
+    Plas    = p["laser_power_W"]
+    v       = p["scan_speed_mm_s"]
+    f       = p["pulse_freq_kHz"] * 1e3
+    n_p     = int(p.get("n_passes", 1))
+    focal_z = p.get("focal_depth_um", 100.0)
+    NA      = p.get("numerical_aperture", 0.65)
+    n_lay   = int(p.get("n_layers", 2))
+    regime  = p.get("pulse_regime", "ps")
+    rp      = LASER_REGIMES.get(regime, LASER_REGIMES["ps"])
+
+    wavelength_um = 1.064                               # Nd:YAG IR [µm]
+    n_SiC         = 2.65                                # SiC refractive index @ 1064nm
+
+    # Diffraction-limited focal spot (Abbe, corrected for immersion in SiC)
+    r_focal_um = 0.61 * wavelength_um / (NA * n_SiC)
+    r_focal_um = max(r_focal_um, 0.15)                  # physical floor ~150nm
+
+    # Rayleigh length (confocal parameter / 2)
+    z_R_um = math.pi * r_focal_um ** 2 / wavelength_um * n_SiC
+
+    # Peak fluence at focal plane [J/cm²]
+    E_pulse_J = Plas / f
+    r_cm      = r_focal_um * 1e-4
+    F_peak    = E_pulse_J / (math.pi * r_cm ** 2)
+
+    # MPI threshold: SiC bandgap 3.26 eV, 1064nm photon = 1.17 eV → 3-photon process
+    n_photon  = 3
+    F_th_MPI  = rp["F_th_J_cm2"] * (4.0 ** n_photon) ** (1.0 / n_photon)
+
+    if F_peak <= F_th_MPI:
+        mod_h = 0.0
+        mod_w = 0.0
+    else:
+        excess = math.log(max(F_peak / F_th_MPI, 1.0 + 1e-9))
+        # Modified layer height: Rayleigh length × overlap × n_layers
+        pulse_pitch_um = v / f * 1e3
+        overlap        = max(0.05, 1.0 - pulse_pitch_um / (2.0 * r_focal_um))
+        mod_h = z_R_um * 2.0 * math.sqrt(excess) * overlap * n_lay * n_p
+        mod_h = min(mod_h, focal_z * 0.6)
+        # Modified layer width: beam waist at threshold contour
+        mod_w = 2.0 * r_focal_um * math.sqrt(excess) * (n_lay ** 0.25) * (n_p ** 0.2)
+
+    # Surface chipping from crack propagation (0001) cleavage plane
+    # Crack angle: near-vertical for deep focus, shallower for shallow focus
+    crack_angle_deg = 75.0 * min(1.0, focal_z / 100.0) + 45.0 * (1.0 - min(1.0, focal_z / 100.0))
+    if mod_h > 0:
+        chipping_um = mod_w * 0.25 / math.tan(math.radians(max(crack_angle_deg, 30.0)))
+        chipping_um = min(chipping_um, mod_w)
+    else:
+        chipping_um = 0.0
+
+    # HAZ: beam passes through surface unabsorbed → essentially zero at surface
+    HAZ_depth_um = rp["HAZ_factor"] * 0.05 * mod_h
+
+    return {
+        "mode":                "stealth",
+        "focal_depth_um":      round(focal_z, 1),
+        "modified_layer_h_um": round(mod_h, 3),
+        "modified_layer_w_um": round(mod_w, 3),
+        "surface_chipping_um": round(chipping_um, 3),
+        "HAZ_depth_um":        round(HAZ_depth_um, 4),
+        "F_peak_J_cm2":        round(F_peak, 4),
+        "r_focal_um":          round(r_focal_um, 3),
+        "z_R_um":              round(z_R_um, 3),
+        "pulse_regime":        regime,
+        "n_layers":            n_lay,
     }
 
 
@@ -325,14 +421,106 @@ def parametric_sweep(output_csv: str = "results/laser_groove_sweep.csv"):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sweep",  action="store_true")
-    ap.add_argument("--power",  type=float, default=DEFAULT["laser_power_W"])
-    ap.add_argument("--speed",  type=float, default=DEFAULT["scan_speed_mm_s"])
-    ap.add_argument("--passes", type=int,   default=DEFAULT["n_passes"])
+    ap.add_argument("--sweep",   action="store_true")
+    ap.add_argument("--stealth", action="store_true",
+                    help="Stealth dicing model + comparison vs surface ablation")
+    ap.add_argument("--power",   type=float, default=DEFAULT["laser_power_W"])
+    ap.add_argument("--speed",   type=float, default=DEFAULT["scan_speed_mm_s"])
+    ap.add_argument("--passes",  type=int,   default=DEFAULT["n_passes"])
     args = ap.parse_args()
 
     if args.sweep:
         parametric_sweep()
+
+    elif args.stealth:
+        import matplotlib.pyplot as plt
+
+        # Sweep: focal depth × laser power → chipping comparison
+        focal_depths  = np.linspace(30, 300, 40)
+        powers        = [5.0, 10.0, 20.0, 30.0]
+        street_widths = [8.0, 15.0, 23.0, 30.0]
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+        # Panel 1: chipping vs focal depth for each power
+        ax = axes[0]
+        for P, color in zip(powers, ["#2166ac", "#4dac26", "#d01c8b", "#d62728"]):
+            chips = []
+            for fd in focal_depths:
+                p = dict(DEFAULT, laser_power_W=P, scan_speed_mm_s=200.0,
+                         n_passes=2, focal_depth_um=fd, pulse_regime="ps",
+                         numerical_aperture=0.65)
+                chips.append(stealth_dicing(p)["surface_chipping_um"])
+            ax.plot(focal_depths, chips, color=color, lw=2, label=f"{P:.0f}W")
+        ax.axhline(0.5, color="purple", ls="--", lw=1.5, label="0.5µm (2nm target)")
+        ax.set_xlabel("Focal Depth [µm]", fontsize=11)
+        ax.set_ylabel("Surface Chipping [µm]", fontsize=11)
+        ax.set_title("Stealth Dicing: Chipping vs Focal Depth\n(ps, NA=0.65, 2 passes)", fontsize=10)
+        ax.legend(fontsize=8)
+        ax.grid(alpha=0.25)
+
+        # Panel 2: SD vs surface ablation — chipping at 2nm node street widths
+        ax2 = axes[1]
+        p_base_sd  = dict(DEFAULT, laser_power_W=15.0, scan_speed_mm_s=200.0,
+                          n_passes=2, pulse_regime="ps", numerical_aperture=0.65)
+        p_base_abl = dict(DEFAULT, laser_power_W=15.0, scan_speed_mm_s=200.0, n_passes=2)
+        for regime, lbl, ls in [("ns","Surface ablation (ns)", "-"),
+                                  ("ps","Surface ablation (ps)", "--"),
+                                  ("fs","Surface ablation (fs)", ":")]:
+            chips = []
+            for P in powers:
+                pa = dict(p_base_abl, laser_power_W=P, pulse_regime=regime)
+                chips.append(analytical_groove(pa)["HAZ_depth_um"])
+            ax2.plot(powers, chips, lw=2, ls=ls, label=lbl)
+        sd_chips = [stealth_dicing(dict(p_base_sd, laser_power_W=P))["surface_chipping_um"]
+                    for P in powers]
+        ax2.plot(powers, sd_chips, "ko-", lw=2.5, label="Stealth dicing (ps)")
+        ax2.axhline(0.5, color="purple", ls="--", lw=1.5, label="0.5µm target")
+        ax2.set_xlabel("Laser Power [W]", fontsize=11)
+        ax2.set_ylabel("Chipping / HAZ [µm]", fontsize=11)
+        ax2.set_title("SD vs Surface Ablation\n(chipping for SD, HAZ for ablation)", fontsize=10)
+        ax2.legend(fontsize=8)
+        ax2.grid(alpha=0.25)
+
+        # Panel 3: modified layer geometry vs focal depth
+        ax3 = axes[2]
+        for nl, color in [(1,"#2166ac"),(2,"#d62728"),(3,"#2ca02c")]:
+            mods_h, mods_w = [], []
+            for fd in focal_depths:
+                p = dict(DEFAULT, laser_power_W=15.0, scan_speed_mm_s=200.0,
+                         n_passes=2, focal_depth_um=fd, pulse_regime="ps",
+                         numerical_aperture=0.65, n_layers=nl)
+                r = stealth_dicing(p)
+                mods_h.append(r["modified_layer_h_um"])
+                mods_w.append(r["modified_layer_w_um"])
+            ax3.plot(focal_depths, mods_h, color=color, lw=2, label=f"{nl} layers (height)")
+            ax3.plot(focal_depths, mods_w, color=color, lw=1.5, ls="--")
+        ax3.set_xlabel("Focal Depth [µm]", fontsize=11)
+        ax3.set_ylabel("Modified Layer [µm]", fontsize=11)
+        ax3.set_title("Modified Layer Geometry\n(solid=height, dashed=width)", fontsize=10)
+        ax3.legend(fontsize=8)
+        ax3.grid(alpha=0.25)
+
+        fig.suptitle(
+            "Stealth Dicing Model — 2nm Node (< 30µm Street, < 0.5µm Chipping Target)\n"
+            "1064nm ps laser, NA=0.65, SiC (0001) cleavage, 3-photon MPI",
+            fontsize=11)
+        plt.tight_layout()
+        os.makedirs("results", exist_ok=True)
+        out = "results/stealth_dicing_2nm.png"
+        plt.savefig(out, dpi=150, bbox_inches="tight")
+        print(f"[✓] Stealth dicing → {out}")
+        # Print summary table
+        print("\n  Focal[µm]  ModH[µm]  ModW[µm]  Chip[µm]  HAZ[µm]")
+        for fd in [50, 100, 150, 200, 300]:
+            p = dict(DEFAULT, laser_power_W=15.0, scan_speed_mm_s=200.0,
+                     n_passes=2, focal_depth_um=fd, pulse_regime="ps",
+                     numerical_aperture=0.65, n_layers=2)
+            r = stealth_dicing(p)
+            print(f"  {fd:9.0f}  {r['modified_layer_h_um']:8.3f}  "
+                  f"{r['modified_layer_w_um']:8.3f}  "
+                  f"{r['surface_chipping_um']:8.3f}  {r['HAZ_depth_um']:7.4f}")
+
     else:
         p   = dict(DEFAULT, laser_power_W=args.power,
                    scan_speed_mm_s=args.speed, n_passes=args.passes)
