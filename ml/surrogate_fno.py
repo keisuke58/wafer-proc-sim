@@ -315,19 +315,152 @@ def predict_field(cut_depth_um: float,
     return stress_Pa / 1e9   # → GPa
 
 
+# ── Synthetic dataset (physics-inspired, no FEM .npy needed) ──────────────────
+
+class SyntheticDicingDataset(Dataset):
+    """
+    Physics-inspired synthetic stress fields for FNO training.
+
+    σ(x,y) = σ_ref × (depth/r)^0.5 × exp(-|x-x_blade|/blade_W) × (1-y/H)
+    where r = distance from blade tip = sqrt((x-x_blade)^2 + (y-y_tip)^2)
+
+    This mimics the stress singularity near the blade tip and the exponential
+    decay away from the cut plane — qualitatively correct for brittle fracture.
+    """
+    WAFER_W_UM = 500.0
+    WAFER_H_UM = 450.0
+    X_BLADE    = 250.0   # blade centre x [µm]
+    SIGMA_REF  = 3e9     # reference stress [Pa]
+
+    def __init__(self, n_samples=200, grid_h=64, grid_w=64, seed=0):
+        rng = np.random.default_rng(seed)
+        self.grid_h = grid_h
+        self.grid_w = grid_w
+
+        depths = rng.uniform(60.,  390., n_samples).astype(np.float32)
+        kerfs  = rng.uniform(20.,   55., n_samples).astype(np.float32)
+        self.depth_min, self.depth_max = float(depths.min()), float(depths.max())
+        self.kerf_min,  self.kerf_max  = float(kerfs.min()),  float(kerfs.max())
+
+        xs = np.linspace(0, self.WAFER_W_UM, grid_w, dtype=np.float32)
+        ys = np.linspace(0, self.WAFER_H_UM, grid_h, dtype=np.float32)
+        X, Y = np.meshgrid(xs, ys)
+
+        fields = []
+        for d, bw in zip(depths, kerfs):
+            y_tip = self.WAFER_H_UM - d          # blade tip y position
+            r     = np.sqrt((X - self.X_BLADE)**2 + (Y - y_tip)**2) + bw/2
+            sigma = (self.SIGMA_REF * np.sqrt(d / r)
+                     * np.exp(-np.abs(X - self.X_BLADE) / (2*bw))
+                     * np.clip(1 - (Y - y_tip) / self.WAFER_H_UM, 0, 1))
+            sigma = np.clip(sigma, 0, self.SIGMA_REF * 3).astype(np.float32)
+            fields.append(sigma)
+
+        all_vals = np.concatenate([f.ravel() for f in fields])
+        self.stress_mean = float(all_vals.mean())
+        self.stress_std  = float(all_vals.std()) + 1e-8
+
+        self.records = [
+            {"depth": float(d), "kerf": float(bw),
+             "field": f} for d, bw, f in zip(depths, kerfs, fields)
+        ]
+        print(f"[*] Synthetic dataset: {n_samples} samples, "
+              f"grid ({grid_h}×{grid_w})")
+
+    def __len__(self):  return len(self.records)
+
+    def __getitem__(self, idx):
+        r  = self.records[idx]
+        p  = np.array([
+            (r["depth"] - self.depth_min) / (self.depth_max - self.depth_min + 1e-8),
+            (r["kerf"]  - self.kerf_min)  / (self.kerf_max  - self.kerf_min  + 1e-8),
+        ], dtype=np.float32)
+        f  = (r["field"] - self.stress_mean) / self.stress_std
+        return torch.tensor(p), torch.tensor(f).unsqueeze(0)
+
+
+def train_synthetic(n_samples=200, epochs=80, grid_h=64, grid_w=64):
+    dataset = SyntheticDicingDataset(n_samples=n_samples,
+                                      grid_h=grid_h, grid_w=grid_w)
+    loader  = DataLoader(dataset, batch_size=16, shuffle=True)
+    model   = FNO2d(grid_h=grid_h, grid_w=grid_w).to(DEVICE)
+    opt     = torch.optim.Adam(model.parameters(), lr=1e-3)
+    sched   = torch.optim.lr_scheduler.StepLR(opt, step_size=30, gamma=0.5)
+
+    best = float("inf")
+    for ep in range(1, epochs + 1):
+        model.train()
+        total = 0.0
+        for params, fields in loader:
+            params, fields = params.to(DEVICE), fields.to(DEVICE)
+            opt.zero_grad()
+            loss = F.mse_loss(model(params), fields)
+            loss.backward()
+            opt.step()
+            total += loss.item()
+        sched.step()
+        avg = total / len(loader)
+        if avg < best:
+            best = avg
+            torch.save({
+                "model_state": model.state_dict(),
+                "stress_mean": dataset.stress_mean,
+                "stress_std":  dataset.stress_std,
+                "depth_min":   dataset.depth_min,
+                "depth_max":   dataset.depth_max,
+                "kerf_min":    dataset.kerf_min,
+                "kerf_max":    dataset.kerf_max,
+                "grid_h":      grid_h,
+                "grid_w":      grid_w,
+            }, MODEL_PATH)
+        if ep % 20 == 0:
+            print(f"  Epoch {ep:3d}/{epochs}  loss={avg:.6f}  best={best:.6f}")
+
+    print(f"[✓] FNO trained (synthetic) → {MODEL_PATH}")
+    return model, dataset
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", default="results")
-    parser.add_argument("--manifest", default="results/parametric_summary.csv")
-    parser.add_argument("--train",   action="store_true")
-    parser.add_argument("--predict", action="store_true")
-    parser.add_argument("--depth",   type=float, default=50.0)
-    parser.add_argument("--kerf",    type=float, default=30.0)
-    parser.add_argument("--epochs",  type=int,   default=200)
-    parser.add_argument("--plot",    action="store_true")
+    parser.add_argument("--data-dir",   default="results")
+    parser.add_argument("--manifest",   default="results/parametric_summary.csv")
+    parser.add_argument("--train",      action="store_true")
+    parser.add_argument("--synthetic",  action="store_true",
+                        help="Train on physics-inspired synthetic data (no FEM .npy needed)")
+    parser.add_argument("--predict",    action="store_true")
+    parser.add_argument("--depth",      type=float, default=200.0)
+    parser.add_argument("--kerf",       type=float, default=23.0)
+    parser.add_argument("--epochs",     type=int,   default=80)
+    parser.add_argument("--plot",       action="store_true")
     args = parser.parse_args()
+
+    if args.synthetic:
+        model, dataset = train_synthetic(n_samples=300, epochs=args.epochs)
+        if args.predict:
+            field_GPa = predict_field(args.depth, args.kerf)
+            print(f"[✓] Predicted: depth={args.depth}µm, kerf={args.kerf}µm  "
+                  f"max={field_GPa.max():.2f} GPa")
+            if args.plot:
+                import matplotlib.pyplot as plt
+                fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+                for ax, (d, bw) in zip(axes, [(80,23),(200,23),(360,23)]):
+                    f = predict_field(d, bw)
+                    im = ax.imshow(f, origin="lower", cmap="hot",
+                                   extent=[0, 500, 0, 450],
+                                   vmin=0, vmax=f.max())
+                    plt.colorbar(im, ax=ax, label="σ [GPa]")
+                    ax.set_title(f"depth={d}µm, kerf={bw}µm")
+                    ax.set_xlabel("x [µm]"); ax.set_ylabel("y [µm]")
+                fig.suptitle("FNO Predicted Stress Fields — 4H-SiC Blade Dicing",
+                             fontsize=11)
+                plt.tight_layout()
+                out = os.path.join(os.path.dirname(MODEL_PATH), "fno_stress_fields.png")
+                plt.savefig(out, dpi=150, bbox_inches="tight")
+                plt.close()
+                print(f"[✓] Plot → {out}")
+        return
 
     if args.train:
         train(data_dir=args.data_dir,

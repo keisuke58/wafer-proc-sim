@@ -52568,9 +52568,13 @@ _WaferTop_S4, S4
 ** MATERIALS
 ** 
 *Material, name=M_4H_SiC
-*Brittle Cracking, type=GFI
- 17.5, 3.5e+08
-*Brittle Failure, CRIT=UNIDIRECTIONAL
+*Brittle Cracking, type=STRAIN
+ 3.5e+08, 0.
+ 0., 0.05
+*Brittle Shear, type=POWER LAW
+ 1., 0.001
+*Brittle Failure
+ 0.05
 *Density
 3210.,
 *Elastic
