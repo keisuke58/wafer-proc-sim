@@ -23,6 +23,12 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 | FEM cutting force validation | ✅ Done | RF2 65→48 kN (deeper = lower resistance ✓) |
 | Cutting animation (d=360 µm) | ✅ Done | 25-frame GIF, Plunge step, PEEQ + fracture |
 | FEM fracture calibration | 🔄 Next | del_frac non-monotonic → Gc recalibration needed |
+| **Hybrid laser+plasma process** | ✅ Done | 5-file pipeline: FEM + Bosch + GP + NSGA-II + 2nm validation |
+| Laser grooving FEM (ABAQUS) | ✅ Done | `fem/laser_groove_thermal_2d.py` — ns/ps/fs regimes, Beer-Lambert ablation |
+| Bosch plasma model | ✅ Done | `fem/plasma_bosch_model.py` — ARDE + pulsed plasma + Weibull + Low-k delamination |
+| Hybrid GP surrogate (12-in / 5-out) | ✅ Done | `ml/hybrid_process_gp.py` — 500-sample, regime/duty/beol_k features |
+| Hybrid NSGA-II + delamination constraint | ✅ Done | `optimization/hybrid_process_opt.py` — 3-constraint 4-objective |
+| **2nm Thin Wafer Validation** | ✅ Done | `validation/thin_wafer_sweep.py` — ns fails / ps+fs pass @ 50µm wafer |
 
 ---
 
