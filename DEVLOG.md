@@ -1,6 +1,6 @@
 # wafer-proc-sim 開発ログ
 
-> 2026-05-30 作業まとめ
+> 2026-05-30 作業まとめ　／　2026-06-01 2nm ノード拡張
 
 ---
 
@@ -175,6 +175,43 @@ test_narrow_nlgeom.inp       → RF2=1.38 MN/m ✓（nlgeom=YES も無関係）
 
 `/home/nishioka/IKM_Hiwi/nife/external_data/BEEM/`  
 Hamilton replicator の competing method として比較用。
+
+---
+
+## 11. 2nm ノード拡張（2026-06-01）
+
+### 追加した機能
+
+| ファイル | 追加内容 | CLI |
+|---------|---------|-----|
+| `fem/plasma_bosch_model.py` | `die_yield_loss()` — Low-k BEOL 歩留まり予測（IBM ALK k=2.8-3.0, 12層モデル） | `--yield-sweep` |
+| `fem/laser_groove_thermal_2d.py` | `stealth_dicing()` — 1064nm ps 内部焦点 MPI 改質層モデル | `--stealth` |
+| `ml/die_strength_gp.py` | `thin_die_nano_sweep()` — Griffith–Weibull を 20µm まで外挿 | `--nano-sweep` |
+
+### 主要な知見
+
+- **2nm ノード (HBM4, 20µm ダイ) での歩留まり損失**
+
+  | 手法 | σ_B (20µm) | yield 損失 |
+  |------|-----------|----------|
+  | BDBG (ブレード) | 405 MPa | **40%** → 不適合 |
+  | SDBG (ステルス) | 1031 MPa | **0.2%** → 合格 |
+  | PDBG (プラズマ) | 619 MPa | 8.5% → 要最適化 |
+
+- ステルスダイシング：焦点深さ ≥ 100µm で表面チッピング **0.22µm**（< 0.5µm 目標達成）
+- Low-k yield 1% 限界（TSMC N2 spec）は ps + pulsed plasma (duty=0.5) + street > 18µm で達成可能
+
+### 残課題（nano スケール）
+
+```
+近期
+├── PDBG 歩留まり 8.5% → 1% 以下にするパラメータ最適化（duty_cycle + mask_um）
+├── ステルス多層化（n_layers=3-4）の改質層重なり検証
+└── FNO を実 FEM データ (d150-d360) で再訓練
+
+中期
+└── TSV 干渉応力 FEM（dicing_blade_2d.py に Cu TSV 埋め込み）
+```
 
 ---
 
