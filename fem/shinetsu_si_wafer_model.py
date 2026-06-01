@@ -192,9 +192,9 @@ def si_cmp_roughness(MRR_nm_min: float, pressure_kPa: float,
 # ════════════════════════════════════════════════════════════════════════════
 
 def si_vs_sic_comparison() -> dict:
-    """Si (信越化学) vs SiC (フェローテック) の定量比較。"""
+    """Si (CZ) vs SiC (PVT) substrate process comparison."""
     return {
-        "Si (信越化学)": {
+        "Si (CZ)": {
             "成長法":       "CZ法 (1415°C)",
             "成長速度":     "1.0 mm/min",
             "ウェーハ価格": "$80-150 /枚 (300mm)",
@@ -206,7 +206,7 @@ def si_vs_sic_comparison() -> dict:
             "成長率":       "+6%/y",
             "主用途":       "ロジック/メモリ/パワー",
         },
-        "SiC (フェローテック)": {
+        "SiC (PVT)": {
             "成長法":       "PVT昇華法 (2250°C)",
             "成長速度":     "500 µm/h = 0.008 mm/min",
             "ウェーハ価格": "$600 /枚 (150mm)",
@@ -221,45 +221,7 @@ def si_vs_sic_comparison() -> dict:
     }
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# 5. 信越化学 簡易 DCF
-# ════════════════════════════════════════════════════════════════════════════
-
-def shinetsu_dcf(scenario: str = "base") -> dict:
-    """
-    信越化学 (4063) 簡易 DCF。単位: 億円。
-    FY2024 実績ベース。
-    """
-    scenarios = {
-        "bear": {"rev_growth": 0.03, "op_margin": 0.28, "wacc": 0.09, "terminal_g": 0.02},
-        "base": {"rev_growth": 0.06, "op_margin": 0.32, "wacc": 0.08, "terminal_g": 0.03},
-        "bull": {"rev_growth": 0.10, "op_margin": 0.36, "wacc": 0.07, "terminal_g": 0.035},
-    }
-    s = scenarios[scenario]
-    rev_fy24 = 23000   # 億円 (FY2024 実績)
-    shares   = 4.1e8   # 発行済株式数
-
-    fcf_total = 0
-    rev = rev_fy24
-    for yr in range(1, 11):
-        rev *= (1 + s["rev_growth"])
-        op   = rev * s["op_margin"]
-        fcf  = op * 0.65   # 税後 FCF
-        pv   = fcf / (1 + s["wacc"]) ** yr
-        fcf_total += pv
-
-    # ターミナルバリュー
-    tv = fcf_total * (1 + s["terminal_g"]) / (s["wacc"] - s["terminal_g"]) * 0.3
-    equity = (fcf_total + tv) * 1e8   # 億円 → 円
-    fair_value = equity / shares
-
-    return {
-        "scenario":    scenario,
-        "fair_value_jpy": round(fair_value),
-        "rev_fy24_B":  round(rev_fy24 / 1e4, 1),
-        "op_margin":   s["op_margin"],
-        "wacc":        s["wacc"],
-    }
+# (DCF section removed — out of scope for process simulation portfolio)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -363,26 +325,26 @@ def plot_all(out_dir=OUT_DIR):
     ax5.set_title("COP Density vs Pull Rate\n(Voronkov V/G model)", fontsize=10)
     ax5.legend(fontsize=8); ax5.grid(alpha=0.2, which="both")
 
-    # Panel 6: 信越化学 DCF サマリー
+    # Panel 6: Si vs SiC 技術比較表 (process perspective)
     ax6 = axes[1, 2]
-    scenarios = ["bear", "base", "bull"]
-    colors6   = ["#2166ac", "#ff7f0e", "#d62728"]
-    dcf_results = {s: shinetsu_dcf(s) for s in scenarios}
-    fvs = [dcf_results[s]["fair_value_jpy"] for s in scenarios]
-    bars = ax6.bar(scenarios, fvs, color=colors6, alpha=0.85, edgecolor="k", lw=0.8)
+    ax6.axis("off")
+    comp = si_vs_sic_comparison()
+    keys = list(list(comp.values())[0].keys())
+    rows = [["Property", "Si (CZ)", "SiC (PVT)"]]
+    for k in keys:
+        rows.append([k, comp["Si (CZ)"][k], comp["SiC (PVT)"][k]])
+    tbl = ax6.table(cellText=rows[1:], colLabels=rows[0], loc="center", cellLoc="center")
+    tbl.auto_set_font_size(False); tbl.set_fontsize(9)
+    tbl.scale(1.3, 1.9)
+    for (r, c), cell in tbl.get_celld().items():
+        if r == 0: cell.set_facecolor("#333"); cell.set_text_props(color="w")
+        elif c == 1: cell.set_facecolor("#e8f4f8")
+        elif c == 2: cell.set_facecolor("#fef9e7")
+        elif r % 2 == 0: cell.set_facecolor("#f8f8f8")
+    ax6.set_title("Si vs SiC Substrate Comparison\n(CZ vs PVT process perspective)", fontsize=10)
 
-    # 現在株価 (2024 年末時点概算)
-    current_price = 5800 * 100  # 約 ¥5,800 (概算)
-    ax6.axhline(current_price, color="black", ls="--", lw=2, label=f"現在値概算 ¥{current_price:,}")
-    for bar, fv in zip(bars, fvs):
-        ax6.text(bar.get_x()+bar.get_width()/2, fv+10000, f"¥{fv:,}", ha="center", fontsize=9, fontweight="bold")
-    ax6.set_ylabel("Fair value per share [JPY]", fontsize=10)
-    ax6.set_title("信越化学 簡易 DCF\n(3シナリオ / FY2024 ベース)", fontsize=10)
-    ax6.legend(fontsize=9); ax6.grid(alpha=0.2, axis="y")
-    ax6.set_xticklabels(["Bear\n(成長3%)", "Base\n(成長6%)", "Bull\n(成長10%)"])
-
-    fig.suptitle("信越化学工業 (4063) — Si ウェーハ CZ 成長モデル\n"
-                 "Voronkov V/G則 / 酸素制御 / Si vs SiC 比較 / DCF",
+    fig.suptitle("Si Wafer CZ Growth Model — Shin-Etsu reference implementation\n"
+                 "Voronkov V/G law / O concentration / CMP quality / Si vs SiC comparison",
                  fontsize=11, fontweight="bold")
     plt.tight_layout()
     out = os.path.join(out_dir, "shinetsu_si_wafer.png")
@@ -408,15 +370,10 @@ def plot_all(out_dir=OUT_DIR):
         print(f"  ウェーハ数: {ig['wafers_per_ingot']} 枚/インゴット")
         print(f"  消費電力: {ig['energy_kWh']:.0f} kWh")
 
-    print(f"\n【酸素濃度 12ppma】: {oxygen_effect(12)}")
-    print(f"\n【CMP】: {si_cmp_roughness(30, 20, 30)}")
+    print(f"\n[Oxygen 12ppma]: {oxygen_effect(12)}")
+    print(f"\n[CMP]: {si_cmp_roughness(30, 20, 30)}")
 
-    print(f"\n【DCF フェアバリュー】")
-    for s in scenarios:
-        r = dcf_results[s]
-        print(f"  {s:5s}: ¥{r['fair_value_jpy']:>8,} /株  (OP率{r['op_margin']*100:.0f}%, WACC{r['wacc']*100:.0f}%)")
-
-    print(f"\n【Si vs SiC 成長速度比較】")
+    print(f"\n[Si vs SiC Growth Rate Comparison]")
     print(f"  Si CZ:  1.0 mm/min = 60,000 µm/h")
     print(f"  SiC PVT: 0.008 mm/min = 500 µm/h  (120× 遅い)")
     print(f"  → SiC ウェーハが Si の 100× 高いのは当然")

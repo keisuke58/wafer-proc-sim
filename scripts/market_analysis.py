@@ -1,19 +1,20 @@
 """
-半導体装置 × SiC 市場分析
-===========================
-4 セグメントを定量的に分析:
-  1. SiC パワーデバイス市場  — EV/産業/エネルギー需要 × 主要プレイヤー
-  2. 後工程装置市場 (OSAT)   — K&S/Besi/Shinkawa + ASE/Amkor
-  3. TEL 洗浄装置市場        — CELLESTA vs Screen/SEMES
-  4. 装置バリューチェーン     — ASML/TEL/Disco/Advantest/K&S の TAM × SiC 依存度
+SiC Semiconductor Equipment Market Context
+===========================================
+Industry context for SiC wafer processing research.
+Quantitative overview of market drivers and equipment segments.
 
-データ出典: Yole Group / SEMI / 各社 IR / アナリストコンセンサス (公開情報)
-数値は概算。実際の投資判断には最新 IR を参照のこと。
+  1. SiC power device market — EV/industrial/energy demand by application
+  2. Back-end equipment      — wire bonding / OSAT market size
+  3. Wafer cleaning market   — TEL CELLESTA vs Screen vs SEMES
+  4. Equipment value chain   — SiC exposure by vendor (Yole / SEMI data)
 
-実行:
+Data sources: Yole Développement 2024, SEMI, company annual reports (public).
+Figures are approximate; refer to latest filings for precise values.
+
+Usage:
     python scripts/market_analysis.py
     python scripts/market_analysis.py --segment sic
-    python scripts/market_analysis.py --segment osat
 """
 
 import argparse
@@ -258,14 +259,13 @@ def plot_all(out_dir=OUT_DIR):
         sic_rev = d["rev_2023_B"] * d["sic_exposure_pct"] / 100
         rows.append([
             name,
-            d["ticker"],
             d["segment"],
             f"${d['rev_2023_B']:.1f}B",
             f"{d['sic_exposure_pct']}%",
             f"${sic_rev:.2f}B",
             f"{d['cagr_5y']}%",
         ])
-    col_labels = ["Company", "Ticker", "Segment", "Rev'23", "SiC%", "SiC Rev", "CAGR"]
+    col_labels = ["Company", "Segment", "Rev'23", "SiC%", "SiC Rev", "CAGR"]
     tbl = ax6.table(cellText=rows, colLabels=col_labels,
                     loc="center", cellLoc="center")
     tbl.auto_set_font_size(False); tbl.set_fontsize(8)
@@ -280,11 +280,11 @@ def plot_all(out_dir=OUT_DIR):
             pct = int(rows[r-1][4].replace("%", ""))
             if pct >= 20:
                 cell.set_facecolor("#ffe0b2")
-    ax6.set_title("Semiconductor Equipment Value Chain\nSiC Revenue Exposure (2023)", fontsize=10)
+    ax6.set_title("Semiconductor Equipment Value Chain\nSiC Process Exposure by Vendor (2023)", fontsize=10)
 
-    fig.suptitle("半導体装置 × SiC 市場分析 2023–2030\n"
-                 "SiC デバイス市場 CAGR ~25% | Disco が最高 SiC 依存度 45%",
-                 fontsize=12, fontweight="bold")
+    fig.suptitle("SiC Semiconductor Equipment Market Context (2023–2030)\n"
+                 "Application demand × equipment segment × vendor exposure (Yole / SEMI data)",
+                 fontsize=11, fontweight="bold")
     plt.tight_layout()
     out = os.path.join(out_dir, "market_analysis.png")
     plt.savefig(out, dpi=150, bbox_inches="tight")
@@ -296,46 +296,35 @@ def plot_all(out_dir=OUT_DIR):
 
 def _print_summary():
     print("\n" + "="*64)
-    print("  半導体装置 × SiC 市場分析 サマリー")
+    print("  SiC Semiconductor Equipment Market Summary")
     print("="*64)
 
-    # SiC 市場
     mkt_23 = SIC_MARKET["total_B_USD"][1]
     mkt_30 = SIC_MARKET["total_B_USD"][-1]
     cagr   = (mkt_30 / mkt_23) ** (1/7) - 1
-    print(f"\n【SiC パワーデバイス市場】")
+    print(f"\n[SiC Power Device Market]")
     print(f"  2023: ${mkt_23:.1f}B → 2030E: ${mkt_30:.1f}B  (CAGR {cagr*100:.0f}%)")
-    print(f"  EV/HEV 主導 ({SIC_MARKET['ev'][-1]/SIC_MARKET['total_B_USD'][-1]*100:.0f}% of 2030)")
-    print(f"  BYD/中国勢が 4% → 10% に台頭 (最大リスク)")
+    print(f"  EV/HEV dominant ({SIC_MARKET['ev'][-1]/SIC_MARKET['total_B_USD'][-1]*100:.0f}% of 2030 total)")
 
-    # 装置 SiC 依存度ランキング
-    print(f"\n【装置メーカー SiC 依存度ランキング】")
+    print(f"\n[Equipment SiC Exposure Ranking]")
     ranked = sorted(EQUIPMENT_CHAIN.items(),
                     key=lambda x: x[1]["sic_exposure_pct"], reverse=True)
     for name, d in ranked:
         sic_rev = d["rev_2023_B"] * d["sic_exposure_pct"] / 100
         print(f"  {name:<12} SiC {d['sic_exposure_pct']:>2}%  "
-              f"(${sic_rev:.2f}B)  CAGR {d['cagr_5y']}%")
+              f"(~${sic_rev:.2f}B)  est. CAGR {d['cagr_5y']}%")
 
-    # 洗浄装置
     cm = CLEANING_MARKET
-    print(f"\n【洗浄装置市場 (TEL CELLESTA)】")
-    print(f"  全体: $3.5B (2023) → $6.9B (2030E)")
-    print(f"  TEL シェア: {cm['players']['TEL (CELLESTA)']['share_2023']}% → "
-          f"{cm['players']['TEL (CELLESTA)']['share_2030']}% (拡大傾向)")
-    print(f"  SiC 単価プレミアム: {cm['sic_premium_x']}× (化学的安定性 → 薬液コスト高)")
+    print(f"\n[Cleaning Equipment Market]")
+    print(f"  Total: $3.5B (2023) → $6.9B (2030E)")
+    print(f"  TEL share: {cm['players']['TEL (CELLESTA)']['share_2023']}% → "
+          f"{cm['players']['TEL (CELLESTA)']['share_2030']}%")
+    print(f"  SiC process premium: {cm['sic_premium_x']}× vs Si (chemical stability)")
 
-    # OSAT
-    print(f"\n【後工程 (OSAT) 市場】")
-    print(f"  総市場: ${OSAT_MARKET['total_2023_B']:.0f}B  CAGR {OSAT_MARKET['cagr_pct']}%")
-    for name, d in OSAT_MARKET["players"].items():
-        print(f"  {name:<14} {d['share']:>2}%")
-
-    print("\n【注目トレンド】")
-    print("  - Au→Cu ワイヤー移行: K&S の Cu 対応装置需要 +15%/y")
-    print("  - Hybrid bonding 普及: Besi の成長加速 (AI チップ積層)")
-    print("  - SiC 洗浄の単価高さ: TEL/Screen の収益性向上ドライバー")
-    print("  - 中国 SiC 内製化: Wolfspeed/ST のシェア侵食リスク 2026–")
+    print(f"\n[Key Technical Trends]")
+    print("  - Au→Cu wire transition: reduces bond loop inductance, improves high-freq. performance")
+    print("  - Hybrid bonding growth: <10µm pitch enables 3D chip stacking for AI/HBM")
+    print("  - SiC cleaning complexity: Piranha+HF+Megasonic required vs standard RCA for Si")
 
 
 def main():

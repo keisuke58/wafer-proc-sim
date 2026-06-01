@@ -760,8 +760,8 @@ elif page == "📈 Market Analysis":
         plt.tight_layout(); st.pyplot(fig2); plt.close()
 
     st.divider()
-    st.markdown("#### 投資観点サマリー")
+    st.markdown("#### Equipment Segment Context")
     col3, col4, col5 = st.columns(3)
-    col3.metric("Disco SiC 依存度", "45%", "最高ピュアプレイ")
-    col4.metric("SiC 市場 CAGR", "27%", "2023-2030")
-    col5.metric("TEL SiC 売上", "$3.15B", "絶対額最大")
+    col3.metric("SiC Market CAGR", "~27%", "2023–2030 (Yole 2024)")
+    col4.metric("Dicing/Grinding SiC exposure", "~45%", "highest process sensitivity")
+    col5.metric("Cleaning SiC premium", "~2.5×", "vs Si (chemical stability)")
