@@ -32,14 +32,18 @@ TARGET_COLS_ALT = ["deletion_fraction", "max_RF2_N"]  # parametric_summary.csv �
 
 def resolve_target_cols(df) -> list[str]:
     """CSVに合わせて TARGET_COLS を動的解決する"""
-    import pandas as pd
     if all(c in df.columns for c in TARGET_COLS):
         return TARGET_COLS
     if all(c in df.columns for c in TARGET_COLS_ALT):
         return TARGET_COLS_ALT
-    # フォールバック: 数値列でFEATURE_COLS以外の最初の2列
     num_cols = df.select_dtypes(include="number").columns.tolist()
     available = [c for c in num_cols if c not in FEATURE_COLS][:2]
+    if len(available) < 2:
+        raise ValueError(
+            f"Cannot resolve 2 target columns from CSV.  "
+            f"Expected one of {TARGET_COLS} or {TARGET_COLS_ALT}.  "
+            f"Found numeric columns: {num_cols}"
+        )
     return available
 
 
@@ -55,26 +59,28 @@ def build_kernel():
 class DicingGPSurrogate:
     """Multi-output GP surrogate (one independent GP per output)."""
 
-    def __init__(self):
+    def __init__(self, target_cols=None):
+        self.target_cols = target_cols or list(TARGET_COLS)
+        n = len(self.target_cols)
         self.scalers_x = StandardScaler()
-        self.scalers_y = [StandardScaler() for _ in TARGET_COLS]
+        self.scalers_y = [StandardScaler() for _ in range(n)]
         self.gps = [
             GaussianProcessRegressor(
                 kernel=build_kernel(),
                 n_restarts_optimizer=10,
                 normalize_y=False,
-                alpha=0.0)
-            for _ in TARGET_COLS]
+                alpha=1e-10)   # small jitter for numerical stability
+            for _ in range(n)]
         self.is_fitted = False
 
     # ── Fit ───────────────────────────────────────────────────────────────────
     def fit(self, X: np.ndarray, Y: np.ndarray):
-        """X: (N, 2), Y: (N, n_targets)."""
+        """X: (N, n_features), Y: (N, n_targets)."""
         Xs = self.scalers_x.fit_transform(X)
-        for i, (gp, scaler) in enumerate(zip(self.gps, self.scalers_y)):
+        for i, (gp, scaler, col) in enumerate(zip(self.gps, self.scalers_y, self.target_cols)):
             ys = scaler.fit_transform(Y[:, i:i+1]).ravel()
             gp.fit(Xs, ys)
-            print(f"  [{TARGET_COLS[i]}] kernel: {gp.kernel_}")
+            print(f"  [{col}] kernel: {gp.kernel_}")
         self.is_fitted = True
         return self
 
@@ -98,12 +104,12 @@ class DicingGPSurrogate:
         loo = LeaveOneOut()
         preds = np.zeros_like(Y)
         for train_idx, test_idx in loo.split(X):
-            tmp = DicingGPSurrogate()
+            tmp = DicingGPSurrogate(self.target_cols)
             tmp.fit(X[train_idx], Y[train_idx])
             preds[test_idx] = tmp.predict(X[test_idx])
 
         metrics = {}
-        for i, col in enumerate(TARGET_COLS):
+        for i, col in enumerate(self.target_cols):
             rmse = np.sqrt(mean_squared_error(Y[:, i], preds[:, i]))
             r2   = r2_score(Y[:, i], preds[:, i])
             metrics[col] = {"rmse": rmse, "r2": r2}
@@ -182,11 +188,13 @@ def main():
     X = df[FEATURE_COLS].values.astype(float)
     Y = df[active_targets].values.astype(float)
 
-    # Normalize stress to GPa-scale for numerical stability
+    # Scale second target to GPa-range for numerical stability.
+    # max_principal_stress_Pa is in Pa → ÷1e9; max_RF2_N is in N → no scaling needed.
     Y_fit = Y.copy()
-    Y_fit[:, 1] = Y[:, 1] / 1e9
+    if active_targets[1] == "max_principal_stress_Pa":
+        Y_fit[:, 1] = Y[:, 1] / 1e9
 
-    model = DicingGPSurrogate()
+    model = DicingGPSurrogate(active_targets)
 
     if args.loo:
         print("\n[*] Running LOO cross-validation...")
