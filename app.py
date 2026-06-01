@@ -857,65 +857,148 @@ d = √(A · t · exp(−Q/k_BT))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Page 10: Market Analysis
+# Page 10: Market Analysis (yfinance live data)
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "📈 Market Analysis":
-    st.title("📈 SiC Equipment Market Context")
-    st.markdown("Application-driven demand for SiC power devices and the corresponding equipment value chain (Yole Développement 2024, SEMI).")
-    with st.expander("📖 Data Sources & Methodology"):
+    st.title("📈 SiC Equipment — Market Context & Live Stock Data")
+    st.markdown(
+        "SiC process equipment value chain: market size projections (Yole 2024 / SEMI) "
+        "combined with **live stock price data** via yfinance."
+    )
+    with st.expander("📖 Data Sources"):
         st.markdown("""
-Market size projections are based on published industry reports:
-
-- **Yole Développement** (2024): SiC power device market by application segment
-- **SEMI** annual semiconductor equipment market data
-- Company annual reports (public filings) for revenue and segment breakdown
-
-**Methodology**:
-- Application split (EV/industrial/telecom) follows Yole 2024 consensus
-- Equipment vendor SiC exposure estimated from public segment disclosures and analyst reports
-- CAGR figures are compound annual growth rates over the 2023–2030 period
-
-*Note: All figures are approximate. Refer to primary sources for investment or business decisions.*
+- **Market projections**: Yole Développement 2024, SEMI annual reports
+- **Stock data**: Yahoo Finance via yfinance (15-min delay for JP stocks, real-time for US)
+- **Tickers**: Disco (6146.T), TEL (8035.T), Screen (7735.T), Lasertec (6920.T), Advantest (6857.T), K&S (KLIC)
+- *All figures approximate. Not financial advice.*
         """)
 
-    import matplotlib.ticker as mticker
+    # ── Live stock data fetch ─────────────────────────────────────────────
+    TICKERS = {
+        "Disco":     {"ticker": "6146.T",  "color": "#ff7f0e", "sic_pct": 45},
+        "TEL":       {"ticker": "8035.T",  "color": "#d62728", "sic_pct": 18},
+        "Screen":    {"ticker": "7735.T",  "color": "#8c564b", "sic_pct": 14},
+        "Lasertec":  {"ticker": "6920.T",  "color": "#9467bd", "sic_pct": 20},
+        "Advantest": {"ticker": "6857.T",  "color": "#2ca02c", "sic_pct": 12},
+        "K&S":       {"ticker": "KLIC",    "color": "#2166ac", "sic_pct": 22},
+    }
 
-    YEARS = np.arange(2022, 2031)
-    SIC_TOTAL = np.array([2.0, 2.5, 3.0, 4.2, 5.8, 7.5, 9.2, 11.0, 13.0])
-    SIC_EV    = np.array([1.1, 1.4, 1.7, 2.4, 3.3, 4.3, 5.3, 6.3,  7.5])
+    period_opt = st.selectbox("Stock chart period", ["3mo", "6mo", "1y", "2y"], index=2)
 
+    @st.cache_data(ttl=900)   # 15-min cache
+    def fetch_stock_data(period):
+        import yfinance as yf
+        import pandas as pd
+        results = {}
+        for name, cfg in TICKERS.items():
+            try:
+                t = yf.Ticker(cfg["ticker"])
+                hist = t.history(period=period)["Close"].dropna()
+                info = t.info
+                results[name] = {
+                    "hist":    hist,
+                    "price":   float(hist.iloc[-1]) if len(hist) > 0 else None,
+                    "PE":      info.get("trailingPE"),
+                    "mcap_B":  (info.get("marketCap") or 0) / 1e12,
+                    "color":   cfg["color"],
+                    "sic_pct": cfg["sic_pct"],
+                }
+            except Exception:
+                results[name] = None
+        return results
+
+    with st.spinner("Fetching live stock data…"):
+        stock_data = fetch_stock_data(period_opt)
+
+    # ── Row 1: Live metrics ───────────────────────────────────────────────
+    st.subheader("Live Metrics (via yfinance)")
+    cols_m = st.columns(len(TICKERS))
+    for i, (name, cfg) in enumerate(TICKERS.items()):
+        d = stock_data.get(name)
+        with cols_m[i]:
+            if d and d["price"]:
+                currency = "¥" if cfg["ticker"].endswith(".T") else "$"
+                st.metric(
+                    name,
+                    f"{currency}{d['price']:,.0f}",
+                    f"P/E {d['PE']:.1f}" if d["PE"] else "P/E N/A"
+                )
+            else:
+                st.metric(name, "N/A")
+
+    st.divider()
+
+    # ── Row 2: Normalised stock chart + SiC bubble chart ─────────────────
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("SiC デバイス市場 ($B)")
-        fig1, ax1 = plt.subplots(figsize=(6, 3.5))
-        ax1.fill_between(YEARS, 0, SIC_EV, alpha=0.7, color="#2196f3", label="EV/HEV")
-        ax1.fill_between(YEARS, SIC_EV, SIC_TOTAL, alpha=0.5, color="#4caf50", label="産業/その他")
-        ax1.plot(YEARS, SIC_TOTAL, "ko-", lw=2, ms=5)
-        cagr = (SIC_TOTAL[-1]/SIC_TOTAL[0])**(1/8)-1
-        ax1.text(2026, 10, f"CAGR\n{cagr*100:.0f}%", fontsize=12, fontweight="bold", color="#d62728")
-        ax1.set_ylabel("Market [$B]"); ax1.legend(fontsize=8); ax1.grid(alpha=0.2)
+        st.subheader("Normalised Stock Performance")
+        fig1, ax1 = plt.subplots(figsize=(6, 3.8))
+        for name, d in stock_data.items():
+            if d and d["hist"] is not None and len(d["hist"]) > 0:
+                norm = d["hist"] / d["hist"].iloc[0] * 100
+                ax1.plot(norm.index, norm.values, lw=2, color=d["color"], label=name)
+        ax1.axhline(100, color="gray", ls="--", lw=1, alpha=0.5)
+        ax1.set_ylabel("Indexed (start=100)", fontsize=10)
+        ax1.set_title(f"Relative Performance ({period_opt})", fontsize=10)
+        ax1.legend(fontsize=8, loc="upper left"); ax1.grid(alpha=0.2)
         plt.tight_layout(); st.pyplot(fig1); plt.close()
 
     with col2:
-        st.subheader("装置メーカー SiC 依存度")
-        companies = ["Disco", "K&S", "TEL", "Screen", "Advantest", "ASML"]
-        sic_pct   = [45, 22, 18, 14, 12, 3]
-        rev_B     = [2.9, 1.4, 17.5, 3.1, 4.2, 28.0]
-        fig2, ax2 = plt.subplots(figsize=(6, 3.5))
-        colors2 = ["#ff7f0e","#9467bd","#d62728","#8c564b","#2ca02c","#2166ac"]
-        for i, (co, sp, rv, col) in enumerate(zip(companies, sic_pct, rev_B, colors2)):
-            ax2.scatter(sp, 18 if co == "Disco" else (15 if co in ["K&S","Advantest"] else 12),
-                        s=rv*15, color=col, alpha=0.8, edgecolors="k", lw=1, zorder=5)
-            ax2.annotate(co, xy=(sp, 18 if co == "Disco" else (15 if co in ["K&S","Advantest"] else 12)),
-                         xytext=(sp+0.5, 18 if co == "Disco" else (15 if co in ["K&S","Advantest"] else 12)+0.3),
-                         fontsize=9)
-        ax2.set_xlabel("SiC exposure [%]"); ax2.set_ylabel("CAGR estimate [%]")
-        ax2.set_title("(bubble size = 2023 revenue)"); ax2.grid(alpha=0.2)
+        st.subheader("P/E vs SiC Exposure")
+        fig2, ax2 = plt.subplots(figsize=(6, 3.8))
+        for name, d in stock_data.items():
+            if d and d["PE"] and d["mcap_B"] > 0:
+                size = max(d["mcap_B"] * 3000, 50)
+                ax2.scatter(d["sic_pct"], d["PE"], s=size,
+                            color=d["color"], alpha=0.8, edgecolors="k", lw=1, zorder=5)
+                ax2.annotate(name,
+                             xy=(d["sic_pct"], d["PE"]),
+                             xytext=(d["sic_pct"] + 0.8, d["PE"] + 1),
+                             fontsize=9)
+        ax2.set_xlabel("SiC process exposure [%]", fontsize=10)
+        ax2.set_ylabel("Trailing P/E", fontsize=10)
+        ax2.set_title("P/E vs SiC Exposure\n(bubble = market cap)", fontsize=10)
+        ax2.grid(alpha=0.2)
         plt.tight_layout(); st.pyplot(fig2); plt.close()
 
     st.divider()
-    st.markdown("#### Equipment Segment Context")
-    col3, col4, col5 = st.columns(3)
-    col3.metric("SiC Market CAGR", "~27%", "2023–2030 (Yole 2024)")
-    col4.metric("Dicing/Grinding SiC exposure", "~45%", "highest process sensitivity")
-    col5.metric("Cleaning SiC premium", "~2.5×", "vs Si (chemical stability)")
+
+    # ── Row 3: SiC market + revenue heatmap ──────────────────────────────
+    col3, col4 = st.columns(2)
+    YEARS = np.arange(2022, 2031)
+    SIC_TOTAL = np.array([2.0, 2.5, 3.0, 4.2, 5.8, 7.5, 9.2, 11.0, 13.0])
+    SIC_EV    = np.array([1.1, 1.4, 1.7, 2.4, 3.3, 4.3, 5.3, 6.3, 7.5])
+
+    with col3:
+        st.subheader("SiC Device Market (Yole 2024)")
+        fig3, ax3 = plt.subplots(figsize=(6, 3.5))
+        ax3.fill_between(YEARS, 0, SIC_EV, alpha=0.7, color="#2196f3", label="EV/HEV")
+        ax3.fill_between(YEARS, SIC_EV, SIC_TOTAL, alpha=0.5, color="#4caf50", label="Industrial/Other")
+        ax3.plot(YEARS, SIC_TOTAL, "ko-", lw=2, ms=5, label="Total")
+        cagr = (SIC_TOTAL[-1] / SIC_TOTAL[1]) ** (1/7) - 1
+        ax3.text(2026.5, 10.5, f"CAGR ~{cagr*100:.0f}%", fontsize=11,
+                 fontweight="bold", color="#d62728")
+        ax3.set_ylabel("Market [$B]"); ax3.legend(fontsize=8); ax3.grid(alpha=0.2)
+        ax3.set_title("SiC Power Device Market 2022–2030", fontsize=10)
+        plt.tight_layout(); st.pyplot(fig3); plt.close()
+
+    with col4:
+        st.subheader("SiC Revenue Exposure by Vendor")
+        valid = {n: d for n, d in stock_data.items() if d and d["mcap_B"] > 0}
+        names_v = list(valid.keys())
+        sic_revs = [valid[n]["mcap_B"] * TICKERS[n]["sic_pct"] / 100 / 10
+                    for n in names_v]   # rough proxy: mcap × SiC% / 10
+        colors_v = [TICKERS[n]["color"] for n in names_v]
+        fig4, ax4 = plt.subplots(figsize=(6, 3.5))
+        bars = ax4.barh(names_v, sic_revs, color=colors_v, alpha=0.85, edgecolor="k", lw=0.7)
+        for bar, v in zip(bars, sic_revs):
+            ax4.text(v + 0.01, bar.get_y() + bar.get_height()/2,
+                     f"~{v:.2f}B", va="center", fontsize=9)
+        ax4.set_xlabel("Est. SiC-related revenue proxy [$ B]", fontsize=9)
+        ax4.set_title("SiC Exposure (market cap × SiC%)", fontsize=10)
+        ax4.grid(alpha=0.2, axis="x")
+        plt.tight_layout(); st.pyplot(fig4); plt.close()
+
+    st.divider()
+    st.caption("Stock data via yfinance (Yahoo Finance). 15-min delay for TSE stocks. "
+               "Market projections: Yole Développement 2024. Not financial advice.")
