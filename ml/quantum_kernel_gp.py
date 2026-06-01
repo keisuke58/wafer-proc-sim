@@ -379,16 +379,125 @@ def plot_prediction_surface(model_q, model_c, X, y, save=True):
 # Main
 # ════════════════════════════════════════════════════════════════════════════
 
+# ════════════════════════════════════════════════════════════════════════════
+# Learning curve ablation
+# ════════════════════════════════════════════════════════════════════════════
+
+def learning_curve_ablation(X: np.ndarray, y: np.ndarray,
+                             n_layers: int = 2,
+                             alpha: float = 1.0,
+                             n_trials: int = 10,
+                             save: bool = True):
+    """
+    Ablation: RMSE vs training-set size N_train for quantum vs classical GP.
+
+    For each N_train in [4, 6, 8, 10, 12, 14]:
+        Repeat n_trials random train/test splits.
+        Record mean ± std RMSE on the held-out test set.
+
+    Research question: at what N does quantum kernel GP match classical?
+    """
+    N_total  = len(X)
+    N_values = [n for n in [4, 6, 8, 10, 12, 14] if n < N_total]
+    rng      = np.random.default_rng(0)
+
+    rmse_q = {n: [] for n in N_values}
+    rmse_c = {n: [] for n in N_values}
+
+    for n_train in N_values:
+        print(f"  N_train={n_train} …", flush=True)
+        for trial in range(n_trials):
+            idx     = rng.permutation(N_total)
+            tr, te  = idx[:n_train], idx[n_train:]
+            if len(te) == 0:
+                continue
+
+            # Quantum GP
+            qgp = QuantumKernelGP(n_layers=n_layers, alpha=alpha)
+            qgp.fit(X[tr], y[tr])
+            mu_q  = qgp.predict(X[te])
+            rmse_q[n_train].append(np.sqrt(np.mean((mu_q - y[te])**2)))
+
+            # Classical GP
+            class _CGP:
+                def __init__(self):
+                    self._gp = build_classical_gp()
+                    self._sx = StandardScaler()
+                    self._sy = StandardScaler()
+                def fit(self, Xtr, ytr):
+                    Xs = self._sx.fit_transform(Xtr)
+                    ys = self._sy.fit_transform(ytr.reshape(-1,1)).ravel()
+                    self._gp.fit(Xs, ys)
+                def predict(self, Xte):
+                    Xs = self._sx.transform(Xte)
+                    ys = self._gp.predict(Xs)
+                    return self._sy.inverse_transform(ys.reshape(-1,1)).ravel()
+
+            cgp = _CGP()
+            cgp.fit(X[tr], y[tr])
+            mu_c  = cgp.predict(X[te])
+            rmse_c[n_train].append(np.sqrt(np.mean((mu_c - y[te])**2)))
+
+    # ── Plot ──────────────────────────────────────────────────────────────────
+    ns  = N_values
+    mq  = np.array([np.mean(rmse_q[n]) for n in ns])
+    sq  = np.array([np.std(rmse_q[n])  for n in ns])
+    mc  = np.array([np.mean(rmse_c[n]) for n in ns])
+    sc  = np.array([np.std(rmse_c[n])  for n in ns])
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(ns, mq, "o-", color="#2166ac", lw=2, ms=7, label="Quantum Kernel GP")
+    ax.fill_between(ns, mq - sq, mq + sq, alpha=0.2, color="#2166ac")
+    ax.plot(ns, mc, "s-", color="#d62728", lw=2, ms=7, label="Classical RBF-GP")
+    ax.fill_between(ns, mc - sc, mc + sc, alpha=0.2, color="#d62728")
+
+    # Annotate crossover if it exists
+    crossover = [i for i in range(len(ns)-1)
+                 if (mq[i] - mc[i]) * (mq[i+1] - mc[i+1]) < 0]
+    if crossover:
+        ci = crossover[0]
+        ax.axvline(ns[ci], color="k", ls=":", lw=1.2)
+        ax.annotate(f"Crossover ~N={ns[ci]}",
+                    xy=(ns[ci], (mq[ci]+mc[ci])/2),
+                    xytext=(ns[ci]+0.5, (mq[ci]+mc[ci])/2 * 1.2),
+                    fontsize=8, arrowprops=dict(arrowstyle="->"))
+
+    ax.set_xlabel("Training set size N")
+    ax.set_ylabel("RMSE [µm]  (mean ± std over trials)")
+    ax.set_title("Learning curves — Quantum vs Classical GP\n"
+                 "(SiC dicing, 4H-SiC experimental data)")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    ax.set_xticks(ns)
+
+    plt.tight_layout()
+    if save:
+        path = os.path.join(OUT_DIR, "quantum_learning_curves.png")
+        plt.savefig(path, dpi=150)
+        print(f"  Saved: {path}")
+    plt.close()
+
+    print("\n  N  |  Quantum RMSE  |  Classical RMSE")
+    print("  " + "-" * 38)
+    for n in ns:
+        print(f"  {n:2d} |  {np.mean(rmse_q[n]):.2f} ± {np.std(rmse_q[n]):.2f} µm  "
+              f"|  {np.mean(rmse_c[n]):.2f} ± {np.std(rmse_c[n]):.2f} µm")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--quick",       action="store_true",
                         help="Skip LOO (just fit + surface plot)")
     parser.add_argument("--kernel-only", action="store_true",
                         help="Only plot kernel matrices, no GP training")
+    parser.add_argument("--ablation",    action="store_true",
+                        help="Run learning curve ablation (quantum vs classical)")
     parser.add_argument("--n-layers",    type=int, default=2,
                         help="ZZFeatureMap layers (default: 2)")
     parser.add_argument("--alpha",       type=float, default=1.0,
                         help="GP noise regularisation (default: 1.0)")
+    parser.add_argument("--n-trials",    type=int, default=10,
+                        help="Trials per N in ablation (default: 10)")
     args = parser.parse_args()
 
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -458,6 +567,21 @@ def main():
     print("\n=== Summary ===")
     for label, (_, _, rmse, r2) in results.items():
         print(f"  {label:15s}  RMSE={rmse:.2f}µm  R²={r2:.3f}")
+
+    # ── Ablation (optional) ───────────────────────────────────────────────────
+    if args.ablation:
+        print("\n--- Learning Curve Ablation ---")
+        print(f"  n_trials={args.n_trials} per N  …")
+        learning_curve_ablation(X, y, n_layers=args.n_layers,
+                                alpha=args.alpha, n_trials=args.n_trials)
+
+
+def main_ablation_only():
+    """Entry point for ablation-only run (skips LOO)."""
+    X, y = load_data()
+    os.makedirs(OUT_DIR, exist_ok=True)
+    print("Learning Curve Ablation (quantum vs classical GP)")
+    learning_curve_ablation(X, y, n_trials=10)
 
 
 if __name__ == "__main__":
