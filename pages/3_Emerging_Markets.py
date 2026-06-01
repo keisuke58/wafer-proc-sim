@@ -16,7 +16,7 @@ st.set_page_config(page_title="Emerging Markets", layout="wide")
 st.title("Emerging Markets — 次世代 SiC / GaN 応用")
 st.caption("ヒューマノイドロボット · 軍用ドローン · eVTOL · LEO衛星 · 系統用BESS")
 
-tab1, tab2, tab3 = st.tabs(["🤖 ロボット & ドローン", "🛰️ 衛星 & 宇宙", "⚡ BESS & グリッド"])
+tab1, tab2, tab3, tab4 = st.tabs(["🤖 ロボット & ドローン", "🛰️ 衛星 & 宇宙", "⚡ BESS & グリッド", "⚛️ 核融合"])
 
 # ══════════════════════════════════════════════════════════════════════════
 # TAB 1 — ロボット & ドローン
@@ -267,3 +267,104 @@ with tab3:
 
     st.info("💡 **SiC 3L-NPC インバータ** は往復効率 93% (Si 90%)。"
             "100MW BESS で年間 **数億円** 相当の追加発電収益。2030年 SiC-BESS 市場 $6.8B 予測。")
+
+# ══════════════════════════════════════════════════════════════════════════
+# TAB 4 — 核融合
+# ══════════════════════════════════════════════════════════════════════════
+with tab4:
+    from fem.fusion_model import (
+        magnet_power_supply, gyrotron_power_supply,
+        radiation_hard_electronics, fusion_semiconductor_summary,
+        FUSION_REACTORS, FUSION_MATERIAL_SUITABILITY, FUSION_MARKET_FORECAST,
+    )
+    import pandas as pd
+
+    st.subheader("核融合炉 × SiC / Ga₂O₃ パワーエレクトロニクス")
+    st.caption("トカマク (ITER/SPARC) · 慣性閉じ込め (NIF) · FRC (Helion)")
+
+    reactor_sel = st.selectbox("核融合炉", list(FUSION_REACTORS.keys()),
+                                format_func=lambda k: FUSION_REACTORS[k]["label"])
+    r_spec = FUSION_REACTORS[reactor_sel]
+    mag   = magnet_power_supply(reactor_sel)
+    gyro  = gyrotron_power_supply(reactor_sel)
+    rad   = radiation_hard_electronics(reactor_sel)
+
+    k = st.columns(5)
+    k[0].metric("核融合出力",   f"{r_spec['fusion_power_MW']} MW")
+    k[1].metric("Q 値",        f"{r_spec['Q_factor']}")
+    k[2].metric("マグネット電源", f"{mag['P_TF_MW']+mag['P_PF_MW']:.0f} MW")
+    k[3].metric("主デバイス",   mag["primary_device"])
+    k[4].metric("状況",        r_spec["status"][:12])
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        # 放射線耐性 (設備室位置)
+        mats  = list(rad["survivability"].keys())
+        years = [min(rad["survivability"][m]["years_to_fail"], 100) for m in mats]
+        colors= ["#4CAF50" if rad["survivability"][m]["survives_10yr"]
+                 else "#e45756" for m in mats]
+        fig = go.Figure(go.Bar(
+            x=mats, y=years,
+            marker_color=colors,
+            text=[f"{'✓' if rad['survivability'][m]['survives_10yr'] else '✗'} {min(rad['survivability'][m]['years_to_fail'],100):.0f}yr"
+                  for m in mats],
+            textposition="outside",
+        ))
+        fig.add_hline(y=10, line_dash="dot", line_color="yellow",
+                      annotation_text="10年 運転目標")
+        fig.update_layout(title=f"設備室 放射線耐性 ({reactor_sel})",
+                          yaxis_title="推定寿命 [年]", yaxis_range=[0, 110],
+                          plot_bgcolor="#111", paper_bgcolor="#111", font_color="white", height=360)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with c2:
+        # 核融合 SiC/Ga₂O₃ 市場予測
+        years_f = [r["year"] for r in FUSION_MARKET_FORECAST]
+        sic_b   = [r["sic_M$"] / 1000 for r in FUSION_MARKET_FORECAST]
+        ga2o3_b = [r["ga2o3_M$"] / 1000 for r in FUSION_MARKET_FORECAST]
+
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(x=years_f, y=sic_b, name="SiC [$B]",
+                                   mode="lines+markers",
+                                   line=dict(color="#2166ac", width=3)))
+        fig2.add_trace(go.Scatter(x=years_f, y=ga2o3_b, name="Ga₂O₃ [$B]",
+                                   mode="lines+markers",
+                                   line=dict(color="#7b2d8b", width=3)))
+        fig2.update_layout(title="核融合 半導体市場予測 (商業炉普及シナリオ)",
+                           xaxis_title="年", yaxis_title="市場規模 [$B]",
+                           plot_bgcolor="#111", paper_bgcolor="#111", font_color="white", height=360)
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # 材料適合度テーブル
+    st.markdown("#### 材料別 核融合適合度")
+    rows = []
+    for mat, m in sorted(FUSION_MATERIAL_SUITABILITY.items(),
+                          key=lambda x: x[1]["score"], reverse=True):
+        rows.append({
+            "材料": mat,
+            "電圧範囲": m["voltage_range"],
+            "核融合用途": " / ".join(m["fusion_apps"][:2]),
+            "優位点": m["advantage"][:40],
+            "成熟度": m["readiness"],
+            "スコア": "⭐" * m["score"],
+        })
+    st.dataframe(pd.DataFrame(rows).set_index("材料"), use_container_width=True)
+
+    st.markdown(f"""
+#### サブシステム別 半導体要件 ({r_spec['label']})
+
+| サブシステム | 電力 | デバイス | 電圧 | チップ数 |
+|---|---|---|---|---|
+| TF コイル電源 | {mag['P_TF_MW']:.0f} MW | **{mag['primary_device']}** | {mag['device_voltage_kV']:.1f} kV | {mag['total_chips']} |
+| PF コイル電源 | {mag['P_PF_MW']:.0f} MW | **{mag['primary_device']}** | {mag['device_voltage_kV']:.1f} kV | — |
+| ジャイロトロン | {gyro.get('P_ECRH_MW', 0)} MW | **Ga₂O₃** | 80 kV | {gyro.get('total_chips', 0)} |
+    """)
+
+    st.warning(
+        "⚛️ **核融合 × Ga₂O₃ が最重要**\n\n"
+        "ジャイロトロン電源 (80kV DC) と HTS マグネット電源 (10kV) は "
+        "**Ga₂O₃ の絶縁破壊電界 8 MV/cm** がなければ実現困難。\n"
+        "SiC は設備室の低放射線環境 (補助電源・制御系) で活躍。\n"
+        "2040年に商業炉 50基なら SiC $30B + Ga₂O₃ $15B の巨大市場。"
+    )
