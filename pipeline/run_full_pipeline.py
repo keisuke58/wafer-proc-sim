@@ -184,6 +184,189 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
                     "gpu_equip_pct": gpu["equip_pct_bom"]})
 
     # ════════════════════════════════════════════════════════════════════
+    step(10, "Lam Research プラズマエッチ — CD → プロファイル → ALD ライナー")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.lam_research_model import full_pipeline as lam_full
+
+    lam = lam_full(feature_nm=node_nm * 7.0, aspect_ratio=12.0,
+                   material="Si", precursor="TMA")
+    ok(f"ER={lam['ER_nm_min']:.0f} nm/min  "
+       f"ARDE 抑制={lam['ard_suppression_pct']:.1f}%  "
+       f"CD バイアス={lam['CD_bias_nm']:.2f} nm")
+    ok(f"ALD GPC={lam['ALD_GPC_A_cycle']:.3f} Å/cycle  "
+       f"ライナー 2nm = {lam['liner_cycles_for_2nm']} cycles")
+    results.update({"lam_ER_nm_min": lam["ER_nm_min"],
+                    "lam_CD_bias_nm": lam["CD_bias_nm"],
+                    "lam_ALD_GPC": lam["ALD_GPC_A_cycle"]})
+
+    # ════════════════════════════════════════════════════════════════════
+    step(11, "AMAT CMP + イオン注入 → 活性化")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.amat_model import full_pipeline as amat_full
+
+    amat = amat_full(node_nm=node_nm, mat_stack="SiO2")
+    ok(f"PECVD dep={amat['pecvd_dep_rate_nm_min']:.0f} nm/min  "
+       f"CMP MRR={amat['cmp_mrr_nm_min']:.0f} nm/min  "
+       f"ディッシング={amat['dishing_nm']:.1f} nm")
+    ok(f"注入 Rp={amat['implant_Rp_nm']:.1f} nm  "
+       f"活性化率={amat['activation_fraction']*100:.2f}%")
+    results.update({"amat_cmp_mrr": amat["cmp_mrr_nm_min"],
+                    "amat_dishing_nm": amat["dishing_nm"],
+                    "amat_activation": amat["activation_fraction"]})
+
+    # ════════════════════════════════════════════════════════════════════
+    step(12, "Samsung / SK Hynix HBM → NVIDIA GPU ルーフライン")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.sk_hynix_model import hbm3e_bandwidth, hbm_stack_height
+    from fem.samsung_process_model import hbm3_tsv_yield
+    from fem.nvidia_gpu_model import ai_roofline, GPU_SPECS
+
+    hbm_bw  = hbm3e_bandwidth("HBM3E_12Hi", n_stacks=6)
+    hbm_ht  = hbm_stack_height("HBM3E_12Hi")
+    tsv_yld = hbm3_tsv_yield("HBM3E_12Hi")
+    roofline= ai_roofline(tflops=GPU_SPECS["H100_SXM"]["tflops_fp16"],
+                           hbm_bw_GBs=hbm_bw["BW_GBs_per_stack"] * 6,
+                           arithmetic_intensity=250.0)
+    ok(f"HBM3E 6×スタック BW={hbm_bw['BW_GBs_per_stack']*6:.0f} GB/s "
+       f"= {hbm_bw['BW_TBs']*6:.2f} TB/s  "
+       f"スタック高={hbm_ht['total_height_um']:.0f} µm")
+    ok(f"TSV 歩留まり={tsv_yld['tsv_yield_pct']:.2f}%  "
+       f"ルーフライン AI=250 FLOP/B → {roofline['attainable_tflops']:.0f} TFLOPS "
+       f"({roofline['bound']}-bound)")
+    results.update({"hbm_BW_TBs": hbm_bw["BW_TBs"] * 6,
+                    "tsv_yield_pct": tsv_yld["tsv_yield_pct"],
+                    "roofline_tflops": roofline["attainable_tflops"],
+                    "roofline_bound": roofline["bound"]})
+
+    # ════════════════════════════════════════════════════════════════════
+    step(13, "Terafab — 垂直統合メガFab 生産目標 + 日本装置波及")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.terafab_model import production_target, yield_chain, japan_impact_analysis
+
+    tf_prod  = production_target()
+    tf_chain = yield_chain()
+    tf_final_yield = list(tf_chain.values())[-1]["cumulative"]
+    tf_imp   = japan_impact_analysis()
+    ok(f"CapEx $119B → ウェーハ: {tf_prod['wafers_per_day']:,} 枚/日  "
+       f"(TSMC比 {tf_prod['wafers_per_day']/60000*100:.0f}%)")
+    ok(f"宇宙向け: {tf_prod['space']['n_chips']/1e6:.0f}M 枚  "
+       f"地上向け: {tf_prod['ground']['n_chips']/1e6:.0f}M 枚  "
+       f"合算: {tf_prod['total_tflops_B']:.0f} B-TFLOPS")
+    ok(f"垂直統合 総歩留まり: {tf_final_yield*100:.1f}%  "
+       f"日本装置需要: ${tf_imp['total_demand_B']:.0f}B")
+    results.update({
+        "terafab_chips_needed": tf_prod["n_chips_needed"],
+        "terafab_wpd":          tf_prod["wafers_per_day"],
+        "terafab_total_yield":  tf_final_yield,
+        "terafab_japan_B":      tf_imp["total_demand_B"],
+    })
+
+    # ════════════════════════════════════════════════════════════════════
+    step(14, "量子コンピュータ — Si Qubit + Surface Code QEC")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.quantum_computing_model import (si_spin_qubit_coherence,
+                                              transmon_qubit,
+                                              surface_code_overhead,
+                                              si_qubit_wafer_integration)
+
+    si_q  = si_spin_qubit_coherence(rms_nm=0.1, n_imp_cm2=1e10, B_mT=1.0)
+    tm_q  = transmon_qubit(EJ_GHz=25.0, EC_GHz=0.25)
+    qec   = surface_code_overhead(p_phys=0.001)
+    integ = si_qubit_wafer_integration(qubit_pitch_um=50.0)
+    mc    = qec.get("min_config", {})
+    ok(f"Si spin qubit: T1={si_q['T1_us']:.0f}µs  T2={si_q['T2_us']:.0f}µs  "
+       f"f_q={si_q['f_q_GHz']:.3f} GHz")
+    ok(f"Transmon: f01={tm_q['f_01_GHz']:.2f} GHz  "
+       f"|α|={tm_q['alpha_MHz']:.0f} MHz  T1={tm_q['T1_us']:.0f}µs")
+    if mc:
+        ok(f"Surface Code (p=0.1%): d={mc['d']}  "
+           f"物理/論理={mc['n_phys']} qubit  p_L={mc['p_L']:.2e}")
+    ok(f"300mm ウェーハ Si qubit (50µm ピッチ): {integ['n_qubits_yield']:,} qubit")
+    results.update({
+        "si_qubit_T1_us":   si_q["T1_us"],
+        "si_qubit_T2_us":   si_q["T2_us"],
+        "transmon_f01_GHz": tm_q["f_01_GHz"],
+        "qec_d":            mc.get("d", 0),
+        "qec_n_phys":       mc.get("n_phys", 0),
+        "wafer_qubits":     integ["n_qubits_yield"],
+    })
+
+    # ════════════════════════════════════════════════════════════════════
+    step(15, "Hyperscaler + Tesla — カスタムシリコン競争 & ウェーハ需要")
+    # ════════════════════════════════════════════════════════════════════
+    from fem.hyperscaler_model import (ASIC_SPECS, HYPERSCALER_CAPEX,
+                                        wafer_demand, tco_analysis,
+                                        tesla_fsd_inference_demand)
+
+    total_capex_B = sum(v["capex_B"] for v in HYPERSCALER_CAPEX.values())
+    total_wpd     = sum(wafer_demand(c, v)["wafers_per_day"]
+                        for c, v in HYPERSCALER_CAPEX.items())
+    # Tesla AI5 最高効率
+    ai5_eff = (ASIC_SPECS["Tesla AI5"]["tflops_bf16"] /
+               ASIC_SPECS["Tesla AI5"]["tdp_W"])
+    tpu_eff = (ASIC_SPECS["Google TPU v6e\n(Trillium)"]["tflops_bf16"] /
+               ASIC_SPECS["Google TPU v6e\n(Trillium)"]["tdp_W"])
+    # Tesla FSD 需要
+    tesla_dem = tesla_fsd_inference_demand()
+    ok(f"Hyperscaler 総 CapEx: ${total_capex_B:.0f}B  "
+       f"TSMC 推定需要: {total_wpd:,} ウェーハ/日")
+    ok(f"Tesla AI5: {ai5_eff:.1f} TFlops/W  "
+       f"Google TPU v6e: {tpu_eff:.1f} TFlops/W  "
+       f"(NVIDIA H100: 1.4 TFlops/W)")
+    ok(f"Tesla AI5 年間需要: {tesla_dem['total_chips']:,} 枚 → "
+       f"{tesla_dem['wafers_needed']:,} 枚 2nm ウェーハ (${tesla_dem['wafer_cost_B']:.1f}B)")
+    results.update({
+        "hyperscaler_capex_B":   total_capex_B,
+        "hyperscaler_tsmc_wpd":  total_wpd,
+        "tesla_ai5_eff":         ai5_eff,
+        "tesla_ai5_wafers":      tesla_dem["wafers_needed"],
+        "tesla_fsd_chips":       tesla_dem["n_chips_vehicle"],
+    })
+
+    # ── Step 16: AI DC × SiC ─────────────────────────────────────────
+    step(16, "AI DC × SiC パワーモデル")
+    from fem.ai_datacenter_model import (
+        server_power, sic_wafer_demand_from_ai, sic_vs_si_tco,
+        ai_power_and_sic_market_forecast,
+    )
+    sv_h100 = server_power("H100_SXM5")
+    ai_wd   = sic_wafer_demand_from_ai()
+    tco_100 = sic_vs_si_tco(100.0, years=5)
+    fc_2030 = next(r for r in ai_power_and_sic_market_forecast() if r["year"] == 2030)
+    ok(f"H100 サーバー IT={sv_h100['p_server_it_W']/1000:.1f}kW  "
+       f"PSU損失={sv_h100['p_loss_W']:.0f}W  "
+       f"AI SiC需要={ai_wd['wafers_per_day']:.0f} wafers/day")
+    ok(f"100MW DC SiC vs Si: 回収{tco_100['payback_years']:.1f}年  "
+       f"CO2削減{tco_100['co2_reduction_tpa']:,.0f}t/年")
+    ok(f"2030 AI DC予測: {fc_2030['ai_avg_power_GW']}GW  "
+       f"SiC市場 ${fc_2030['sic_market_B$']:.1f}B")
+    results.update({
+        "ai_server_it_kw":     sv_h100["p_server_it_W"] / 1000,
+        "ai_sic_wpd":          ai_wd["wafers_per_day"],
+        "ai_dc_tco_payback":   tco_100["payback_years"],
+        "ai_sic_2030_B":       fc_2030["sic_market_B$"],
+    })
+
+    # ── Step 17: EV × SiC ─────────────────────────────────────────────
+    step(17, "EV × SiC パワーエレクトロニクス")
+    from fem.ev_sic_model import switching_loss, thermal_model, ev_sic_demand
+    r_sic = switching_loss("SiC_MOSFET_1200V", "BEV_800V")
+    r_si  = switching_loss("Si_IGBT_1200V",    "BEV_800V")
+    th    = thermal_model(r_sic["P_total_W"])
+    dem   = ev_sic_demand()
+    ok(f"BEV 800V インバータ: SiC={r_sic['P_total_W']:.0f}W  "
+       f"Si={r_si['P_total_W']:.0f}W  "
+       f"Tj(SiC)={th['Tj_C']:.0f}°C ({'Safe' if th['safe'] else 'Over'})")
+    ok(f"EV SiC 需要: {dem['total_chips_M']:.0f}M チップ/年  "
+       f"→ {dem['wafers_per_day']:.0f} wafers/day")
+    results.update({
+        "ev_sic_loss_W":    r_sic["P_total_W"],
+        "ev_si_loss_W":     r_si["P_total_W"],
+        "ev_Tj_C":          th["Tj_C"],
+        "ev_sic_wpd":       dem["wafers_per_day"],
+    })
+
+    # ════════════════════════════════════════════════════════════════════
     # サマリー
     # ════════════════════════════════════════════════════════════════════
     elapsed = time.time() - t0
@@ -203,6 +386,24 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
         ("CPGD",                 f"$ {results['cpgd_usd']:.2f}"),
         ("SoC タイミング yield",  f"{results['soc_timing_yield']:.2f} %"),
         ("GPU 装置コスト比",      f"{results['gpu_equip_pct']:.1f} %"),
+        ("Lam CD バイアス",        f"{results.get('lam_CD_bias_nm', 0):.2f} nm  ER={results.get('lam_ER_nm_min', 0):.0f} nm/min"),
+        ("AMAT 活性化率",         f"{results.get('amat_activation', 0)*100:.2f} %"),
+        ("HBM3E BW (6スタック)", f"{results.get('hbm_BW_TBs', 0):.2f} TB/s"),
+        ("GPU ルーフライン",      f"{results.get('roofline_tflops', 0):.0f} TFLOPS ({results.get('roofline_bound', '-')})"),
+        ("Terafab 必要ウェーハ/日", f"{results.get('terafab_wpd', 0):,} 枚"),
+        ("Terafab 総歩留まり",    f"{results.get('terafab_total_yield', 0)*100:.1f} %"),
+        ("日本装置 波及需要",     f"${results.get('terafab_japan_B', 0):.0f}B"),
+        ("Si Qubit T2",          f"{results.get('si_qubit_T2_us', 0):.0f} µs"),
+        ("QEC 物理/論理 qubit",  f"{results.get('qec_n_phys', 0)} (d={results.get('qec_d', 0)})"),
+        ("300mm ウェーハ Qubit", f"{results.get('wafer_qubits', 0):,} qubit"),
+        ("Hyperscaler CapEx",    f"${results.get('hyperscaler_capex_B', 0):.0f}B"),
+        ("TSMC 推定需要",         f"{results.get('hyperscaler_tsmc_wpd', 0):,} ウェーハ/日"),
+        ("Tesla AI5 効率",        f"{results.get('tesla_ai5_eff', 0):.1f} TFlops/W"),
+        ("Tesla FSD 年間チップ",  f"{results.get('tesla_fsd_chips', 0):,} 枚"),
+        ("AI DC SiC ウェーハ/日", f"{results.get('ai_sic_wpd', 0):.0f} 枚"),
+        ("AI DC SiC 回収期間",   f"{results.get('ai_dc_tco_payback', 0):.1f} 年"),
+        ("EV SiC 損失",          f"{results.get('ev_sic_loss_W', 0):.0f} W (Tj={results.get('ev_Tj_C', 0):.0f}°C)"),
+        ("EV SiC ウェーハ/日",   f"{results.get('ev_sic_wpd', 0):.0f} 枚"),
     ]
     for k, v in summary:
         print(f"  {k:<24} {BOLD}{v}{RESET}")
