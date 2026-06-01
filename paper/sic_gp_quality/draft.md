@@ -376,12 +376,14 @@ to any precision machining dataset with heterogeneous measurement quality.
 [1]  Kimoto, T., Cooper, J.A. (2014). Fundamentals of Silicon Carbide Technology.
      Wiley-IEEE Press. ISBN 978-1-118-31352-7.
 
-[2]  [Author names TBD from PDF]. Processing Characteristics of Ultra-Precision
-     Cutting of 4H-SiC Wafers by Dicing Blade. Micromachines 2026, 17(2), 187.
+[2]  Wang, Y.; Li, Z.; Chen, F.; Xu, Z. Processing Characteristics of
+     Ultra-Precision Cutting of 4H-SiC Wafers by Dicing Blade.
+     Micromachines 2026, 17(2), 187.
      https://doi.org/10.3390/mi17020187
 
-[3]  [Author names TBD from PDF]. High-Speed Dicing of SiC Wafers with 0.048mm
-     Diamond Blades via Rolling-Slitting. Materials 2022, 15(22), 8083.
+[3]  Feng, Y.; Li, K.; Dou, Z.; Zhang, Z.; Guo, B. High-Speed Dicing of SiC
+     Wafers with 0.048 mm Diamond Blades via Rolling-Slitting.
+     Materials 2022, 15(22), 8083.
      https://doi.org/10.3390/ma15228083
 
 [4]  Shahriari, B., Swersky, K., Wang, Z., Adams, R.P., de Freitas, N. (2016).

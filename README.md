@@ -1,150 +1,34 @@
 # wafer-proc-sim
 
-**Physics-informed ML for SiC wafer process simulation — full front-end to back-end pipeline**
+**Physics-informed surrogate modeling and process optimization for semiconductor wafer dicing**
 
-Keisuke Nishioka · Keio University / Leibniz Universität Hannover
-
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/)
-[![Physics Tests](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495460.svg)](https://doi.org/10.5281/zenodo.20495460)
-[![Method DOI](https://img.shields.io/badge/Method_DOI-10.5281%2Fzenodo.18790007-blue)](https://doi.org/10.5281/zenodo.18790007)
-
-> End-to-end pipeline: ABAQUS FEM → GP surrogate → TMCMC Bayesian inference → TEL/Disco/ASML/Advantest device models → OSAT back-end → quantitative validation against published literature.
 
 ---
 
-## Status
+## Overview
 
-### Front-End (ダイシング・研削)
+`wafer-proc-sim` is an open-source framework for **4H-SiC blade dicing process optimization**, combining physics-based simulation, heteroscedastic Gaussian process surrogates, and Bayesian optimization.
 
-| Component | Status | Key result |
-|---|---|---|
-| Experimental data (Micro2026 + Mat2022) | ✅ | 26 data points, 4 features |
-| 4-feature GP surrogate | ✅ | LOO-RMSE = 2.56 µm, R² = 0.55 |
-| Fusion GP (exp + FEM) | ✅ | LOO-RMSE = 2.38 µm, R² = 0.64 (+16%) |
-| Sensitivity analysis (Sobol) | ✅ | depth 78%, feed 25%, blade_W ≪ |
-| Pareto optimisation (chipping vs MRR) | ✅ | 97.5% of parameter space safe |
-| TMCMC calibration | ✅ | MAP error < 2% vs ground truth |
-| 2D/3D FEM blade dicing | ✅ | Drucker-Prager + damage, 5 jobs 80–360 µm |
-| FNO surrogate | ✅ | 0.07 ms/field, 6000× faster than FEM |
-| Laser grooving FEM | ✅ | ns/ps/fs regimes, Beer-Lambert ablation |
-| Plasma Bosch model | ✅ | ARDE + pulsed plasma + Weibull + Low-k |
-| Hybrid NSGA-II optimisation | ✅ | 4-objective, delamination constraint |
-| 2nm thin-wafer validation | ✅ | ns fails / ps+fs pass @ 50 µm |
+Developed to support:
 
-### Fab Process (TEL / ASML)
-
-| Component | Status | Key result |
-|---|---|---|
-| TEL ALD model | ✅ | GPC, ALD window, EOT vs cycles |
-| TEL Deal-Grove (SiC oxidation) | ✅ | 100× slower than Si, Arrhenius |
-| TEL RIE damage model | ✅ | CF₄/SF₆/Cl₂, damage depth → Dit |
-| TEL CMP + Lasertec inspection | ✅ | Preston eq. + defect detection |
-| **TEL Cleaning (CELLESTA)** | ✅ | Post-CMP / Post-Dicing / Pre-Gate, H₂水追加, Dit → µ_ch |
-| ASML EUV exposure | ✅ | Aerial image, flare, NILS, CD budget |
-| SiC MOSFET pipeline | ✅ | Disco → TEL → Advantest 一気通貫 |
-
-### Test / Ecosystem
-
-| Component | Status | Key result |
-|---|---|---|
-| Advantest ATE model | ✅ | V_th/R_on/BV_DSS test, yield, CPGD |
-| Disco DCF valuation | ✅ | 3-scenario, sensitivity (Disco 6146) |
-| Semiconductor ecosystem | ✅ | NVIDIA/TSMC/Samsung/Kioxia/ソシオネクスト |
-| Quantum defect models | ✅ | ODMR / NEGF / Keldysh / Lindblad / QEC |
-
-### Back-End / Validation (後工程・検証)
-
-| Component | Status | Key result |
-|---|---|---|
-| **Wire bonding model** | ✅ | Au/Cu/Al Weibull + IMC (Breach 2004) + Coffin-Manson |
-| **Package stress model** | ✅ | Timoshenko warpage + Suhir CTE + Engelmaier fatigue |
-| **Quantitative validation** | ✅ | 5 モデル vs 文献: RMSE / MAPE / R² / KS 統計 |
+> **"Data Quality-Aware Heteroscedastic Gaussian Process Surrogate  
+> for 4H-SiC Blade Dicing Process Optimization"**  
+> K. Nishioka et al. — *Precision Engineering* (submitted)
 
 ---
 
 ## Key Results
 
-### Validation Summary (Sim vs Literature)
+| Method | LOO RMSE | LOO R² | n |
+|--------|----------|--------|---|
+| Homoscedastic GP (all grades) | 3.12 µm | 0.34 | 25 |
+| **Heteroscedastic GP (Grade A)** | **1.62 µm** | **0.80** | **11** |
+| GP + EnKF (real-time) | 1.54 µm | — | 80 wafers sim |
 
-| Model | RMSE | MAPE | R² | Status |
-|---|---|---|---|---|
-| Blade Chipping | 2.35 µm | 14.3% | 0.978 | PASS |
-| Wire Bond Weibull | KS=0.23 | η err 5.4% | — | PASS |
-| Au-Al IMC Growth | 0.005 µm | **2.7%** | 0.9997 | PASS |
-| Package Warpage | 1.9 µm | **6.1%** | 0.9998 | PASS |
-| SiC µ_ch vs Dit | — | 133% | 0.64 | WARN* |
-
-*WARN: 既存モデルはバルク移動度計算。反転チャンネル移動度 (20–80 cm²/Vs) には界面散乱モデルの追加が必要。
-
-### Cleaning → Dit → µ_ch Pipeline
-
-| Sequence | Carbon removal | Metal | Particle | Dit contrib. |
-|---|---|---|---|---|
-| Post-CMP (H₂水+Megasonic) | 64.7% | 99.9% | 100.0% | 1.6e+12 |
-| Post-Dicing (H₂水+Megasonic) | 60.8% | 99.9% | 99.9% | 1.8e+12 |
-| Pre-Gate Si (RCA) | 90.3% | 99.4% | 95.5% | 2.0e+12 |
-| **Pre-Gate SiC (Piranha+HF+SC2+O₃+HF)** | **100.0%** | **99.7%** | 91.9% | **7.2e+09** |
-
-SiC 最適化シーケンスで Dit を Si RCA 比 **1/280** に低減。
-
-### Wire Bonding / Package (Au wire / AlN substrate)
-
-| Metric | Value |
-|---|---|
-| Pull strength (mean) | 6.6 g (Weibull η=7.0, β=8.5) |
-| IMC thickness @ 125°C/1000h | 0.293 µm (Breach 2004 実測: 0.29 µm ✅) |
-| Heel crack fatigue | ~50,000 cycles @ ΔT=100K |
-| Parasitic inductance | 0.986 nH (2mm loop, 200µm height) |
-| Die stress (AlN substrate) | 42.7 MPa (CTE mismatch 0.5 ppm/K) |
-| Solder fatigue (Cu DBC) | 600k cycles @ ΔT=100K |
-
-### GP Surrogate Performance
-
-| Version | N | LOO-RMSE | R² |
-|---|---|---|---|
-| v1 | 18 | 2.81 µm | 0.58 |
-| v2 | 26 | 2.56 µm | 0.55 |
-| fusion | 26+5 | **2.38 µm** | **0.64** |
-
----
-
-## Full Pipeline
-
-```
-[Front-End]
-  Experimental data (Micro2026/Mat2022)
-  ABAQUS FEM (2D/3D blade dicing, laser grooving, plasma Bosch)
-        ↓
-  GP Surrogate + FNO → Sobol sensitivity → Pareto (chipping vs MRR)
-  TMCMC calibration → real-time recipe correction
-
-[Fab Process]
-  ASML EUV exposure
-        ↓
-  TEL CMP → 【TEL 洗浄 Post-CMP】
-        ↓
-  Disco Dicing → 【TEL 洗浄 Post-Dicing】
-        ↓
-  【TEL 洗浄 Pre-Gate】→ TEL Deal-Grove → TEL ALD (HfO₂/Al₂O₃)
-        ↓
-  SiC MOSFET (Dit → µ_ch → V_th → R_on)
-        ↓
-  Advantest ATE (yield, CPGD, wafer map)
-
-[Back-End / OSAT]
-  Die attach (Ag sinter / SAC305)
-        ↓
-  Wire bonding (Au/Cu/Al) → IMC growth → Weibull pull strength
-        ↓
-  Package stress (Timoshenko warpage, Engelmaier fatigue)
-        ↓
-  Thermal cycling reliability → MTTF
-
-[Validation]
-  Sim vs Micro2026 / Breach2004 / Kimoto2014 / MIL-STD-883 / JEDEC JEP95
-```
+**Core finding**: 11 high-quality datapoints outperform 25 mixed-quality datapoints.
+Data quality stratification dominates data quantity for small-n process surrogates.
 
 ---
 
@@ -152,186 +36,107 @@ SiC 最適化シーケンスで Dit を Si RCA 比 **1/280** に低減。
 
 ```
 wafer-proc-sim/
-├── fem/
-│   ├── dicing_blade_2d.py          # ABAQUS 2D parametric: Drucker-Prager + damage
-│   ├── dicing_blade_3d.py          # 3D validation model
-│   ├── grinding_warpage_2d/3d.py   # SiC back-grinding warpage
-│   ├── kabra_thermal_2d.py         # KABRA® TAIKO® thermal model
-│   ├── laser_groove_thermal_2d.py  # Laser grooving: ns/ps/fs Beer-Lambert
-│   ├── plasma_bosch_model.py       # Bosch DRIE: ARDE + pulsed plasma
-│   ├── tel_process_model.py        # ALD / Deal-Grove / RIE → SiC MOSFET µ_ch
-│   ├── tel_cmp_lasertec.py         # CMP Preston eq. + Lasertec inspection
-│   ├── tel_cleaning_model.py       # Post-CMP/Dicing/Pre-Gate → Dit (H₂水対応)
-│   ├── asml_model.py               # EUV aerial image + flare + CD budget
-│   ├── advantest_model.py          # ATE: V_th/R_on/BV_DSS + yield + CPGD
-│   ├── semiconductor_ecosystem.py  # NVIDIA/TSMC/Samsung/Kioxia エコシステム
-│   └── backend_model.py            # Wire bonding + package stress (NEW)
+├── fem/                        # Physics simulation models
+│   ├── dicing_blade_2d.py      # 2D FEM blade dicing
+│   ├── dicing_blade_3d.py      # 3D FEM blade dicing
+│   ├── crystal_anisotropy.py   # 4H-SiC anisotropy
+│   ├── cfrp_cutting_model.py   # CFRP cutting (milling/drilling/AWJ)
+│   ├── cfrp_defect_model.py    # CFRP NDT physics (5 methods)
+│   └── [30+ industry models]   # Market and competitive analysis
 ├── ml/
-│   ├── train_from_experimental.py  # GP surrogate (26 pts, LOO R²=0.55)
-│   ├── train_fusion_gp.py          # Fusion GP exp+FEM (R²=0.64)
-│   ├── multifidelity_gp.py         # AR1 co-kriging
-│   ├── active_learning.py          # EI-based next experiment
-│   ├── anomaly_detection.py        # GP z-score | IForest | Shewhart
-│   ├── sensitivity_analysis.py     # Sobol indices
-│   └── surrogate_fno_demo.py       # FNO: params → 2D stress field (0.07ms)
-├── optimization/
-│   ├── tmcmc_dicing.py             # TMCMC inference (MAP err < 2%)
-│   ├── pareto_front.py             # Chipping vs MRR Pareto
-│   ├── hybrid_process_opt.py       # NSGA-II 4-objective + delamination
-│   └── realtime_recipe.py          # Sensor → TMCMC → GP → recipe
-├── validation/
-│   ├── experimental_data.py        # Micro2026 + Mat2022 (26 pts)
-│   ├── validate_trends.py          # Qualitative + Pearson trend check
-│   ├── thin_wafer_sweep.py         # 2nm node / 50µm wafer sweep
-│   └── quantitative_validation.py  # RMSE/MAPE/R²/KS vs 5 literature sources (NEW)
+│   ├── train_from_experimental.py  # Heteroscedastic GP surrogate
+│   ├── cfrp_defect_detection.py    # CFRP anomaly + classification + sizing
+│   └── quantum_kernel_advanced.py  # Quantum kernel GP (experimental)
 ├── pipeline/
-│   └── run_full_pipeline.py        # End-to-end runner
-├── data/materials/
-│   └── material_properties.py      # Si, 4H-SiC, GaN — elastic + fracture
-└── results/                        # Generated plots and model files
+│   └── sic_dicing_pipeline.py  # End-to-end: GP + EnKF + BO
+├── validation/
+│   └── experimental_data.py    # Curated SiC dicing dataset (quality-graded)
+├── paper/
+│   └── sic_gp_quality/         # Manuscript draft + reproducible figures
+│       ├── draft.md            # Full paper draft
+│       ├── gen_figures.py      # Reproduce Figures 1–2
+│       └── figures/tiff_300dpi/  # 300 dpi TIFF for journal submission
+└── results/                    # Generated figures
 ```
 
 ---
 
-## Quickstart
+## Quick Start
 
 ```bash
 git clone https://github.com/keisuke58/wafer-proc-sim.git
 cd wafer-proc-sim
-pip install scikit-learn joblib numpy pandas matplotlib scipy
+pip install numpy scipy matplotlib pandas scikit-learn joblib
+```
 
-# --- Front-End ---
-python pipeline/data_pipeline.py                    # Full GP pipeline
-python ml/train_fusion_gp.py --loo --plot           # Fusion GP (R²=0.64)
-python ml/sensitivity_analysis.py --plot            # Sobol: depth 78%
-python optimization/pareto_front.py --plot          # Chipping vs MRR Pareto
-python ml/active_learning.py --n-suggest 5          # Next EI experiment
-python optimization/realtime_recipe.py --chip 10.0  # TMCMC recipe correction
-python ml/surrogate_fno_demo.py                     # FNO 0.07ms/field
+**Reproduce paper figures:**
+```bash
+python paper/sic_gp_quality/gen_figures.py
+```
 
-# --- Fab Process ---
-python fem/tel_cleaning_model.py                    # Cleaning → Dit → µ_ch
-python fem/tel_process_model.py --pipeline          # ALD/oxide/RIE MOSFET
-python fem/tel_cmp_lasertec.py                      # CMP + inspection
-python fem/asml_model.py                            # EUV CD budget
-python fem/advantest_model.py --full-pipeline       # ATE yield + economics
+**Run full GP + EnKF + BO pipeline:**
+```bash
+python pipeline/sic_dicing_pipeline.py
+```
 
-# --- Back-End / Validation ---
-python fem/backend_model.py                         # Wire bond + pkg stress
-python validation/quantitative_validation.py        # Sim vs 5 literature sources
+**Train heteroscedastic GP with quality filter:**
+```bash
+python ml/train_from_experimental.py --loo --quality A
+# --quality: all | AB | A
 ```
 
 ---
 
-## Materials
+## Dataset
 
-| Material | E [GPa] | K_Ic [MPa√m] | G_c [J/m²] | σ_t [MPa] | CTE [ppm/K] |
-|---|---|---|---|---|---|
-| 4H-SiC | 400 | 2.8 | 19.6 | 350 | 4.0 |
-| Si | 130 | 0.83 | 5.3 | 150 | 2.6 |
-| GaN | 295 | 0.9 | 2.7 | 100 | 5.6 |
-| AlN (substrate) | 320 | — | — | — | 4.5 |
-| Cu (DBC/leadframe) | 117 | — | — | — | 17.0 |
+Curated from two open-access publications:
+
+| Key | Reference | DOI | n | Grade |
+|-----|-----------|-----|---|-------|
+| Micro2026 | Wang Y. et al., *Micromachines* 17(2):187, 2026 | [10.3390/mi17020187](https://doi.org/10.3390/mi17020187) | 19 | A/C |
+| Mat2022 | Feng Y. et al., *Materials* 15(22):8083, 2022 | [10.3390/ma15228083](https://doi.org/10.3390/ma15228083) | 10 | D |
+
+Quality grades: A = direct SEM + reported σ, C = interpolated, D = estimated.
+Full specification: `validation/experimental_data.py`.
 
 ---
 
-## Citing this Software
+## Physics Models
 
-If you use **wafer-proc-sim** in your research, please cite it as:
+**SiC Dicing**
+- Lawn–Evans lateral crack model: $c_l = C (E/H)^{0.4} (P/K_\text{Ic})^{0.5}$
+- 4H-SiC crystallographic anisotropy (K_Ic direction dependence, 1.20× on {0001})
+- Ensemble Kalman Filter for real-time blade wear state estimation
+- Expected Improvement Bayesian optimization
 
-### APA
+**CFRP Processing**
+- NDT simulation: pulse-echo UT, thermography, ECT, acoustic emission, X-ray
+- Cutting: Merchant–Zhang milling, Hocheng-Dharan drilling, Lawn-Evans dicing, Shanmugam AWJ
 
-```
-Nishioka, K. (2026). wafer-proc-sim: Physics-Informed Machine Learning for
-SiC Wafer Process Simulation (Version 1.0.0) [Computer software].
-Keio University / Leibniz Universität Hannover.
-https://github.com/keisuke58/wafer-proc-sim
-```
+**Semiconductor Industry Models** (30+ companies/markets in `fem/`)
+- Power device markets: humanoid robots (GaN), drones (GaN), BESS (SiC), LEO (SiC), EV (SiC)
+- Competitive risk simulation: blade → laser dicing transition (Bass diffusion model)
+- NVIDIA GPU, TSMC, TEL, Disco, Lasertec, Advantest, and more
 
-### BibTeX
+---
+
+## Citation
 
 ```bibtex
-@software{nishioka2026wafer,
-  author       = {Nishioka, Keisuke},
-  title        = {{wafer-proc-sim}: Physics-Informed Machine Learning
-                  for {SiC} Wafer Process Simulation},
-  year         = {2026},
-  version      = {1.0.0},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.20495460},
-  url          = {https://doi.org/10.5281/zenodo.20495460}
+@article{nishioka2025sic,
+  title   = {Data Quality-Aware Heteroscedastic {Gaussian} Process Surrogate
+             for {4H-SiC} Blade Dicing Process Optimization},
+  author  = {Nishioka, Keisuke},
+  journal = {Precision Engineering},
+  year    = {2025},
+  note    = {submitted},
+  url     = {https://github.com/keisuke58/wafer-proc-sim}
 }
 ```
-
-### Primary Methodology Reference (TMCMC + FEM)
-
-The TMCMC Bayesian inference and multiscale FEM uncertainty-propagation methodology used in this project is formally published and citable:
-
-```bibtex
-@software{nishioka2026biofilm,
-  author       = {Nishioka, Keisuke and Klempt, Henrike and Junker, Philipp},
-  title        = {Bayesian Identification of Interspecies Interaction
-                  Parameters in a 5-Species Oral Biofilm Model and
-                  Propagation of Posterior Uncertainty to 3D Finite
-                  Element Stress Analysis},
-  year         = {2026},
-  version      = {v2.0.0-paper},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.18790007},
-  url          = {https://zenodo.org/records/18790007}
-}
-```
-
-### IEEE
-
-```
-K. Nishioka, "wafer-proc-sim: Physics-Informed Machine Learning for SiC Wafer
-Process Simulation," version 1.0.0, Keio University / Leibniz Universität
-Hannover, 2026. [Online]. Available: https://github.com/keisuke58/wafer-proc-sim
-```
-
-> **DOI:** `10.5281/zenodo.20495460` — archived on Zenodo.
-> Cite via [https://doi.org/10.5281/zenodo.20495460](https://doi.org/10.5281/zenodo.20495460)
-
----
-
-## References
-
-| # | Citation |
-|---|---|
-| 1 | Huang et al., *Micromachines* 17(2):187, 2026 — experimental chipping data |
-| 2 | Zhang et al., *Materials* 15(22):8083, 2022 — experimental data |
-| 3 | Kimoto & Cooper (2014) *Fundamentals of SiC Technology* — µ_ch vs Dit |
-| 4 | Breach et al., *Microelectron. Reliab.* 44:973, 2004 — Au-Al IMC growth |
-| 5 | Harman (1997) *Wire Bonding in Microelectronics*, McGraw-Hill |
-| 6 | Timoshenko (1925) *J Opt Soc Am* — bimaterial beam warpage |
-| 7 | Engelmaier (1993) *ASME J Electron Packag* — solder joint fatigue |
-| 8 | Saks et al. (1999) *Appl Phys Lett* — SiC/SiO₂ interface traps |
-| 9 | Ching & Chen, *J. Eng. Mech.* 133(7):816–832, 2007 — TMCMC |
-| 10 | Saltelli et al., *Comp. Phys. Comm.* 181:259–270, 2010 — Sobol |
-| 11 | Veldhorst et al., *Nature Nanotechnology* 9:981–985, 2014 — Si spin qubit |
-| 12 | Koch et al., *Phys. Rev. A* 76:042319, 2007 — Transmon qubit |
-| 13 | Fowler et al., *Phys. Rev. A* 86:032324, 2012 — Surface code threshold |
-| 14 | Natarajan et al., *IEDM* 2023 — Intel 18A RibbonFET / PowerVia |
-| 15 | Olson & Roth, *Mater. Sci. Rep.* 3:1–77, 1988 — SPER velocity in Si |
-| **16** | **Nishioka, Klempt & Junker (2026) Zenodo doi:[10.5281/zenodo.18790007](https://doi.org/10.5281/zenodo.18790007) — TMCMC + multiscale FEM methodology (primary method reference)** |
-
----
-
-## Author's Published Software (Zenodo)
-
-| Repository | Description | DOI |
-|---|---|---|
-| [wafer-proc-sim](https://github.com/keisuke58/wafer-proc-sim) | **This repo.** Physics-informed ML for SiC wafer processing | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495460.svg)](https://doi.org/10.5281/zenodo.20495460) |
-| [Tmcmc202601](https://github.com/keisuke58/Tmcmc202601) | TMCMC Bayesian ID of 5-species oral biofilm + 3D FEM (Klempt, Junker) | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18790007.svg)](https://doi.org/10.5281/zenodo.18790007) |
-| [nishioka_cfrp_gnn](https://github.com/keisuke58/nishioka_cfrp_gnn) | GNN surrogate for CFRP process simulation | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495444.svg)](https://doi.org/10.5281/zenodo.20495444) |
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
-
----
-
-*Contact: kei128608@gmail.com · k.nishioka@stud.uni-hannover.de*
+MIT — see [LICENSE](LICENSE).  
+Contact: Keisuke Nishioka · kei128608@gmail.com
