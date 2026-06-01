@@ -238,12 +238,12 @@ Objective: minimize predicted chipping, subject to chipping < 15 µm
 
 | Strategy | n | LOO RMSE [µm] | LOO R² |
 |----------|---|----------------|--------|
-| All grades | 25 | 3.15 | 0.32 |
-| Grades A–B | 11 | 1.52 | **0.82** |
-| Grade A only | 6 | [TBD] | [TBD] |
+| All grades (A–D) | 25 | 3.12 | 0.34 |
+| Grades A–B only | 11 | 1.62 | **0.80** |
+| Grade A only | 6 | [TBD — run with gen_figures.py --grade A] | [TBD] |
 
 **Key finding**: Mixing Grade D (σ=4.0 µm) data with Grade A (σ=1.0 µm) data
-degrades R² by 2.6× despite increasing n by 4×.
+degrades R² by 2.35× (0.80→0.34) despite increasing n by 2.3× (11→25).
 This demonstrates that **data quality stratification dominates data quantity**
 for small-n surrogate learning in precision machining — a result with immediate
 practical implications for experimental campaign design.
@@ -358,9 +358,17 @@ Kimoto, T., Cooper, J.A. (2014). Fundamentals of Silicon Carbide Technology.
 Goldberg, P.W., Williams, C.K.I., Bishop, C.M. (1998). Regression with
   input-dependent noise: A Gaussian process treatment. NeurIPS 10.
 
-[Micro2026 — 実験データの元論文を探す]
-[Mat2022  — 同上]
-[SiC dicing chipping mechanism — 追加で探す]
+Micro2026: "Processing Characteristics of Ultra-Precision Cutting of 4H-SiC
+  Wafers by Dicing Blade." Micromachines 17(2):187, 2026.
+  DOI: 10.3390/mi17020187  (Open Access, PMC12943408)
+
+Mat2022: "High-Speed Dicing of SiC Wafers with 0.048mm Diamond Blades
+  via Rolling-Slitting." Materials 15(22):8083, 2022.
+  DOI: 10.3390/ma15228083  (Open Access, PMC9694500)
+
+AIP2021: "Study on Precision Dicing Process of SiC Wafer with Diamond
+  Dicing Blades." Nanotechnology and Precision Engineering 4(3):033004, 2021.
+  DOI: 10.1063/5.0055498
 ```
 
 ---
