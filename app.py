@@ -1195,6 +1195,17 @@ elif page == "§11 Market Analysis (SiC)":
                           "step": "§8  SoC Timing",       "cat": "Logic"},
         # Samsung (005930.KS) / SK Hynix (000660.KS) appear in Step 12 of the pipeline
         # but are excluded from live stock tracking (KRX-listed, out of scope).
+        # Hyperscalers — AI data center customers of SiC power + TSMC wafer consumers
+        "Microsoft":    {"ticker": "MSFT",      "color": "#00a4ef", "sic_pct":  3,
+                          "step": "CapEx $80B  Maia 200",  "cat": "Hyperscaler"},
+        "Alphabet":     {"ticker": "GOOGL",     "color": "#4285f4", "sic_pct":  4,
+                          "step": "CapEx $75B  TPU v6e",   "cat": "Hyperscaler"},
+        "Meta":         {"ticker": "META",      "color": "#1877f2", "sic_pct":  2,
+                          "step": "CapEx $125B MTIA 500",  "cat": "Hyperscaler"},
+        "Amazon":       {"ticker": "AMZN",      "color": "#ff9900", "sic_pct":  3,
+                          "step": "CapEx $85B  Trainium3", "cat": "Hyperscaler"},
+        "Tesla":        {"ticker": "TSLA",      "color": "#cc0000", "sic_pct": 18,
+                          "step": "SiC inverter + AI5",    "cat": "Hyperscaler"},
     }
 
     def _currency(ticker: str) -> str:
@@ -1230,15 +1241,16 @@ elif page == "§11 Market Analysis (SiC)":
                 out[name] = None
         return out
 
-    with st.spinner("Fetching live data for 13 companies…"):
+    with st.spinner("Fetching live data for 16 companies…"):
         stock_data = fetch_stock_data(period_opt, ",".join(TICKERS.keys()))
 
     if not stock_data:
         st.warning("yfinance not available — showing static coverage table and market projections.")
 
     # ── Tabs ─────────────────────────────────────────────────────────────────
-    tab_cov, tab_price, tab_chart, tab_market = st.tabs([
-        "🗺️ Pipeline Coverage", "💹 Live Prices", "📊 Stock Charts", "🏭 SiC Market"
+    tab_cov, tab_price, tab_chart, tab_market, tab_hyper = st.tabs([
+        "🗺️ Pipeline Coverage", "💹 Live Prices", "📊 Stock Charts",
+        "🏭 SiC Market", "🤖 Hyperscalers",
     ])
 
     # ── Tab 1: Pipeline Coverage ──────────────────────────────────────────────
@@ -1297,6 +1309,7 @@ Step 12 Samsung / SK Hynix → HBM3E TSV yield · bandwidth  (KRX-listed, stock 
                 ("⚙️ Equipment / Inspection / Test", "Equipment"),
                 ("📦 Packaging", "Package"),
                 ("💡 Logic & SoC", "Logic"),
+                ("🤖 Hyperscalers (AI CapEx / SiC power customers)", "Hyperscaler"),
             ]:
                 names_cat = [n for n, cfg in TICKERS.items() if cfg["cat"] == cat_key]
                 if not names_cat:
@@ -1324,12 +1337,19 @@ Step 12 Samsung / SK Hynix → HBM3E TSV yield · bandwidth  (KRX-listed, stock 
     # ── Tab 3: Stock Charts ───────────────────────────────────────────────────
     with tab_chart:
         if stock_data:
-            # Normalised performance — split by category
+            # Normalised performance — split by category (2×3 grid)
             cat_colors = {"Equipment": "#2166ac", "Package": "#7f7f7f",
-                           "Logic": "#2ca02c",   "Memory": "#d62728"}
-            fig_n, axes_n = plt.subplots(2, 2, figsize=(13, 9), sharex=False)
-            cat_order = [("Equipment", axes_n[0,0]), ("Package", axes_n[0,1]),
-                          ("Logic",    axes_n[1,0]), ("Memory",  axes_n[1,1])]
+                           "Logic": "#2ca02c",   "Hyperscaler": "#cc0000"}
+            fig_n, axes_n = plt.subplots(2, 3, figsize=(15, 9), sharex=False)
+            cat_order = [
+                ("Equipment",   axes_n[0, 0]),
+                ("Package",     axes_n[0, 1]),
+                ("Logic",       axes_n[0, 2]),
+                ("Hyperscaler", axes_n[1, 0]),
+            ]
+            # hide unused panels
+            for ax_unused in [axes_n[1, 1], axes_n[1, 2]]:
+                ax_unused.set_visible(False)
             for cat_key, ax in cat_order:
                 plotted = 0
                 for name, cfg in TICKERS.items():
@@ -1454,9 +1474,177 @@ Step 12 Samsung / SK Hynix → HBM3E TSV yield · bandwidth  (KRX-listed, stock 
                 ax5.grid(alpha=0.2, axis="y"); plt.tight_layout()
                 st.pyplot(fig5); plt.close()
                 _fig_caption(
-                    "Market cap in USD ($B) for all 13 companies in run_full_pipeline.py.  "
-                    "NVIDIA and Samsung dominate; Disco is largest Japan-pure-play tool maker."
+                    "Market cap in USD ($B) for all 16 tracked companies (pipeline + hyperscalers).  "
+                    "Apple/Microsoft/Alphabet dominate by cap; Disco is largest Japan pure-play tool maker."
                 )
+
+    # ── Tab 5: Hyperscalers ──────────────────────────────────────────────────
+    with tab_hyper:
+        from fem.hyperscaler_model import (
+            ASIC_SPECS, HYPERSCALER_CAPEX, NVIDIA_SHARE,
+            tco_analysis, wafer_demand, tesla_fsd_inference_demand,
+        )
+
+        st.markdown("##### AI Data Center Custom Silicon — Specs, TCO, and TSMC Wafer Demand")
+        st.markdown(
+            "Source: `fem/hyperscaler_model.py`  |  "
+            "CapEx figures: company IR / analyst consensus (2026E)"
+        )
+
+        # Live stock row for hyperscalers
+        if stock_data:
+            hyper_names = [n for n, cfg in TICKERS.items() if cfg["cat"] == "Hyperscaler"]
+            hy_cols = st.columns(len(hyper_names))
+            for col, name in zip(hy_cols, hyper_names):
+                cfg = TICKERS[name]
+                d   = stock_data.get(name)
+                with col:
+                    if d and d.get("price"):
+                        st.metric(
+                            f"{name}",
+                            f"${d['price']:,.0f}",
+                            f"P/E {d['PE']:.1f}" if d.get("PE") else "P/E —",
+                            help=cfg["step"],
+                        )
+                    else:
+                        st.metric(name, "—", help=cfg["step"])
+            st.divider()
+
+        # ── Chip specs comparison ─────────────────────────────────────────
+        col_h1, col_h2 = st.columns([1, 2])
+        with col_h1:
+            chip_sel = st.selectbox(
+                "Select chip for TCO analysis",
+                [c for c in ASIC_SPECS if "H100" not in c],
+                index=0,
+            )
+            nvidia_ref = st.selectbox(
+                "NVIDIA reference",
+                ["NVIDIA H100 SXM", "NVIDIA B200 SXM"],
+                index=0,
+            )
+            tco = tco_analysis(chip_sel, {}, nvidia_ref)
+            if tco:
+                st.divider()
+                s = ASIC_SPECS[chip_sel]
+                st.metric("Peak BF16 TFlops",  f"{s['tflops_bf16']:,}")
+                st.metric("TDP",               f"{s['tdp_W']} W")
+                st.metric("TFlops/W",          f"{tco['flops_per_W']:.2f}")
+                st.metric("Die cost (est.)",   f"${tco['die_cost_k']*1000:,.0f}")
+                st.metric("Power cost (3 yr)", f"${tco['elec_cost_3yr_k']*1000:,.0f}")
+                st.metric("TCO/TFlops vs NVIDIA",
+                          f"{tco['tco_vs_h100_pct']:+.0f}%",
+                          "Cheaper than ref." if tco["tco_vs_h100_pct"] > 0 else "More expensive")
+                st.caption(f"Process: {s['process_nm']} nm  {s['foundry']}  "
+                           f"Die: {s['die_area_mm2']} mm²  ({s['year']})")
+
+        with col_h2:
+            # TFLOPS/W bars
+            chip_names = list(ASIC_SPECS.keys())
+            short      = [c.split("\n")[0] for c in chip_names]
+            fw         = [ASIC_SPECS[c]["tflops_bf16"] / ASIC_SPECS[c]["tdp_W"]
+                          for c in chip_names]
+            cols_chips = [ASIC_SPECS[c]["color"] for c in chip_names]
+
+            fig_h1, ax_h1 = plt.subplots(figsize=(7, 4.2))
+            bars_h = ax_h1.barh(short, fw, color=cols_chips,
+                                height=0.65, edgecolor="k", lw=0.4)
+            for bar, v in zip(bars_h, fw):
+                ax_h1.text(v + 0.05, bar.get_y() + bar.get_height() / 2,
+                           f"{v:.1f}", va="center", fontsize=8)
+            ax_h1.set_xlabel("TFlops/W (BF16)", fontsize=10)
+            ax_h1.set_title("(a) AI Chip Efficiency — TFlops per Watt", fontsize=10)
+            ax_h1.grid(alpha=0.2, axis="x")
+            plt.tight_layout(); st.pyplot(fig_h1); plt.close()
+            _fig_caption(
+                "(a) BF16 performance per watt for NVIDIA H100/B200 vs hyperscaler custom ASICs.  "
+                "Google TPU v6e and Tesla AI5 lead on efficiency."
+            )
+
+        st.divider()
+
+        # ── CapEx → wafer demand + NVIDIA share erosion ───────────────────
+        col_h3, col_h4 = st.columns(2)
+        with col_h3:
+            demands   = {c: wafer_demand(c, HYPERSCALER_CAPEX[c]) for c in HYPERSCALER_CAPEX}
+            hc_names  = list(HYPERSCALER_CAPEX.keys())
+            hc_capex  = [HYPERSCALER_CAPEX[c]["capex_B"] for c in hc_names]
+            hc_wpd    = [demands[c]["wafers_per_day"] for c in hc_names]
+            hc_colors = [HYPERSCALER_CAPEX[c]["color"] for c in hc_names]
+
+            fig_h2, ax_h2 = plt.subplots(figsize=(6, 4))
+            x_pos = np.arange(len(hc_names))
+            ax_h2b = ax_h2.twinx()
+            bars_capex = ax_h2.bar(x_pos - 0.2, hc_capex, 0.4,
+                                    color=hc_colors, alpha=0.85, edgecolor="k",
+                                    lw=0.5, label="Total CapEx [$B]")
+            bars_wpd   = ax_h2b.bar(x_pos + 0.2, hc_wpd, 0.4,
+                                     color=hc_colors, alpha=0.45, edgecolor="k",
+                                     lw=0.5, hatch="//", label="Wafers/day")
+            ax_h2.set_xticks(x_pos)
+            ax_h2.set_xticklabels(hc_names, rotation=30, ha="right", fontsize=8)
+            ax_h2.set_ylabel("AI CapEx [$B]", fontsize=9)
+            ax_h2b.set_ylabel("Est. TSMC wafers/day", fontsize=9, color="#555")
+            total_capex = sum(hc_capex)
+            ax_h2.set_title(f"(b) AI CapEx 2026E  (total ${total_capex:.0f}B)\n"
+                             f"→ TSMC wafer demand (right axis)", fontsize=9)
+            ax_h2.grid(alpha=0.2, axis="y")
+            plt.tight_layout(); st.pyplot(fig_h2); plt.close()
+            _fig_caption(
+                f"(b) 2026E AI infrastructure CapEx (left) and implied TSMC wafer demand/day (right, hatched).  "
+                f"Total tracked CapEx: ${total_capex:.0f}B."
+            )
+
+        with col_h4:
+            yrs     = list(NVIDIA_SHARE.keys())
+            gpu_sh  = [NVIDIA_SHARE[y][0] for y in yrs]
+            asic_sh = [NVIDIA_SHARE[y][1] for y in yrs]
+            mkt_B   = [NVIDIA_SHARE[y][2] for y in yrs]
+
+            fig_h3, ax_h3 = plt.subplots(figsize=(6, 4))
+            ax_h3.stackplot(yrs, gpu_sh, asic_sh,
+                             labels=["NVIDIA GPU", "Custom ASIC (GAFAM + Tesla)"],
+                             colors=["#76b900", "#2166ac"], alpha=0.85)
+            ax_h3r = ax_h3.twinx()
+            ax_h3r.plot(yrs, mkt_B, "o--", color="#d62728", lw=2, ms=6,
+                        label="Market [$B]")
+            for y, m in zip(yrs, mkt_B):
+                ax_h3r.text(y, m + 15, f"${m}B", ha="center", fontsize=7,
+                             color="#d62728")
+            ax_h3.axvline(2026, color="gray", ls=":", lw=1.5, alpha=0.7,
+                           label="2026 (now)")
+            ax_h3.set_ylabel("Market share [%]", fontsize=9)
+            ax_h3r.set_ylabel("AI chip market [$B]", fontsize=9, color="#d62728")
+            ax_h3r.tick_params(colors="#d62728")
+            lines1, lb1 = ax_h3.get_legend_handles_labels()
+            lines2, lb2 = ax_h3r.get_legend_handles_labels()
+            ax_h3.legend(lines1 + lines2, lb1 + lb2, fontsize=7, loc="upper left")
+            ax_h3.set_title("(c) NVIDIA GPU vs Custom ASIC Market Share\n"
+                             "(Tom's Hardware 2026 + analyst projections)", fontsize=9)
+            ax_h3.grid(alpha=0.2)
+            plt.tight_layout(); st.pyplot(fig_h3); plt.close()
+            _fig_caption(
+                "(c) AI accelerator market share evolution 2022–2030.  "
+                "Custom ASIC share rising from 8% (2022) to ~60% (2030E).  "
+                "Right axis: total market size [$B]."
+            )
+
+        # Tesla demand summary
+        st.divider()
+        tesla = tesla_fsd_inference_demand()
+        st.markdown("##### Tesla AI5 Demand Estimate (2026)")
+        t_cols = st.columns(4)
+        t_cols[0].metric("FSD vehicle chips",    f"{tesla['n_chips_vehicle']:,}")
+        t_cols[1].metric("Optimus robot chips",  f"{tesla['n_chips_optimus']:,}")
+        t_cols[2].metric("Dojo 3 tiles",         f"{tesla['n_dojo_tiles']:,}")
+        t_cols[3].metric("2nm wafers needed",
+                          f"{tesla['wafers_needed']:,}",
+                          f"~${tesla['wafer_cost_B']:.1f}B")
+        _ref(
+            "Tom's Hardware (2026) — Custom AI ASIC 70%/30% GPU/ASIC split  |  "
+            "TSMC Q1 2026 Earnings — wafer revenue mix  |  "
+            "Buildmvpfast.com — Hyperscaler CapEx $770B 2026"
+        )
 
     st.caption(
         "Stock data: Yahoo Finance via yfinance (15-min delay TSE/KRX, real-time US NASDAQ).  "
