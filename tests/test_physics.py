@@ -254,6 +254,58 @@ class TestSiCZGrowth:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Die Strength Model: Griffith + Weibull pipeline
+# ════════════════════════════════════════════════════════════════════════════
+
+class TestDieStrength:
+    """
+    Griffith fracture strength + Weibull failure probability pipeline.
+    """
+
+    def test_smaller_chipping_gives_higher_strength(self):
+        """Smaller chipping → larger σ_f (Griffith: σ ∝ a^-0.5)."""
+        from fem.die_strength_model import fracture_strength
+        s2  = fracture_strength(2,  "4H-SiC")
+        s10 = fracture_strength(10, "4H-SiC")
+        assert s2 > s10, "Smaller chipping should give higher fracture strength"
+
+    def test_m_face_stronger_than_a_face(self):
+        """m-face (θ=0°) should be stronger than a-face (θ=30°)."""
+        from fem.die_strength_model import fracture_strength
+        s_m = fracture_strength(5, "4H-SiC", theta_deg=0)
+        s_a = fracture_strength(5, "4H-SiC", theta_deg=30)
+        assert s_m > s_a, "m-face should be stronger than a-face"
+
+    def test_failure_rate_zero_for_tiny_chipping(self):
+        """Near-zero chipping → near-zero failure rate."""
+        from fem.die_strength_model import assembly_failure_rate
+        r = assembly_failure_rate(0.5, "4H-SiC", 0, sigma_assembly_MPa=80)
+        assert r["P_failure_ppm"] < 1.0, \
+            f"Tiny chipping should give < 1 PPM failure, got {r['P_failure_ppm']}"
+
+    def test_large_chipping_high_failure(self):
+        """Large chipping + a-face → elevated failure rate."""
+        from fem.die_strength_model import assembly_failure_rate
+        r = assembly_failure_rate(15, "4H-SiC", 30, sigma_assembly_MPa=80)
+        assert r["P_failure_ppm"] > 10, \
+            f"Large a-face chipping should give > 10 PPM, got {r['P_failure_ppm']}"
+
+    def test_sic_stronger_than_gan(self):
+        """SiC (K_Ic=2.8 MPa√m) should give higher σ_f than GaN (K_Ic=0.9)."""
+        from fem.die_strength_model import fracture_strength
+        s_sic = fracture_strength(5, "4H-SiC")
+        s_gan = fracture_strength(5, "GaN")
+        assert s_sic > s_gan, "SiC should be stronger than GaN at same chipping"
+
+    def test_safety_margin_definition(self):
+        """Safety margin = σ_f / σ_assembly."""
+        from fem.die_strength_model import assembly_failure_rate
+        r = assembly_failure_rate(2, "4H-SiC", 0, sigma_assembly_MPa=80)
+        expected = r["fracture_str_MPa"] / 80
+        assert abs(r["safety_margin"] - expected) < 0.1
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Laser Groove: Bessel beam vs Gaussian
 # ════════════════════════════════════════════════════════════════════════════
 

@@ -5,6 +5,7 @@
 Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/)
+[![Physics Tests](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml)
 
 > End-to-end pipeline: ABAQUS FEM → GP surrogate → TMCMC Bayesian inference → TEL/Disco/ASML/Advantest device models → OSAT back-end → quantitative validation against published literature.
 
