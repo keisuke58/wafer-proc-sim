@@ -173,7 +173,15 @@ Die Fracture Reliability (Griffith / Weibull)     ← §9
         """)
     with col_b:
         st.markdown("#### Validation Summary")
-        st.markdown("""
+        try:
+            from validation.quantitative_validation import validate_mosfet_mobility
+            _r_mob = validate_mosfet_mobility()
+            _mob_r2 = f"{_r_mob['R2']:.3f}"
+            _mob_mape = f"{_r_mob['MAPE_%']:.1f}%"
+            _mob_status = "✅" if _r_mob["R2"] >= 0.95 else "⚠️"
+        except Exception:
+            _mob_r2, _mob_mape, _mob_status = "N/A", "N/A", "⚠️"
+        st.markdown(f"""
 | Module | Metric | Result | Status |
 |---|---|---|---|
 | §1 Blade Chipping GP | LOO RMSE | 2.38 µm | ✅ |
@@ -181,7 +189,7 @@ Die Fracture Reliability (Griffith / Weibull)     ← §9
 | §8 Au-Al IMC growth | MAPE | 2.7% (R²=0.9997) | ✅ |
 | §8 Package warpage | MAPE | 6.1% (R²=0.9998) | ✅ |
 | §8 Weibull η (wire) | Error | 5.4% | ✅ |
-| §6 µ_ch vs Dit | R² | 0.64 (NO anneal) | ⚠️ |
+| §6 µ_ch vs Dit | R² / MAPE | {_mob_r2} / {_mob_mape} | {_mob_status} |
         """)
 
     st.divider()

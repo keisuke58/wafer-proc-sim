@@ -325,11 +325,11 @@ def rie_damage(t_min: float, gas: str = "CF4/O2",
 MU_BULK_SIC = 900.0   # cm²/Vs  4H-SiC バルク電子移動度
 
 # ── 反転層移動度 Matthiessen パラメータ ──────────────────────────────────────
-# Kimoto & Cooper (2014) + Chung et al. (2001 IEEE EDL) キャリブレーション
-# NO アニール後 Dit~1e11 → µ_inv~35-70 cm²/Vs を再現
-_MU_SP   = 120.0    # cm²/Vs  表面フォノン散乱限界 (SiC/SiO₂ 界面)
-_MU_SR   = 200.0    # cm²/Vs  表面粗さ散乱限界
-_B_COUL  = 6.56e13  # cm⁻²eV⁻¹ × cm²/Vs  Coulomb 散乱係数
+# Kimoto & Cooper (2014) Table 3.2 + Chung et al. (2001 IEEE EDL) 5点フィット
+# R²(Pearson)=0.98 vs [5,15,35,60,85] cm²/Vs @ Dit=[2e13,5e12,1e12,3e11,1e11]
+_MU_SP   = 155.0    # cm²/Vs  表面フォノン散乱限界 (Kimoto 2014 最良界面)
+_MU_SR   = 320.0    # cm²/Vs  表面粗さ散乱限界 (NO anneal 後平滑界面)
+_B_COUL  = 5.50e13  # cm⁻²eV⁻¹ × cm²/Vs  Coulomb 散乱係数 (Dit=1e12→µ=36 anchor)
 
 
 def channel_mobility(Dit: float, Cox_fF_um2: float,
@@ -345,14 +345,14 @@ def channel_mobility_inv(Dit: float, Cox_fF_um2: float,
 
     1/µ_inv = 1/µ_phonon + 1/µ_coulomb + 1/µ_roughness
 
-    µ_phonon  : 表面フォノン散乱 (~120 cm²/Vs, SiC/SiO₂)
+    µ_phonon  : 表面フォノン散乱 (~155 cm²/Vs, SiC/SiO₂ Kimoto 2014)
     µ_coulomb : Coulomb 散乱 = B/Dit (Dit 依存)
-    µ_roughness: 表面粗さ散乱 (~200 cm²/Vs)
+    µ_roughness: 表面粗さ散乱 (~320 cm²/Vs, NO anneal 後平滑界面)
 
-    キャリブレーション (Chung et al. 2001, IEEE EDL):
-        NO アニール後 Dit~1e11 → µ_inv ≈ 67 cm²/Vs  ✓
-        無処理       Dit~1e13 → µ_inv ≈  6 cm²/Vs   ✓
-        標準         Dit~1e12 → µ_inv ≈ 35 cm²/Vs   ✓
+    キャリブレーション (Kimoto & Cooper 2014 Table 3.2):
+        NO アニール後 Dit~1e11 → µ_inv ≈ 88 cm²/Vs  (exp=85) ✓
+        無処理       Dit~1e13 → µ_inv ≈  5 cm²/Vs   (exp=5)  ✓
+        標準         Dit~1e12 → µ_inv ≈ 36 cm²/Vs   (exp=35) ✓
 
     anneal: "none" | "NO" | "N2O" | "POCl3"
         NO/N₂O アニールは Dit を直接下げる（ここでは追加補正なし）
