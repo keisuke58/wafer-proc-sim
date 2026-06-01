@@ -20,9 +20,9 @@ st.caption(
     "Hyperscaler + Tesla カスタムシリコン · AI DC × SiC · EV × SiC"
 )
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🏭 Terafab", "⚛️ Quantum Computing", "🖥️ Hyperscaler + Tesla",
-    "🤖 AI DC × SiC", "🚗 EV × SiC",
+    "🤖 AI DC × SiC", "🚗 EV × SiC", "🏆 市場全景 × 材料決定",
 ])
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -468,3 +468,135 @@ with tab5:
 
     eff_gain = r_si["efficiency_%"] - r_sic["efficiency_%"]
     st.info(f"💡 SiC 採用で航続距離 **+3〜5%** 相当 (インバータ効率差 {r_sic['efficiency_%']:.2f}% vs {r_si['efficiency_%']:.2f}%)")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 6 — 応用領域 × 材料 全景決定
+# ══════════════════════════════════════════════════════════════════════════════
+with tab6:
+    from fem.application_landscape_model import (
+        score_applications, material_battle, top_picks,
+        APPLICATIONS, MATERIALS,
+    )
+
+    picks = top_picks()
+    scores = picks["all_scores"]
+    mats   = picks["all_materials"]
+
+    st.subheader("パワー半導体 応用領域 × 材料 全景分析")
+    st.caption("EV / AI DC / ロボット / ドローン / 衛星 / 鉄道 / 再エネ × SiC / GaN / Ga₂O₃")
+
+    # KPI
+    k = st.columns(5)
+    k[0].metric("全市場 2026",  f"${picks['total_market_2026_B']:.0f}B")
+    k[1].metric("全市場 2030",  f"${picks['total_market_2030_B']:.0f}B")
+    k[2].metric("市場 CAGR",   f"{picks['total_cagr_pct']:.1f}%/年")
+    k[3].metric("材料 #1",      picks["material_winner"]["name"],
+                f"{picks['material_winner']['share_pct']:.1f}% シェア")
+    k[4].metric("産業 #1",      picks["top3_industries"][0]["label"][:10],
+                f"CAGR {picks['top3_industries'][0]['cagr_pct']}%")
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        # バブルチャート: CAGR × 市場規模 (2030)
+        fig = go.Figure()
+        cat_colors = {
+            "transport": "#4c78a8", "energy": "#4CAF50",
+            "ai_compute": "#e45756", "robot": "#72B7B2",
+            "drone": "#B279A2", "space": "#001f3f", "industrial": "#607D8B",
+        }
+        for r in scores:
+            fig.add_trace(go.Scatter(
+                x=[r["cagr_pct"]], y=[r["market_2030_B"]],
+                mode="markers+text",
+                marker=dict(size=r["market_2030_B"] * 4 + 10,
+                            color=r["color"], opacity=0.8,
+                            line=dict(color="white", width=1)),
+                text=[r["label"].replace(" ", "<br>")],
+                textposition="top center",
+                textfont=dict(size=8, color="white"),
+                name=r["label"],
+                showlegend=False,
+                hovertemplate=f"<b>{r['label']}</b><br>"
+                              f"CAGR: {r['cagr_pct']}%<br>"
+                              f"2030市場: ${r['market_2030_B']}B<br>"
+                              f"材料: {r['primary_mat']}<extra></extra>",
+            ))
+        fig.update_layout(
+            title="産業別 CAGR × 2030市場規模 (バブル=市場規模)",
+            xaxis_title="CAGR [%/年]", yaxis_title="2030市場規模 [$B]",
+            plot_bgcolor="#111", paper_bgcolor="#111", font_color="white",
+            height=420, showlegend=False,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with c2:
+        # 材料シェア パイ
+        fig2 = go.Figure(go.Pie(
+            labels=[m["name"] for m in mats],
+            values=[m["market_2030_B"] for m in mats],
+            marker=dict(colors=[MATERIALS.get(m["material"], {}).get("color", "#999")
+                                for m in mats],
+                        line=dict(color="#111", width=2)),
+            hole=0.4,
+            textinfo="label+percent",
+            hovertemplate="%{label}<br>$%{value:.1f}B<br>%{percent}<extra></extra>",
+        ))
+        fig2.update_layout(
+            title="材料別 2030市場シェア",
+            annotations=[dict(text="2030", x=0.5, y=0.5,
+                               font_size=14, showarrow=False, font_color="white")],
+            plot_bgcolor="#111", paper_bgcolor="#111", font_color="white", height=420,
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # スコアランキング テーブル
+    st.markdown("#### 応用領域 総合スコアランキング (市場規模 × CAGR × 参入障壁)")
+    cols = st.columns([3, 1, 1, 1, 1, 1])
+    cols[0].markdown("**産業**"); cols[1].markdown("**CAGR**")
+    cols[2].markdown("**2026 [$B]**"); cols[3].markdown("**2030 [$B]**")
+    cols[4].markdown("**材料**"); cols[5].markdown("**スコア**")
+    for i, r in enumerate(scores[:10], 1):
+        medal = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i-1]
+        cols = st.columns([3, 1, 1, 1, 1, 1])
+        cols[0].write(f"{medal} {r['label']}")
+        cols[1].write(f"**{r['cagr_pct']}%**")
+        cols[2].write(f"${r['market_2026_B']:.1f}B")
+        cols[3].write(f"**${r['market_2030_B']:.1f}B**")
+        cols[4].write(r["primary_mat"])
+        cols[5].write(f"{r['score']:.1f}")
+
+    # 材料比較
+    st.markdown("#### 材料スペック比較")
+    mat_rows = []
+    for mk, mv in MATERIALS.items():
+        mat_rows.append({
+            "材料": mv["name"],
+            "バンドギャップ [eV]": mv["bandgap_eV"],
+            "絶縁破壊電界 [MV/cm]": mv["breakdown_MV_cm"],
+            "移動度 [cm²/Vs]": mv["mobility_cm2Vs"],
+            "熱伝導率 [W/mK]": mv["thermal_W_mK"],
+            "最大電圧 [V]": mv["max_voltage_V"],
+            "ウェーハ単価 [$/6in]": mv["wafer_cost_6in"],
+            "成熟度": mv["maturity"],
+            "スイートスポット": mv["sweet_spot"],
+        })
+    import pandas as pd
+    st.dataframe(pd.DataFrame(mat_rows).set_index("材料"), use_container_width=True)
+
+    # 総合判定
+    st.divider()
+    t3 = picks["top3_industries"]
+    st.markdown(f"""
+### 🏆 総合判定
+
+| | 評価 | 根拠 |
+|---|---|---|
+| **産業 #1** | **{t3[0]['label']}** CAGR {t3[0]['cagr_pct']}% | {t3[0]['market_2026_B']:.1f}B→{t3[0]['market_2030_B']:.1f}B、市場確立前 |
+| **産業 #2** | **{t3[1]['label']}** CAGR {t3[1]['cagr_pct']}% | 防衛調達で爆発的成長 |
+| **産業 #3** | **{t3[2]['label']}** CAGR {t3[2]['cagr_pct']}% | 再エネ普及の必須インフラ |
+| **材料 覇者** | **SiC (66.6%)** | EV・鉄道・BESS の高電圧需要が盤石 |
+| **ダークホース** | **GaN** | ロボット・ドローンの低電圧高周波領域で急伸 |
+| **2030年構造** | SiC が量、GaN が成長率で勝負 | 電圧で棲み分け: >650V→SiC、<650V→GaN |
+    """)
