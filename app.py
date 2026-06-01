@@ -1139,164 +1139,327 @@ The GP z-score layer is most sensitive to sudden jumps; the Shewhart chart detec
 # §11  Market Analysis
 # ══════════════════════════════════════════════════════════════════════════════
 elif page == "§11 Market Analysis (SiC)":
-    st.title("§11  SiC Equipment Market Context & Live Stock Data")
+    st.title("§11  Semiconductor Value Chain — Pipeline Coverage & Market Context")
     st.markdown(
-        "**Objective**: Contextualise the simulated processes within the SiC equipment market,  \n"
-        "combining Yole 2024 market projections with live stock price data."
+        "**Objective**: Map every company in `run_full_pipeline.py` to its simulation step,  \n"
+        "then overlay live stock data and SiC market projections for business context."
     )
     with st.expander("📖 Data Sources & Methodology", expanded=False):
         st.markdown("""
-**Market data sources**:
-- Market size projections: Yole Développement SiC Power Device Monitor 2024, SEMI annual reports
-- Stock data: Yahoo Finance via `yfinance` (15-min delay for TSE-listed stocks)
+**Coverage**: All 13 companies appearing in `pipeline/run_full_pipeline.py` Steps 1–12.
 
-**Companies covered**:
-| Company | Ticker | SiC exposure est. | Core SiC equipment |
-|---|---|---|---|
-| Disco | 6146.T | 45% | Dicing saws, grinders |
-| TEL | 8035.T | 18% | Wet cleaning, CVD |
-| Screen | 7735.T | 14% | Wet cleaning |
-| Lasertec | 6920.T | 20% | Mask/wafer inspection |
-| Advantest | 6857.T | 12% | ATE testers |
-| K&S | KLIC | 22% | Wire bonders |
+**Estimated SiC process exposure** (analyst consensus + annual reports, ±5 pp):
+- Disco 45%: world-monopoly on SiC dicing/grinding tools
+- Lam Research 15%: etch + CVD liner used in SiC power device BEOL
+- TEL 18%, Screen 14%: wet clean critical for SiC pre-gate
+- AMAT 12%: CMP slurry + ion implant for SiC n-well
+- K&S 22%: SiC power module wire bonding (thick Al)
+- Lasertec 20%: SiC epi-wafer inspection + EUV mask inspection
+- Advantest 12%: SiC MOSFET / SBD ATE testing
+- ASML 4%: EUV mainly for leading-edge Si; SiC uses I-line/DUV
+- Socionext 8%: fabless automotive SoC — customer of SiC power
+- NVIDIA 3%: GPU server PSU uses SiC power modules
+- Samsung 5%, SK Hynix 3%: HBM stacking on SiC interposer research
 
-**SiC revenue proxy** = market cap × estimated SiC exposure % / 10 (rough proxy only).
+**SiC revenue proxy** = market cap × SiC exposure % / 10  (rough order-of-magnitude only).
 *Not financial advice. All figures approximate.*
         """)
         _ref("Yole Développement, SiC Power Device Monitor 2024  |  "
-             "SEMI World Fab Forecast (2024)  |  Yahoo Finance via yfinance")
+             "SEMI World Fab Forecast 2024  |  Company IR / annual reports  |  "
+             "Yahoo Finance via yfinance (15-min delay TSE / KRX, real-time US)")
 
+    # ── Master company table ──────────────────────────────────────────────────
+    # cat: Equipment / Package / Logic / Memory
     TICKERS = {
-        "Disco":     {"ticker": "6146.T", "color": "#ff7f0e", "sic_pct": 45},
-        "TEL":       {"ticker": "8035.T", "color": "#d62728", "sic_pct": 18},
-        "Screen":    {"ticker": "7735.T", "color": "#8c564b", "sic_pct": 14},
-        "Lasertec":  {"ticker": "6920.T", "color": "#9467bd", "sic_pct": 20},
-        "Advantest": {"ticker": "6857.T", "color": "#2ca02c", "sic_pct": 12},
-        "K&S":       {"ticker": "KLIC",   "color": "#2166ac", "sic_pct": 22},
+        "ASML":         {"ticker": "ASML",      "color": "#1f77b4", "sic_pct":  4,
+                          "step": "§1  EUV Litho",      "cat": "Equipment"},
+        "Lasertec":     {"ticker": "6920.T",    "color": "#9467bd", "sic_pct": 20,
+                          "step": "§2/§5 Inspection",   "cat": "Equipment"},
+        "TEL":          {"ticker": "8035.T",    "color": "#d62728", "sic_pct": 18,
+                          "step": "§3/§6 CMP·ALD",      "cat": "Equipment"},
+        "Disco":        {"ticker": "6146.T",    "color": "#ff7f0e", "sic_pct": 45,
+                          "step": "§4  Dicing",          "cat": "Equipment"},
+        "Advantest":    {"ticker": "6857.T",    "color": "#2ca02c", "sic_pct": 12,
+                          "step": "§7  ATE Test",        "cat": "Equipment"},
+        "Lam Research": {"ticker": "LRCX",      "color": "#17becf", "sic_pct": 15,
+                          "step": "§10 Etch·ALD",        "cat": "Equipment"},
+        "AMAT":         {"ticker": "AMAT",      "color": "#bcbd22", "sic_pct": 12,
+                          "step": "§11 CMP·Implant",     "cat": "Equipment"},
+        "Screen":       {"ticker": "7735.T",    "color": "#8c564b", "sic_pct": 14,
+                          "step": "Wet Clean",            "cat": "Equipment"},
+        "K&S":          {"ticker": "KLIC",      "color": "#7f7f7f", "sic_pct": 22,
+                          "step": "§8  Wire Bond",        "cat": "Package"},
+        "NVIDIA":       {"ticker": "NVDA",      "color": "#76b900", "sic_pct":  3,
+                          "step": "§9  GPU BOM",          "cat": "Logic"},
+        "Socionext":    {"ticker": "6526.T",    "color": "#e377c2", "sic_pct":  8,
+                          "step": "§8  SoC Timing",       "cat": "Logic"},
+        # Samsung (005930.KS) / SK Hynix (000660.KS) appear in Step 12 of the pipeline
+        # but are excluded from live stock tracking (KRX-listed, out of scope).
     }
 
+    def _currency(ticker: str) -> str:
+        if ticker.endswith(".T"):  return "¥"
+        if ticker.endswith(".KS"): return "₩"
+        return "$"
+
+    # ── Stock data fetch ──────────────────────────────────────────────────────
     period_opt = st.selectbox("Stock chart period", ["3mo", "6mo", "1y", "2y"], index=2)
 
     @st.cache_data(ttl=900)
-    def fetch_stock_data(period):
+    def fetch_stock_data(period, _tickers_key):
         try:
             import yfinance as yf
         except ImportError:
             return {}
-        results = {}
+        out = {}
         for name, cfg in TICKERS.items():
             try:
                 t    = yf.Ticker(cfg["ticker"])
                 hist = t.history(period=period)["Close"].dropna()
                 info = t.info
-                results[name] = {
+                out[name] = {
                     "hist":    hist,
                     "price":   float(hist.iloc[-1]) if len(hist) > 0 else None,
                     "PE":      info.get("trailingPE"),
                     "mcap_B":  (info.get("marketCap") or 0) / 1e12,
                     "color":   cfg["color"],
                     "sic_pct": cfg["sic_pct"],
+                    "cat":     cfg["cat"],
                 }
             except Exception:
-                results[name] = None
-        return results
+                out[name] = None
+        return out
 
-    with st.spinner("Fetching live stock data…"):
-        stock_data = fetch_stock_data(period_opt)
+    with st.spinner("Fetching live data for 13 companies…"):
+        stock_data = fetch_stock_data(period_opt, ",".join(TICKERS.keys()))
 
     if not stock_data:
-        st.warning("yfinance not available — showing market projections only.")
+        st.warning("yfinance not available — showing static coverage table and market projections.")
 
-    if stock_data:
-        st.subheader("Live Metrics (via yfinance)")
-        cols_m = st.columns(len(TICKERS))
-        for i, (name, cfg) in enumerate(TICKERS.items()):
-            d = stock_data.get(name)
-            with cols_m[i]:
-                if d and d["price"]:
-                    currency = "¥" if cfg["ticker"].endswith(".T") else "$"
-                    st.metric(name, f"{currency}{d['price']:,.0f}",
-                               f"P/E {d['PE']:.1f}" if d["PE"] else "P/E N/A")
-                else:
-                    st.metric(name, "N/A")
-        st.divider()
+    # ── Tabs ─────────────────────────────────────────────────────────────────
+    tab_cov, tab_price, tab_chart, tab_market = st.tabs([
+        "🗺️ Pipeline Coverage", "💹 Live Prices", "📊 Stock Charts", "🏭 SiC Market"
+    ])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Normalised Stock Performance")
-            fig1, ax1 = plt.subplots(figsize=(6, 3.8))
-            for name, d in stock_data.items():
-                if d and d["hist"] is not None and len(d["hist"]) > 0:
-                    norm = d["hist"] / d["hist"].iloc[0] * 100
-                    ax1.plot(norm.index, norm.values, lw=2, color=d["color"], label=name)
-            ax1.axhline(100, color="gray", ls="--", lw=1, alpha=0.5)
-            ax1.set_ylabel("Indexed (start = 100)", fontsize=10)
-            ax1.set_title(f"Relative Performance  ({period_opt})", fontsize=10)
-            ax1.legend(fontsize=8, loc="upper left"); ax1.grid(alpha=0.2)
-            plt.tight_layout(); st.pyplot(fig1); plt.close()
-            _fig_caption(f"Relative total return indexed to 100 at period start ({period_opt}).")
+    # ── Tab 1: Pipeline Coverage ──────────────────────────────────────────────
+    with tab_cov:
+        st.markdown("##### All companies in `pipeline/run_full_pipeline.py` mapped to simulation steps")
+        import pandas as pd
+        cov_rows = []
+        for name, cfg in TICKERS.items():
+            d = (stock_data or {}).get(name)
+            mcap_str = f"${d['mcap_B']:.0f}B" if d and d.get("mcap_B") else "—"
+            pe_str   = f"{d['PE']:.1f}×" if d and d.get("PE") else "—"
+            cov_rows.append({
+                "Company":       name,
+                "Category":      cfg["cat"],
+                "Pipeline Step": cfg["step"],
+                "Ticker":        cfg["ticker"],
+                "SiC Exp. %":    cfg["sic_pct"],
+                "Mkt Cap":       mcap_str,
+                "P/E":           pe_str,
+            })
+        cov_df = pd.DataFrame(cov_rows)
+        # Color-highlight SiC exposure column
+        st.dataframe(
+            cov_df.style.background_gradient(
+                subset=["SiC Exp. %"], cmap="YlOrRd", vmin=0, vmax=50
+            ),
+            use_container_width=True, hide_index=True,
+        )
+        _fig_caption(
+            "SiC Exp. % = estimated fraction of revenue derived from SiC-related process tools.  "
+            "Colour gradient: darker = higher SiC exposure.  "
+            "Market cap and P/E from yfinance (15-min delay)."
+        )
 
-        with col2:
-            st.subheader("P/E vs SiC Exposure")
-            fig2, ax2 = plt.subplots(figsize=(6, 3.8))
-            for name, d in stock_data.items():
-                if d and d["PE"] and d["mcap_B"] > 0:
-                    size = max(d["mcap_B"] * 3000, 50)
-                    ax2.scatter(d["sic_pct"], d["PE"], s=size, color=d["color"],
-                                alpha=0.8, edgecolors="k", lw=1, zorder=5)
-                    ax2.annotate(name, xy=(d["sic_pct"], d["PE"]),
-                                 xytext=(d["sic_pct"] + 0.8, d["PE"] + 1), fontsize=9)
-            ax2.set_xlabel("Est. SiC process exposure [%]", fontsize=10)
-            ax2.set_ylabel("Trailing P/E ratio", fontsize=10)
-            ax2.set_title("P/E vs SiC Exposure\n(bubble area ∝ market cap)", fontsize=10)
-            ax2.grid(alpha=0.2)
-            plt.tight_layout(); st.pyplot(fig2); plt.close()
-            _fig_caption("Trailing P/E ratio vs estimated SiC revenue exposure; "
-                          "bubble area proportional to market capitalisation.")
-        st.divider()
+        # Pipeline flow graphic
+        st.markdown("##### Process Flow")
+        st.code("""
+Step 1  ASML         → EUV aerial image / process window
+Step 2  Lasertec     → EUV mask defect density (ACTIS)
+Step 3  TEL          → SiC CMP (Preston MRR)
+Step 4  Disco        → Dicing: blade / stealth / laser
+Step 5  Lasertec     → Post-dicing SiC inspection grade
+Step 6  TEL          → ALD HfO₂ + thermal oxidation → Dit → µ_ch
+Step 7  Advantest    → ATE yield · CPGD
+Step 8  Socionext    → SoC timing yield  |  K&S → wire bond
+Step 9  NVIDIA       → GPU BOM equipment cost breakdown
+Step 10 Lam Research → Plasma etch ARDE + ALD liner
+Step 11 AMAT         → PECVD dep · CMP · ion implant activation
+Step 12 Samsung / SK Hynix → HBM3E TSV yield · bandwidth  (KRX-listed, stock data excluded)
+        """, language="text")
 
-    col3, col4 = st.columns(2)
-    YEARS     = np.arange(2022, 2031)
-    SIC_TOTAL = np.array([2.0, 2.5, 3.0, 4.2, 5.8, 7.5, 9.2, 11.0, 13.0])
-    SIC_EV    = np.array([1.1, 1.4, 1.7, 2.4, 3.3, 4.3, 5.3, 6.3, 7.5])
-
-    with col3:
-        st.subheader("SiC Device Market (Yole 2024)")
-        fig3, ax3 = plt.subplots(figsize=(6, 3.5))
-        ax3.fill_between(YEARS, 0, SIC_EV, alpha=0.7, color="#2196f3", label="EV / HEV")
-        ax3.fill_between(YEARS, SIC_EV, SIC_TOTAL, alpha=0.5, color="#4caf50", label="Industrial / Other")
-        ax3.plot(YEARS, SIC_TOTAL, "ko-", lw=2, ms=5, label="Total")
-        cagr = (SIC_TOTAL[-1] / SIC_TOTAL[1]) ** (1 / 7) - 1
-        ax3.text(2026.5, 10.5, f"CAGR ~{cagr*100:.0f}%", fontsize=11,
-                  fontweight="bold", color="#d62728")
-        ax3.set_ylabel("Market [$B]"); ax3.legend(fontsize=8); ax3.grid(alpha=0.2)
-        ax3.set_title("SiC Power Device Market 2022–2030", fontsize=10)
-        plt.tight_layout(); st.pyplot(fig3); plt.close()
-        _fig_caption("SiC power device market forecast 2022–2030; "
-                      "area breakdown by end-market (Yole 2024).")
-
-    with col4:
-        st.subheader("SiC Revenue Exposure by Vendor")
-        valid = {n: d for n, d in stock_data.items() if d and d.get("mcap_B", 0) > 0} if stock_data else {}
-        if valid:
-            names_v  = list(valid.keys())
-            sic_revs = [valid[n]["mcap_B"] * TICKERS[n]["sic_pct"] / 100 / 10 for n in names_v]
-            colors_v = [TICKERS[n]["color"] for n in names_v]
-            fig4, ax4 = plt.subplots(figsize=(6, 3.5))
-            bars = ax4.barh(names_v, sic_revs, color=colors_v, alpha=0.85, edgecolor="k", lw=0.7)
-            for bar, v in zip(bars, sic_revs):
-                ax4.text(v + 0.01, bar.get_y() + bar.get_height() / 2,
-                          f"~{v:.2f}B", va="center", fontsize=9)
-            ax4.set_xlabel("Est. SiC-related revenue proxy [$B]", fontsize=9)
-            ax4.set_title("SiC Exposure (market cap × SiC%)", fontsize=10)
-            ax4.grid(alpha=0.2, axis="x")
-            plt.tight_layout(); st.pyplot(fig4); plt.close()
-            _fig_caption("Rough SiC revenue proxy = market cap × estimated SiC exposure % / 10.")
+    # ── Tab 2: Live Prices ────────────────────────────────────────────────────
+    with tab_price:
+        if stock_data:
+            for cat_label, cat_key in [
+                ("⚙️ Equipment / Inspection / Test", "Equipment"),
+                ("📦 Packaging", "Package"),
+                ("💡 Logic & SoC", "Logic"),
+            ]:
+                names_cat = [n for n, cfg in TICKERS.items() if cfg["cat"] == cat_key]
+                if not names_cat:
+                    continue
+                st.markdown(f"**{cat_label}**")
+                cols_cat = st.columns(len(names_cat))
+                for col, name in zip(cols_cat, names_cat):
+                    cfg = TICKERS[name]
+                    d   = stock_data.get(name)
+                    with col:
+                        if d and d.get("price"):
+                            cur = _currency(cfg["ticker"])
+                            st.metric(
+                                f"{name}",
+                                f"{cur}{d['price']:,.0f}",
+                                f"P/E {d['PE']:.1f}" if d.get("PE") else "P/E —",
+                                help=cfg["step"],
+                            )
+                        else:
+                            st.metric(name, "—", help=cfg["step"])
+                st.divider()
         else:
-            st.info("Stock data unavailable — cannot compute revenue proxy.")
+            st.info("Stock data unavailable.")
 
-    st.divider()
+    # ── Tab 3: Stock Charts ───────────────────────────────────────────────────
+    with tab_chart:
+        if stock_data:
+            # Normalised performance — split by category
+            cat_colors = {"Equipment": "#2166ac", "Package": "#7f7f7f",
+                           "Logic": "#2ca02c",   "Memory": "#d62728"}
+            fig_n, axes_n = plt.subplots(2, 2, figsize=(13, 9), sharex=False)
+            cat_order = [("Equipment", axes_n[0,0]), ("Package", axes_n[0,1]),
+                          ("Logic",    axes_n[1,0]), ("Memory",  axes_n[1,1])]
+            for cat_key, ax in cat_order:
+                plotted = 0
+                for name, cfg in TICKERS.items():
+                    if cfg["cat"] != cat_key:
+                        continue
+                    d = stock_data.get(name)
+                    if d and d.get("hist") is not None and len(d["hist"]) > 1:
+                        norm = d["hist"] / d["hist"].iloc[0] * 100
+                        ax.plot(norm.index, norm.values, lw=1.8,
+                                color=cfg["color"], label=name)
+                        plotted += 1
+                ax.axhline(100, color="gray", ls="--", lw=1, alpha=0.5)
+                ax.set_title(f"{cat_key}  ({plotted} co.)", fontsize=10)
+                ax.set_ylabel("Index (start=100)", fontsize=8)
+                ax.legend(fontsize=7, loc="upper left"); ax.grid(alpha=0.2)
+                ax.tick_params(axis="x", labelsize=7)
+            fig_n.suptitle(f"Relative Stock Performance by Category  ({period_opt})",
+                           fontsize=12, fontweight="bold")
+            plt.tight_layout()
+            st.pyplot(fig_n); plt.close()
+            _fig_caption(
+                f"Normalised total return (start = 100) over {period_opt}, split by value-chain category.  "
+                "Equipment = process tools; Package = wire bonders; Logic = GPU/SoC; Memory = DRAM/HBM."
+            )
+
+            st.divider()
+            # P/E vs SiC Exposure bubble
+            fig_pe, ax_pe = plt.subplots(figsize=(10, 5))
+            for name, cfg in TICKERS.items():
+                d = stock_data.get(name)
+                if d and d.get("PE") and d.get("mcap_B", 0) > 0:
+                    size = max(d["mcap_B"] * 1500, 30)
+                    ax_pe.scatter(cfg["sic_pct"], d["PE"], s=size,
+                                  color=cfg["color"], alpha=0.82,
+                                  edgecolors="k", lw=0.8, zorder=5)
+                    ax_pe.annotate(name, xy=(cfg["sic_pct"], d["PE"]),
+                                   xytext=(cfg["sic_pct"] + 0.5, d["PE"] + 0.8),
+                                   fontsize=9)
+            ax_pe.set_xlabel("Estimated SiC process exposure [%]", fontsize=11)
+            ax_pe.set_ylabel("Trailing P/E ratio", fontsize=11)
+            ax_pe.set_title("P/E Ratio vs SiC Exposure  (bubble area ∝ market cap)",
+                            fontsize=11)
+            ax_pe.grid(alpha=0.2)
+            plt.tight_layout(); st.pyplot(fig_pe); plt.close()
+            _fig_caption(
+                "Bubble area proportional to market capitalisation.  "
+                "High SiC exposure + high P/E ≈ premium for SiC-pure-play positioning."
+            )
+        else:
+            st.info("Stock data unavailable.")
+
+    # ── Tab 4: SiC Market ────────────────────────────────────────────────────
+    with tab_market:
+        YEARS     = np.arange(2022, 2031)
+        SIC_TOTAL = np.array([2.0, 2.5, 3.0, 4.2, 5.8, 7.5, 9.2, 11.0, 13.0])
+        SIC_EV    = np.array([1.1, 1.4, 1.7, 2.4, 3.3, 4.3, 5.3, 6.3, 7.5])
+        cagr      = (SIC_TOTAL[-1] / SIC_TOTAL[1]) ** (1 / 7) - 1
+
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            fig3, ax3 = plt.subplots(figsize=(6, 4))
+            ax3.fill_between(YEARS, 0, SIC_EV, alpha=0.7, color="#2196f3", label="EV / HEV")
+            ax3.fill_between(YEARS, SIC_EV, SIC_TOTAL, alpha=0.5,
+                              color="#4caf50", label="Industrial / Other")
+            ax3.plot(YEARS, SIC_TOTAL, "ko-", lw=2, ms=5, label="Total")
+            ax3.text(2026.5, 10.5, f"CAGR ~{cagr*100:.0f}%", fontsize=12,
+                      fontweight="bold", color="#d62728")
+            ax3.set_ylabel("Market [$B]"); ax3.legend(fontsize=9)
+            ax3.set_title("SiC Power Device Market 2022–2030  (Yole 2024)", fontsize=10)
+            ax3.grid(alpha=0.2); plt.tight_layout()
+            st.pyplot(fig3); plt.close()
+            _fig_caption("SiC power device market 2022–2030; EV/HEV vs Industrial.")
+
+        with col_m2:
+            valid = {}
+            if stock_data:
+                valid = {n: d for n, d in stock_data.items()
+                          if d and d.get("mcap_B", 0) > 0}
+            if valid:
+                # Sort by SiC revenue proxy descending
+                sic_rev = {n: valid[n]["mcap_B"] * TICKERS[n]["sic_pct"] / 100 / 10
+                            for n in valid}
+                sorted_names = sorted(sic_rev, key=lambda n: sic_rev[n])
+                vals_sorted  = [sic_rev[n] for n in sorted_names]
+                cols_sorted  = [TICKERS[n]["color"] for n in sorted_names]
+
+                fig4, ax4 = plt.subplots(figsize=(6, 4.8))
+                bars = ax4.barh(sorted_names, vals_sorted,
+                                color=cols_sorted, alpha=0.85, edgecolor="k", lw=0.6)
+                for bar, v in zip(bars, vals_sorted):
+                    ax4.text(v + 0.02, bar.get_y() + bar.get_height() / 2,
+                              f"~{v:.1f}B", va="center", fontsize=8)
+                ax4.set_xlabel("Est. SiC-related revenue proxy [$B]", fontsize=9)
+                ax4.set_title("SiC Revenue Exposure by Company\n(market cap × SiC% ÷ 10)",
+                              fontsize=10)
+                ax4.grid(alpha=0.2, axis="x"); plt.tight_layout()
+                st.pyplot(fig4); plt.close()
+                _fig_caption("Sorted by SiC revenue proxy.  "
+                              "Disco dominates due to high SiC exposure + large market cap.")
+            else:
+                st.info("Stock data unavailable — cannot compute revenue proxy chart.")
+
+        st.divider()
+        # Market cap comparison
+        if stock_data:
+            valid_mc = {n: d for n, d in stock_data.items()
+                         if d and d.get("mcap_B", 0) > 0}
+            if valid_mc:
+                sorted_mc = sorted(valid_mc.items(), key=lambda x: x[1]["mcap_B"], reverse=True)
+                names_mc  = [x[0] for x in sorted_mc]
+                mcap_mc   = [x[1]["mcap_B"] for x in sorted_mc]
+                cols_mc   = [TICKERS[n]["color"] for n in names_mc]
+
+                fig5, ax5 = plt.subplots(figsize=(12, 3.5))
+                bars5 = ax5.bar(names_mc, mcap_mc, color=cols_mc,
+                                alpha=0.85, edgecolor="k", lw=0.6)
+                for bar, v in zip(bars5, mcap_mc):
+                    ax5.text(bar.get_x() + bar.get_width() / 2, v + max(mcap_mc) * 0.01,
+                              f"${v:.0f}B", ha="center", fontsize=8, fontweight="bold")
+                ax5.set_ylabel("Market Cap [$B]", fontsize=10)
+                ax5.set_title("Market Capitalisation — All Pipeline Companies", fontsize=11)
+                ax5.grid(alpha=0.2, axis="y"); plt.tight_layout()
+                st.pyplot(fig5); plt.close()
+                _fig_caption(
+                    "Market cap in USD ($B) for all 13 companies in run_full_pipeline.py.  "
+                    "NVIDIA and Samsung dominate; Disco is largest Japan-pure-play tool maker."
+                )
+
     st.caption(
-        "Stock data: Yahoo Finance via yfinance (15-min delay for TSE stocks).  "
+        "Stock data: Yahoo Finance via yfinance (15-min delay TSE/KRX, real-time US NASDAQ).  "
+        "SiC exposure estimates: analyst consensus ± 5 pp.  "
         "Market projections: Yole Développement 2024.  **Not financial advice.**"
     )
