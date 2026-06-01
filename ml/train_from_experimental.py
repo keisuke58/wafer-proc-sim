@@ -105,11 +105,30 @@ class ExperimentalGPSurrogate:
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 
-def load_data():
-    df = pd.DataFrame(CHIPPING_DATA)
-    X = df[FEATURE_COLS].values.astype(float)
-    y = df[TARGET_COL].values.astype(float)
-    return X, y, df
+def load_data(quality_filter: str = "all"):
+    """
+    quality_filter: "all" | "AB" | "A"
+        "all": all grades (N≈25)
+        "AB" : directly measured + digitized (N≈11)
+        "A"  : directly measured with reported std (N≈6)
+    """
+    from validation.experimental_data import point_noise
+    ok_grades = {"all": set("ABCD"), "AB": set("AB"), "A": {"A"}}
+    allowed = ok_grades.get(quality_filter, set("ABCD"))
+
+    rows, alpha_list = [], []
+    for entry in CHIPPING_DATA:
+        if entry.get("cut_type") == "complete":
+            continue
+        if entry.get("quality", "B") not in allowed:
+            continue
+        rows.append(entry)
+        alpha_list.append(point_noise(entry) ** 2)
+
+    df = pd.DataFrame(rows)
+    X  = df[FEATURE_COLS].values.astype(float)
+    y  = df[TARGET_COL].values.astype(float)
+    return X, y, df, np.array(alpha_list)
 
 
 # ── Sweep helpers ─────────────────────────────────────────────────────────────
@@ -225,21 +244,43 @@ def plot_heatmap(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--loo",  action="store_true", help="LOO cross-validation")
-    parser.add_argument("--plot", action="store_true", help="Save sweep + heatmap plots")
+    parser.add_argument("--loo",     action="store_true", help="LOO cross-validation")
+    parser.add_argument("--plot",    action="store_true", help="Save sweep + heatmap plots")
+    parser.add_argument("--quality", default="all", choices=["all", "AB", "A"],
+                        help="Data quality filter (default: all)")
     args = parser.parse_args()
 
-    X, y, df = load_data()
-    print(f"[*] Loaded {len(df)} data points")
+    X, y, df, alpha_vec = load_data(args.quality)
+    print(f"[*] Loaded {len(df)} data points  (quality={args.quality})")
     print(f"    Sources  : {df['source'].unique().tolist()}")
     print(f"    Features : {FEATURE_COLS}")
     print(f"    Chipping : {y.min():.1f} – {y.max():.1f} µm")
+    if "quality" in df.columns:
+        from collections import Counter
+        print(f"    Grades   : {dict(Counter(df['quality']))}")
 
     model = ExperimentalGPSurrogate()
 
     if args.loo:
-        print("\n[*] LOO cross-validation …")
-        model.loo_cv(X, y)
+        print("\n[*] LOO cross-validation (with per-point quality noise) …")
+        # Temporarily pass alpha_vec to gp.alpha for LOO
+        from sklearn.model_selection import LeaveOneOut
+        from sklearn.metrics import mean_squared_error, r2_score
+        loo   = LeaveOneOut()
+        preds = np.zeros_like(y)
+        scaler_y_tmp = model.scaler_y
+        for tr, te in loo.split(X):
+            tmp = ExperimentalGPSurrogate()
+            Xs = tmp.scaler_x.fit_transform(X[tr])
+            ys = tmp.scaler_y.fit_transform(y[tr].reshape(-1,1)).ravel()
+            tmp.gp.alpha = alpha_vec[tr] / tmp.scaler_y.scale_[0]**2
+            tmp.gp.fit(Xs, ys)
+            Xte = tmp.scaler_x.transform(X[te])
+            mu, _ = tmp.gp.predict(Xte, return_std=True)
+            preds[te] = tmp.scaler_y.inverse_transform(mu.reshape(-1,1)).ravel()
+        rmse = float(np.sqrt(mean_squared_error(y, preds)))
+        r2   = float(r2_score(y, preds))
+        print(f"  LOO RMSE = {rmse:.2f} µm    R² = {r2:.4f}")
 
     print("\n[*] Fitting on full dataset …")
     model.fit(X, y)
