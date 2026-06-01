@@ -324,18 +324,43 @@ def rie_damage(t_min: float, gas: str = "CF4/O2",
 
 MU_BULK_SIC = 900.0   # cm²/Vs  4H-SiC バルク電子移動度
 
+# ── 反転層移動度 Matthiessen パラメータ ──────────────────────────────────────
+# Kimoto & Cooper (2014) + Chung et al. (2001 IEEE EDL) キャリブレーション
+# NO アニール後 Dit~1e11 → µ_inv~35-70 cm²/Vs を再現
+_MU_SP   = 120.0    # cm²/Vs  表面フォノン散乱限界 (SiC/SiO₂ 界面)
+_MU_SR   = 200.0    # cm²/Vs  表面粗さ散乱限界
+_B_COUL  = 6.56e13  # cm⁻²eV⁻¹ × cm²/Vs  Coulomb 散乱係数
+
+
 def channel_mobility(Dit: float, Cox_fF_um2: float,
                       mu_bulk: float = MU_BULK_SIC) -> float:
-    """
-    経験的 Coulomb 散乱モデル (SiC/SiO₂, Saks 1999 式):
-        µ_ch = µ_bulk / (1 + Dit / Dit_ref)
-        Dit_ref = 5e12 cm⁻²eV⁻¹  で µ = µ_bulk/2
+    """後方互換用ラッパー。新規コードは channel_mobility_inv を使用。"""
+    return channel_mobility_inv(Dit, Cox_fF_um2)
 
-    これは Dit が移動度に与える実験的スケーリングを再現する。
-    (フル Coulomb 散乱積分の近似)
+
+def channel_mobility_inv(Dit: float, Cox_fF_um2: float,
+                          anneal: str = "none") -> float:
     """
-    Dit_ref = 5e12   # cm⁻²eV⁻¹
-    return mu_bulk / (1.0 + Dit / Dit_ref)
+    SiC MOSFET 反転チャンネル移動度 [cm²/Vs] — Matthiessen 則。
+
+    1/µ_inv = 1/µ_phonon + 1/µ_coulomb + 1/µ_roughness
+
+    µ_phonon  : 表面フォノン散乱 (~120 cm²/Vs, SiC/SiO₂)
+    µ_coulomb : Coulomb 散乱 = B/Dit (Dit 依存)
+    µ_roughness: 表面粗さ散乱 (~200 cm²/Vs)
+
+    キャリブレーション (Chung et al. 2001, IEEE EDL):
+        NO アニール後 Dit~1e11 → µ_inv ≈ 67 cm²/Vs  ✓
+        無処理       Dit~1e13 → µ_inv ≈  6 cm²/Vs   ✓
+        標準         Dit~1e12 → µ_inv ≈ 35 cm²/Vs   ✓
+
+    anneal: "none" | "NO" | "N2O" | "POCl3"
+        NO/N₂O アニールは Dit を直接下げる（ここでは追加補正なし）
+        POCl₃ は Dit と界面粗さを同時改善するため µ_sr 補正を適用
+    """
+    mu_coulomb = min(_B_COUL / max(Dit, 1e8), 1e4)
+    mu_sr = _MU_SR * (1.5 if anneal == "POCl3" else 1.0)
+    return 1.0 / (1.0 / _MU_SP + 1.0 / mu_coulomb + 1.0 / mu_sr)
 
 
 def mosfet_performance(mu_ch: float, Cox_fF_um2: float,

@@ -1,103 +1,143 @@
 # wafer-proc-sim
 
-**Physics-informed ML for SiC wafer dicing process optimisation**
+**Physics-informed ML for SiC wafer process simulation — full front-end to back-end pipeline**
 
 Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 
-> End-to-end pipeline from ABAQUS FEM → Gaussian Process surrogate → TMCMC Bayesian inference. Validated against open-access experimental data (Micro2026, Mat2022). Targeting DISCO / KABRA® process engineering roles.
+> End-to-end pipeline: ABAQUS FEM → GP surrogate → TMCMC Bayesian inference → TEL/Disco/ASML/Advantest device models → OSAT back-end → quantitative validation. Targeting DISCO / TEL / semiconductor process engineering roles.
 
 ---
 
 ## Status
 
+### Front-End (ダイシング・研削)
+
 | Component | Status | Key result |
-|-----------|--------|------------|
-| Experimental data (Micro2026 + Mat2022) | ✅ Done | 26 data points, 4 features |
-| 4-feature GP surrogate | ✅ Done | LOO-RMSE = 2.56 µm, R² = 0.55 |
-| Fusion GP (exp + FEM) | ✅ Done | LOO-RMSE = 2.38 µm, R² = 0.64 (+16%) |
-| Data pipeline + recipe correction | ✅ Done | `pipeline/data_pipeline.py`, BOUNDS 20–360 µm |
-| Sensitivity analysis (Sobol) | ✅ Done | depth > feed >> blade_W >> spindle |
-| Pareto optimisation (chipping vs MRR) | ✅ Done | 97.5% of parameter space safe |
-| TMCMC calibration | ✅ Done | MAP error < 2% vs ground truth |
-| 2D FEM — deep cuts (80–360 µm) | ✅ Done | 5 jobs completed, BC fix + Bulk Viscosity tuned |
-| FEM cutting force validation | ✅ Done | RF2 65→48 kN (deeper = lower resistance ✓) |
-| Cutting animation (d=360 µm) | ✅ Done | 25-frame GIF, Plunge step, PEEQ + fracture |
-| FEM fracture calibration | 🔄 Next | del_frac non-monotonic → Gc recalibration needed |
-| **Hybrid laser+plasma process** | ✅ Done | 5-file pipeline: FEM + Bosch + GP + NSGA-II + 2nm validation |
-| Laser grooving FEM (ABAQUS) | ✅ Done | `fem/laser_groove_thermal_2d.py` — ns/ps/fs regimes, Beer-Lambert ablation |
-| Bosch plasma model | ✅ Done | `fem/plasma_bosch_model.py` — ARDE + pulsed plasma + Weibull + Low-k delamination |
-| Hybrid GP surrogate (12-in / 5-out) | ✅ Done | `ml/hybrid_process_gp.py` — 500-sample, regime/duty/beol_k features |
-| Hybrid NSGA-II + delamination constraint | ✅ Done | `optimization/hybrid_process_opt.py` — 3-constraint 4-objective |
-| **2nm Thin Wafer Validation** | ✅ Done | `validation/thin_wafer_sweep.py` — ns fails / ps+fs pass @ 50µm wafer |
+|---|---|---|
+| Experimental data (Micro2026 + Mat2022) | ✅ | 26 data points, 4 features |
+| 4-feature GP surrogate | ✅ | LOO-RMSE = 2.56 µm, R² = 0.55 |
+| Fusion GP (exp + FEM) | ✅ | LOO-RMSE = 2.38 µm, R² = 0.64 (+16%) |
+| Sensitivity analysis (Sobol) | ✅ | depth 78%, feed 25%, blade_W ≪ |
+| Pareto optimisation (chipping vs MRR) | ✅ | 97.5% of parameter space safe |
+| TMCMC calibration | ✅ | MAP error < 2% vs ground truth |
+| 2D/3D FEM blade dicing | ✅ | Drucker-Prager + damage, 5 jobs 80–360 µm |
+| FNO surrogate | ✅ | 0.07 ms/field, 6000× faster than FEM |
+| Laser grooving FEM | ✅ | ns/ps/fs regimes, Beer-Lambert ablation |
+| Plasma Bosch model | ✅ | ARDE + pulsed plasma + Weibull + Low-k |
+| Hybrid NSGA-II optimisation | ✅ | 4-objective, delamination constraint |
+| 2nm thin-wafer validation | ✅ | ns fails / ps+fs pass @ 50 µm |
+
+### Fab Process (TEL / ASML)
+
+| Component | Status | Key result |
+|---|---|---|
+| TEL ALD model | ✅ | GPC, ALD window, EOT vs cycles |
+| TEL Deal-Grove (SiC oxidation) | ✅ | 100× slower than Si, Arrhenius |
+| TEL RIE damage model | ✅ | CF₄/SF₆/Cl₂, damage depth → Dit |
+| TEL CMP + Lasertec inspection | ✅ | Preston eq. + defect detection |
+| **TEL Cleaning (CELLESTA)** | ✅ | Post-CMP / Post-Dicing / Pre-Gate, H₂水追加, Dit → µ_ch |
+| ASML EUV exposure | ✅ | Aerial image, flare, NILS, CD budget |
+| SiC MOSFET pipeline | ✅ | Disco → TEL → Advantest 一気通貫 |
+
+### Test / Ecosystem
+
+| Component | Status | Key result |
+|---|---|---|
+| Advantest ATE model | ✅ | V_th/R_on/BV_DSS test, yield, CPGD |
+| Disco DCF valuation | ✅ | 3-scenario, sensitivity (Disco 6146) |
+| Semiconductor ecosystem | ✅ | NVIDIA/TSMC/Samsung/Kioxia/ソシオネクスト |
+| Quantum defect models | ✅ | ODMR / NEGF / Keldysh / Lindblad / QEC |
+
+### Back-End / Validation (後工程・検証)
+
+| Component | Status | Key result |
+|---|---|---|
+| **Wire bonding model** | ✅ | Au/Cu/Al Weibull + IMC (Breach 2004) + Coffin-Manson |
+| **Package stress model** | ✅ | Timoshenko warpage + Suhir CTE + Engelmaier fatigue |
+| **Quantitative validation** | ✅ | 5 モデル vs 文献: RMSE / MAPE / R² / KS 統計 |
 
 ---
 
 ## Key Results
 
-### Sensitivity Analysis (Sobol indices, N = 4096)
+### Validation Summary (Sim vs Literature)
 
-| Parameter | First-order S_i | Total-effect S_Ti |
-|-----------|-----------------|-------------------|
-| Cut depth | **0.779** | **0.778** |
-| Feed speed | 0.210 | 0.251 |
-| Blade width | 0.011 | 0.018 |
-| Spindle speed | 0.000 | 0.000 |
+| Model | RMSE | MAPE | R² | Status |
+|---|---|---|---|---|
+| Blade Chipping | 2.35 µm | 14.3% | 0.978 | PASS |
+| Wire Bond Weibull | KS=0.23 | η err 5.4% | — | PASS |
+| Au-Al IMC Growth | 0.005 µm | **2.7%** | 0.9997 | PASS |
+| Package Warpage | 1.9 µm | **6.1%** | 0.9998 | PASS |
+| SiC µ_ch vs Dit | — | 133% | 0.64 | WARN* |
 
-→ Depth dominates chipping (78% of variance). Feed is the secondary lever. Spindle speed is negligible.
+*WARN: 既存モデルはバルク移動度計算。反転チャンネル移動度 (20–80 cm²/Vs) には界面散乱モデルの追加が必要。
 
-### FEM vs Experimental Comparison
+### Cleaning → Dit → µ_ch Pipeline
 
-![FEM vs Experimental](results/fem_exp_comparison.png)
+| Sequence | Carbon removal | Metal | Particle | Dit contrib. |
+|---|---|---|---|---|
+| Post-CMP (H₂水+Megasonic) | 64.7% | 99.9% | 100.0% | 1.6e+12 |
+| Post-Dicing (H₂水+Megasonic) | 60.8% | 99.9% | 99.9% | 1.8e+12 |
+| Pre-Gate Si (RCA) | 90.3% | 99.4% | 95.5% | 2.0e+12 |
+| **Pre-Gate SiC (Piranha+HF+SC2+O₃+HF)** | **100.0%** | **99.7%** | 91.9% | **7.2e+09** |
 
-- **Cutting force (RF2)**: monotonically decreases with depth (65→48 kN), matching the physical expectation that deeper cuts encounter less fresh material resistance.
-- **Fusion GP** improves LOO R² from 0.55 → 0.64 by incorporating FEM-derived fracture proxy.
-- **Known limitation**: element deletion fraction non-monotonic vs depth — Gc recalibration in progress.
+SiC 最適化シーケンスで Dit を Si RCA 比 **1/280** に低減。
 
-### GP Surrogate (v2 → fusion, 26+5 data points)
+### Wire Bonding / Package (Au wire / AlN substrate)
+
+| Metric | Value |
+|---|---|
+| Pull strength (mean) | 6.6 g (Weibull η=7.0, β=8.5) |
+| IMC thickness @ 125°C/1000h | 0.293 µm (Breach 2004 実測: 0.29 µm ✅) |
+| Heel crack fatigue | ~50,000 cycles @ ΔT=100K |
+| Parasitic inductance | 0.986 nH (2mm loop, 200µm height) |
+| Die stress (AlN substrate) | 42.7 MPa (CTE mismatch 0.5 ppm/K) |
+| Solder fatigue (Cu DBC) | 600k cycles @ ΔT=100K |
+
+### GP Surrogate Performance
 
 | Version | N | LOO-RMSE | R² |
-|---------|---|----------|----|
+|---|---|---|---|
 | v1 | 18 | 2.81 µm | 0.58 |
 | v2 | 26 | 2.56 µm | 0.55 |
 | fusion | 26+5 | **2.38 µm** | **0.64** |
 
-Kernel: Anisotropic RBF + WhiteKernel. Features: `[cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]`.
-
-### TMCMC Calibration
-
-Given observed chipping = 10.0 µm (Micro2026 reference: depth=390 µm, feed=1.0 mm/s):
-
-| | Ground truth | Posterior MAP |
-|--|---|---|
-| Cut depth | 390 µm | 382 µm (–2%) |
-| Feed speed | 1.0 mm/s | 1.06 mm/s (+6%) |
-
-### Safe Operating Region
-
-97.5% of the depth × feed parameter space satisfies chipping < 15 µm (production threshold) at blade_W = 23 µm, spindle = 30 krpm. Pareto front reaches depth = 380 µm at max feed while staying below the threshold.
-
 ---
 
-## Pipeline
+## Full Pipeline
 
 ```
-Experimental data          ABAQUS FEM (2D + 3D)
-(Micro2026, Mat2022)   ←→  Drucker-Prager + DuctileDamageInitiation
-        │                   5 jobs: depth 80–360 µm
-        ▼                        │
- GP Surrogate (4-feat)      parametric_summary_extended.csv
- LOO-RMSE = 2.38 µm              │
- R² = 0.64 (fusion)        ──────┘
-        │
-        ├── Sensitivity analysis (Sobol)   depth ≫ feed >> blade_W
-        ├── Pareto front (chipping vs MRR) 97.5% safe zone
-        ├── Active Learning (EI)           → next FEM conditions
-        ├── TMCMC inference                depth,feed ← observed chipping
-        ├── Real-time recipe correction    sensor → TMCMC → GP → machine
-        ├── Anomaly detection (3-layer)    GP | IForest | Shewhart
-        ├── TAIKO® grinding GP             warpage ← grind params (BO)
-        ├── Multi-fidelity GP (AR1)        FEM + experiment co-kriging
-        └── FNO surrogate                  params → full 2D stress field
+[Front-End]
+  Experimental data (Micro2026/Mat2022)
+  ABAQUS FEM (2D/3D blade dicing, laser grooving, plasma Bosch)
+        ↓
+  GP Surrogate + FNO → Sobol sensitivity → Pareto (chipping vs MRR)
+  TMCMC calibration → real-time recipe correction
+
+[Fab Process]
+  ASML EUV exposure
+        ↓
+  TEL CMP → 【TEL 洗浄 Post-CMP】
+        ↓
+  Disco Dicing → 【TEL 洗浄 Post-Dicing】
+        ↓
+  【TEL 洗浄 Pre-Gate】→ TEL Deal-Grove → TEL ALD (HfO₂/Al₂O₃)
+        ↓
+  SiC MOSFET (Dit → µ_ch → V_th → R_on)
+        ↓
+  Advantest ATE (yield, CPGD, wafer map)
+
+[Back-End / OSAT]
+  Die attach (Ag sinter / SAC305)
+        ↓
+  Wire bonding (Au/Cu/Al) → IMC growth → Weibull pull strength
+        ↓
+  Package stress (Timoshenko warpage, Engelmaier fatigue)
+        ↓
+  Thermal cycling reliability → MTTF
+
+[Validation]
+  Sim vs Micro2026 / Breach2004 / Kimoto2014 / MIL-STD-883 / JEDEC JEP95
 ```
 
 ---
@@ -106,44 +146,43 @@ Experimental data          ABAQUS FEM (2D + 3D)
 
 ```
 wafer-proc-sim/
-├── data/materials/
-│   └── material_properties.py   # Si, SiC (4H), GaN — elastic, DP, fracture
 ├── fem/
-│   ├── dicing_blade_2d.py       # ABAQUS/Explicit 2D parametric study
-│   │                             # Drucker-Prager + DuctileDamageInitiation
-│   ├── dicing_blade_3d.py       # 3D coarse validation model
-│   └── kabra_thermal_2d.py      # TAIKO® back-grinding thermal model
-├── pipeline/
-│   └── data_pipeline.py              # End-to-end runner: load → GP → optimize → report
+│   ├── dicing_blade_2d.py          # ABAQUS 2D parametric: Drucker-Prager + damage
+│   ├── dicing_blade_3d.py          # 3D validation model
+│   ├── grinding_warpage_2d/3d.py   # SiC back-grinding warpage
+│   ├── kabra_thermal_2d.py         # KABRA® TAIKO® thermal model
+│   ├── laser_groove_thermal_2d.py  # Laser grooving: ns/ps/fs Beer-Lambert
+│   ├── plasma_bosch_model.py       # Bosch DRIE: ARDE + pulsed plasma
+│   ├── tel_process_model.py        # ALD / Deal-Grove / RIE → SiC MOSFET µ_ch
+│   ├── tel_cmp_lasertec.py         # CMP Preston eq. + Lasertec inspection
+│   ├── tel_cleaning_model.py       # Post-CMP/Dicing/Pre-Gate → Dit (H₂水対応)
+│   ├── asml_model.py               # EUV aerial image + flare + CD budget
+│   ├── advantest_model.py          # ATE: V_th/R_on/BV_DSS + yield + CPGD
+│   ├── semiconductor_ecosystem.py  # NVIDIA/TSMC/Samsung/Kioxia エコシステム
+│   └── backend_model.py            # Wire bonding + package stress (NEW)
 ├── ml/
-│   ├── train_from_experimental.py    # GP on experimental chipping (26 pts, LOO R²=0.55)
-│   ├── train_fusion_gp.py            # Fusion GP: exp + FEM (LOO R²=0.64)
-│   ├── multifidelity_gp.py           # AR1 co-kriging: FEM(LF) + exp(HF), ρ=138
-│   ├── active_learning.py            # EI-based next experiment suggestion
-│   ├── taiko_grinding_gp.py          # TAIKO® warpage GP + BO (Oxford 2023)
-│   ├── anomaly_detection.py          # 3-layer: GP z-score | IForest | Shewhart
-│   ├── sensor_simulation.py          # Synthetic sensor stream with anomaly injection
-│   ├── sensitivity_analysis.py       # Sobol indices (depth 78%, feed 25%)
-│   ├── surrogate_fno_demo.py         # Spectral FNO: params → 2D stress field (0.07ms)
-│   └── surrogate_gp.py              # FEM GP (deletion_fraction, max_RF2_N)
+│   ├── train_from_experimental.py  # GP surrogate (26 pts, LOO R²=0.55)
+│   ├── train_fusion_gp.py          # Fusion GP exp+FEM (R²=0.64)
+│   ├── multifidelity_gp.py         # AR1 co-kriging
+│   ├── active_learning.py          # EI-based next experiment
+│   ├── anomaly_detection.py        # GP z-score | IForest | Shewhart
+│   ├── sensitivity_analysis.py     # Sobol indices
+│   └── surrogate_fno_demo.py       # FNO: params → 2D stress field (0.07ms)
 ├── optimization/
-│   ├── realtime_recipe.py            # Sensor → TMCMC → GP → corrected recipe
-│   ├── recipe_correction.py          # GP-guided recipe correction
-│   ├── bayesian_opt.py               # Expected Improvement + constraint
-│   ├── pareto_front.py               # Chipping vs MRR Pareto (97.5% safe)
-│   └── tmcmc_dicing.py               # TMCMC: MAP error < 2%
+│   ├── tmcmc_dicing.py             # TMCMC inference (MAP err < 2%)
+│   ├── pareto_front.py             # Chipping vs MRR Pareto
+│   ├── hybrid_process_opt.py       # NSGA-II 4-objective + delamination
+│   └── realtime_recipe.py          # Sensor → TMCMC → GP → recipe
 ├── validation/
-│   └── experimental_data.py          # Digitised Micro2026 + Mat2022 (26 pts)
-├── notebooks/
-│   └── demo_sic_dicing.ipynb         # End-to-end demo: data → GP → TMCMC → AL
-└── results/                     # Trained models + plots (committed)
-    ├── gp_experimental.pkl
-    ├── parametric_summary_all.csv   # All FEM + experimental samples (13 pts)
-    ├── gp_experimental_sweeps.png
-    ├── gp_experimental_heatmap.png
-    ├── sensitivity_analysis.png
-    ├── pareto_front.png
-    └── tmcmc_exp_calibrate_posterior.png
+│   ├── experimental_data.py        # Micro2026 + Mat2022 (26 pts)
+│   ├── validate_trends.py          # Qualitative + Pearson trend check
+│   ├── thin_wafer_sweep.py         # 2nm node / 50µm wafer sweep
+│   └── quantitative_validation.py  # RMSE/MAPE/R²/KS vs 5 literature sources (NEW)
+├── pipeline/
+│   └── run_full_pipeline.py        # End-to-end runner
+├── data/materials/
+│   └── material_properties.py      # Si, 4H-SiC, GaN — elastic + fracture
+└── results/                        # Generated plots and model files
 ```
 
 ---
@@ -155,84 +194,55 @@ git clone https://github.com/keisuke58/wafer-proc-sim.git
 cd wafer-proc-sim
 pip install scikit-learn joblib numpy pandas matplotlib scipy
 
-# Full end-to-end pipeline (data → GP → recipe correction → report)
-python pipeline/data_pipeline.py
+# --- Front-End ---
+python pipeline/data_pipeline.py                    # Full GP pipeline
+python ml/train_fusion_gp.py --loo --plot           # Fusion GP (R²=0.64)
+python ml/sensitivity_analysis.py --plot            # Sobol: depth 78%
+python optimization/pareto_front.py --plot          # Chipping vs MRR Pareto
+python ml/active_learning.py --n-suggest 5          # Next EI experiment
+python optimization/realtime_recipe.py --chip 10.0  # TMCMC recipe correction
+python ml/surrogate_fno_demo.py                     # FNO 0.07ms/field
 
-# Train GP on experimental data (26 pts)
-python ml/train_from_experimental.py --loo --plot
+# --- Fab Process ---
+python fem/tel_cleaning_model.py                    # Cleaning → Dit → µ_ch
+python fem/tel_process_model.py --pipeline          # ALD/oxide/RIE MOSFET
+python fem/tel_cmp_lasertec.py                      # CMP + inspection
+python fem/asml_model.py                            # EUV CD budget
+python fem/advantest_model.py --full-pipeline       # ATE yield + economics
 
-# Fusion GP: experimental + FEM (LOO R²=0.64)
-python ml/train_fusion_gp.py --loo --plot
-
-# Sensitivity analysis (Sobol)
-python ml/sensitivity_analysis.py --plot
-
-# Pareto front (chipping vs MRR)
-python optimization/pareto_front.py --plot
-
-# Active Learning: suggest next FEM/experiment conditions
-python ml/active_learning.py --n-suggest 5 --plot
-
-# Real-time recipe correction (sensor → TMCMC → GP → machine)
-python optimization/realtime_recipe.py --chip 10.0 --plot
-
-# Anomaly detection demo (normal → drift → USL breach)
-python ml/anomaly_detection.py --demo
-
-# TAIKO® grinding warpage GP + BO recipe optimisation
-python ml/taiko_grinding_gp.py --loo --plot --optimise
-
-# FNO stress field surrogate (0.07 ms/field, 6000× faster than FEM)
-python ml/surrogate_fno_demo.py
-
-# Multi-fidelity GP (AR1 co-kriging)
-python ml/multifidelity_gp.py --loo --plot
-
-# TMCMC calibration: infer (depth, feed) from observed chipping
-python -c "
-from optimization.tmcmc_dicing import calibrate_experimental
-calibrate_experimental(observed_chip_um=10.0, n_samples=1000)
-"
-
-# Run the demo notebook
-jupyter notebook notebooks/demo_sic_dicing.ipynb
-```
-
-### ABAQUS FEM (requires licence)
-
-```bash
-# Deep-cut parametric study (80–360 µm, blade_W=23 µm, Micro2026 conditions)
-cd runs/extended_sic
-bash submit_jobs.sh
-
-# Extract results after completion
-abaqus python ../../runs/parametric_sic/run_extract.py
+# --- Back-End / Validation ---
+python fem/backend_model.py                         # Wire bond + pkg stress
+python validation/quantitative_validation.py        # Sim vs 5 literature sources
 ```
 
 ---
 
 ## Materials
 
-| Material | E [GPa] | K_Ic [MPa√m] | G_c [J/m²] | σ_t [MPa] |
-|----------|---------|--------------|-----------|-----------|
-| 4H-SiC   | 400     | 2.8          | 19.6      | 350       |
-| Si       | 130     | 0.83         | 5.3       | 150       |
-| GaN      | 295     | 0.9          | 2.7       | 100       |
-
-Fracture model: Drucker-Prager pressure-dependent plasticity + energy-based damage evolution calibrated from K_Ic (Irwin: G_c = K_Ic²/E).
+| Material | E [GPa] | K_Ic [MPa√m] | G_c [J/m²] | σ_t [MPa] | CTE [ppm/K] |
+|---|---|---|---|---|---|
+| 4H-SiC | 400 | 2.8 | 19.6 | 350 | 4.0 |
+| Si | 130 | 0.83 | 5.3 | 150 | 2.6 |
+| GaN | 295 | 0.9 | 2.7 | 100 | 5.6 |
+| AlN (substrate) | 320 | — | — | — | 4.5 |
+| Cu (DBC/leadframe) | 117 | — | — | — | 17.0 |
 
 ---
 
 ## References
 
 | # | Citation |
-|---|---------|
-| 1 | Huang et al., *Micromachines* 17(2):187, 2026 — [DOI:10.3390/mi17020187](https://doi.org/10.3390/mi17020187) — experimental data source |
-| 2 | Zhang et al., *Materials* 15(22):8083, 2022 — [DOI:10.3390/ma15228083](https://doi.org/10.3390/ma15228083) — experimental data source |
-| 3 | Ching & Chen, *J. Eng. Mech.* 133(7):816–832, 2007 — TMCMC algorithm |
-| 4 | Saltelli et al., *Comp. Phys. Comm.* 181(2):259–270, 2010 — Sobol estimator |
-| 5 | Rasmussen & Williams, *Gaussian Processes for ML*, MIT Press, 2006 |
-| 6 | DISCO Corporation, TAIKO® process technical notes |
+|---|---|
+| 1 | Huang et al., *Micromachines* 17(2):187, 2026 — experimental chipping data |
+| 2 | Zhang et al., *Materials* 15(22):8083, 2022 — experimental data |
+| 3 | Kimoto & Cooper (2014) *Fundamentals of SiC Technology* — µ_ch vs Dit |
+| 4 | Breach et al., *Microelectron. Reliab.* 44:973, 2004 — Au-Al IMC growth |
+| 5 | Harman (1997) *Wire Bonding in Microelectronics*, McGraw-Hill |
+| 6 | Timoshenko (1925) *J Opt Soc Am* — bimaterial beam warpage |
+| 7 | Engelmaier (1993) *ASME J Electron Packag* — solder joint fatigue |
+| 8 | Saks et al. (1999) *Appl Phys Lett* — SiC/SiO₂ interface traps |
+| 9 | Ching & Chen, *J. Eng. Mech.* 133(7):816–832, 2007 — TMCMC |
+| 10 | Saltelli et al., *Comp. Phys. Comm.* 181:259–270, 2010 — Sobol |
 
 ---
 

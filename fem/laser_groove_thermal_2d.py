@@ -247,6 +247,101 @@ def stealth_dicing(p: dict) -> dict:
     }
 
 
+def bessel_beam_stealth(p: dict) -> dict:
+    """
+    Bessel ビームによるステルスダイシング (IEEE CPMT 2024 実装)。
+
+    Bessel ビームは非回折ビーム: I(r) ∝ J₀(k_r · r)²
+    ガウシアンビームと異なり、焦点深度が大幅に延長される。
+
+    利点:
+    - 深さ方向に均一な改質層 → チッピングがガウシアン比で大幅低減
+    - SiC 厚ウェーハ (350µm+) に特に効果的
+    - ラプラシアン長 z_Bessel >> z_R_Gaussian
+
+    Bessel ビームパラメータ:
+    - k_r = k * sin(θ_cone)  : 横方向波数
+    - z_depth = 2π / k_r * n : 非回折伝播距離
+
+    References:
+        Courvoisier et al. (2016) Laser Photon Rev — Bessel beam machining
+        IEEE CPMT 2024 — SiC stealth dicing with fs Bessel beam
+    """
+    Plas   = p["laser_power_W"]
+    v      = p["scan_speed_mm_s"]
+    f      = p["pulse_freq_kHz"] * 1e3
+    NA     = p.get("numerical_aperture", 0.65)
+    n_lay  = int(p.get("n_layers", 2))
+    regime = p.get("pulse_regime", "fs")      # Bessel には fs 推奨
+    rp     = LASER_REGIMES.get(regime, LASER_REGIMES["fs"])
+
+    wavelength_um = 1.064
+    n_SiC = 2.65
+    # Bessel ビームの円錐半角 θ_cone (アキシコンレンズで生成)
+    theta_cone_deg = p.get("bessel_cone_deg", 12.0)
+    theta_rad = math.radians(theta_cone_deg)
+
+    # 横方向波数・ビームコア半径
+    k = 2 * math.pi * n_SiC / wavelength_um
+    k_r = k * math.sin(theta_rad)
+    r_bessel_um = 2.405 / k_r           # J₀ の最初のゼロ点 → ビームコア半径
+
+    # 非回折伝播距離 (Bessel ゾーン長)
+    z_bessel_um = wavelength_um / (n_SiC * (1 - math.cos(theta_rad))) * 500
+    z_bessel_um = min(z_bessel_um, 800.0)   # 物理的上限
+
+    # ピークフルエンス
+    E_pulse_J = Plas / f
+    r_cm = r_bessel_um * 1e-4
+    F_peak = E_pulse_J / (math.pi * r_cm ** 2)
+
+    # MPI しきい値（fs Bessel は ps/Gaussian より低フルエンスで改質可能）
+    F_th_MPI = rp["F_th_J_cm2"] * 1.5   # Bessel のピーク強度集中
+
+    if F_peak <= F_th_MPI:
+        mod_h, mod_w = 0.0, 0.0
+    else:
+        excess = math.log(max(F_peak / F_th_MPI, 1.0 + 1e-9))
+        pulse_pitch_um = v / f * 1e3
+        overlap = max(0.05, 1.0 - pulse_pitch_um / (2.0 * r_bessel_um))
+        # Bessel はラプラシアン長が長い → 深さ方向に均一な改質層
+        mod_h = z_bessel_um * math.sqrt(excess) * overlap * n_lay
+        mod_h = min(mod_h, p.get("focal_depth_um", 100.0) * 0.8)
+        mod_w = 2.0 * r_bessel_um * math.sqrt(excess)
+
+    # チッピング: Bessel は改質層が均一 → ガウシアンより大幅低減
+    # IEEE 2024: Bessel のチッピングはガウシアン比で約 40% 低減
+    bessel_chip_factor = 0.60
+    if mod_h > 0:
+        crack_angle_deg = 80.0
+        chipping_um = (mod_w * 0.25 / math.tan(math.radians(crack_angle_deg))
+                       * bessel_chip_factor)
+    else:
+        chipping_um = 0.0
+
+    HAZ_depth_um = rp["HAZ_factor"] * 0.03 * mod_h  # Bessel は HAZ がさらに小さい
+
+    # ガウシアン比較用
+    gauss_ref = stealth_dicing(dict(p, pulse_regime=regime))
+    chip_reduction_pct = 0.0
+    if gauss_ref["surface_chipping_um"] > 0:
+        chip_reduction_pct = (1 - chipping_um / gauss_ref["surface_chipping_um"]) * 100
+
+    return {
+        "mode":                  "bessel_stealth",
+        "r_bessel_um":           round(r_bessel_um, 3),
+        "z_bessel_um":           round(z_bessel_um, 1),
+        "modified_layer_h_um":   round(mod_h, 3),
+        "modified_layer_w_um":   round(mod_w, 3),
+        "surface_chipping_um":   round(chipping_um, 3),
+        "HAZ_depth_um":          round(HAZ_depth_um, 4),
+        "F_peak_J_cm2":          round(F_peak, 4),
+        "pulse_regime":          regime,
+        "bessel_cone_deg":       theta_cone_deg,
+        "chip_reduction_vs_gaussian_pct": round(chip_reduction_pct, 1),
+    }
+
+
 # ── ABAQUS FEM model ──────────────────────────────────────────────────────────
 def _abq_name(s):
     s = re.sub(r'[^A-Za-z0-9_]', '_', str(s))
