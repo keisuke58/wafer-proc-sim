@@ -152,9 +152,17 @@ class QuantumKernelGP:
         )
         self.is_fitted = False
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "QuantumKernelGP":
+    def fit(self, X: np.ndarray, y: np.ndarray,
+            alpha_vec=None) -> "QuantumKernelGP":
+        """
+        alpha_vec: per-point noise variance σ_i² (shape N,).
+        If provided, overrides the scalar self.alpha for heteroscedastic noise.
+        """
         Xs = self.scaler_x.fit_transform(X)
         ys = self.scaler_y.fit_transform(y.reshape(-1, 1)).ravel()
+        if alpha_vec is not None:
+            scale = float(self.scaler_y.scale_[0])
+            self.gp.alpha = alpha_vec / (scale ** 2)   # rescale to normalised space
         t0 = time.time()
         print(f"  Computing {len(X)}×{len(X)} quantum kernel matrix …")
         self.gp.fit(Xs, ys)
@@ -188,17 +196,54 @@ def build_classical_gp(alpha: float = 1.0) -> GaussianProcessRegressor:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# Data
+# Quality-aware data loading
 # ════════════════════════════════════════════════════════════════════════════
 
-def load_data():
+def load_data(quality_filter: str = "all",
+              cut_type: str = "incomplete"):
+    """
+    Load experimental chipping data with optional quality filtering.
+
+    quality_filter:
+        "all"    — all data points (original behaviour)
+        "AB"     — only grade A (direct measurement) + B (digitized)
+        "A"      — only directly measured with reported std
+    cut_type:
+        "incomplete" — only partial-penetration cuts (default, consistent regime)
+        "all"        — include complete cuts (different fracture mode)
+
+    Returns X, y, alpha_vec where alpha_vec[i] = σ_i² (per-point noise variance).
+    alpha_vec can be passed directly as `alpha` to GaussianProcessRegressor.
+    """
     import pandas as pd
+    from validation.experimental_data import CHIPPING_DATA, point_noise
+
     df = pd.DataFrame(CHIPPING_DATA)
-    df = df[df["material"] == "4H-SiC"].dropna(subset=FEATURE_COLS + [TARGET_COL])
+    df = df[df["material"].isin(["4H-SiC", "SiC"])]
+
+    if cut_type == "incomplete":
+        df = df[df["cut_type"] == "incomplete"]
+
+    if quality_filter == "AB":
+        df = df[df["quality"].isin(["A", "B"])]
+    elif quality_filter == "A":
+        df = df[df["quality"] == "A"]
+
+    df = df.dropna(subset=FEATURE_COLS + [TARGET_COL])
+
     X = df[FEATURE_COLS].values.astype(float)
     y = df[TARGET_COL].values.astype(float)
-    return X, y
 
+    raw = df.to_dict("records")
+    sigma = np.array([point_noise(r) for r in raw])
+    alpha_vec = sigma ** 2   # variance for GPR alpha parameter
+
+    return X, y, alpha_vec
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Data
+# ════════════════════════════════════════════════════════════════════════════
 
 # ════════════════════════════════════════════════════════════════════════════
 # LOO cross-validation
@@ -383,42 +428,59 @@ def plot_prediction_surface(model_q, model_c, X, y, save=True):
 # Learning curve ablation
 # ════════════════════════════════════════════════════════════════════════════
 
+def _make_mlp():
+    """Small MLP surrogate (sklearn). Hidden: 64-32-16, ReLU, early stopping."""
+    from sklearn.neural_network import MLPRegressor
+    return MLPRegressor(
+        hidden_layer_sizes=(64, 32, 16),
+        activation="relu",
+        max_iter=2000,
+        early_stopping=True,
+        validation_fraction=0.2,
+        n_iter_no_change=30,
+        random_state=0,
+        alpha=0.01,       # L2 regularisation
+    )
+
+
 def learning_curve_ablation(X: np.ndarray, y: np.ndarray,
                              n_layers: int = 2,
                              alpha: float = 1.0,
                              n_trials: int = 10,
                              save: bool = True):
     """
-    Ablation: RMSE vs training-set size N_train for quantum vs classical GP.
+    Ablation: RMSE vs training-set size N_train.
+    Models: Quantum Kernel GP / Classical RBF-GP / MLP (64-32-16).
 
     For each N_train in [4, 6, 8, 10, 12, 14]:
         Repeat n_trials random train/test splits.
         Record mean ± std RMSE on the held-out test set.
-
-    Research question: at what N does quantum kernel GP match classical?
     """
+    from sklearn.neural_network import MLPRegressor  # noqa: F401 (ensure import)
+
     N_total  = len(X)
     N_values = [n for n in [4, 6, 8, 10, 12, 14] if n < N_total]
     rng      = np.random.default_rng(0)
 
     rmse_q = {n: [] for n in N_values}
     rmse_c = {n: [] for n in N_values}
+    rmse_n = {n: [] for n in N_values}   # NN
 
     for n_train in N_values:
         print(f"  N_train={n_train} …", flush=True)
         for trial in range(n_trials):
-            idx     = rng.permutation(N_total)
-            tr, te  = idx[:n_train], idx[n_train:]
+            idx    = rng.permutation(N_total)
+            tr, te = idx[:n_train], idx[n_train:]
             if len(te) == 0:
                 continue
 
-            # Quantum GP
+            # ── Quantum GP ────────────────────────────────────────────────
             qgp = QuantumKernelGP(n_layers=n_layers, alpha=alpha)
             qgp.fit(X[tr], y[tr])
-            mu_q  = qgp.predict(X[te])
-            rmse_q[n_train].append(np.sqrt(np.mean((mu_q - y[te])**2)))
+            rmse_q[n_train].append(
+                np.sqrt(np.mean((qgp.predict(X[te]) - y[te])**2)))
 
-            # Classical GP
+            # ── Classical GP ──────────────────────────────────────────────
             class _CGP:
                 def __init__(self):
                     self._gp = build_classical_gp()
@@ -433,55 +495,93 @@ def learning_curve_ablation(X: np.ndarray, y: np.ndarray,
                     ys = self._gp.predict(Xs)
                     return self._sy.inverse_transform(ys.reshape(-1,1)).ravel()
 
-            cgp = _CGP()
-            cgp.fit(X[tr], y[tr])
-            mu_c  = cgp.predict(X[te])
-            rmse_c[n_train].append(np.sqrt(np.mean((mu_c - y[te])**2)))
+            cgp = _CGP(); cgp.fit(X[tr], y[tr])
+            rmse_c[n_train].append(
+                np.sqrt(np.mean((cgp.predict(X[te]) - y[te])**2)))
+
+            # ── MLP ───────────────────────────────────────────────────────
+            sx = StandardScaler(); sy = StandardScaler()
+            Xs = sx.fit_transform(X[tr])
+            ys = sy.fit_transform(y[tr].reshape(-1,1)).ravel()
+
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                # early_stopping needs validation split; disable for very small N
+                use_es = n_train >= 8
+                mlp = MLPRegressor(
+                    hidden_layer_sizes=(64, 32, 16),
+                    activation="relu",
+                    max_iter=2000,
+                    early_stopping=use_es,
+                    validation_fraction=0.2 if use_es else 0.0,
+                    n_iter_no_change=30,
+                    random_state=trial,
+                    alpha=0.05,
+                )
+                mlp.fit(Xs, ys)
+
+            mu_n = sy.inverse_transform(
+                mlp.predict(sx.transform(X[te])).reshape(-1,1)).ravel()
+            rmse_n[n_train].append(
+                np.sqrt(np.mean((mu_n - y[te])**2)))
 
     # ── Plot ──────────────────────────────────────────────────────────────────
-    ns  = N_values
-    mq  = np.array([np.mean(rmse_q[n]) for n in ns])
-    sq  = np.array([np.std(rmse_q[n])  for n in ns])
-    mc  = np.array([np.mean(rmse_c[n]) for n in ns])
-    sc  = np.array([np.std(rmse_c[n])  for n in ns])
+    ns = N_values
+    def _stats(d): return (
+        np.array([np.mean(d[n]) for n in ns]),
+        np.array([np.std(d[n])  for n in ns]),
+    )
+    mq, sq = _stats(rmse_q)
+    mc, sc = _stats(rmse_c)
+    mn, sn = _stats(rmse_n)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(ns, mq, "o-", color="#2166ac", lw=2, ms=7, label="Quantum Kernel GP")
-    ax.fill_between(ns, mq - sq, mq + sq, alpha=0.2, color="#2166ac")
-    ax.plot(ns, mc, "s-", color="#d62728", lw=2, ms=7, label="Classical RBF-GP")
-    ax.fill_between(ns, mc - sc, mc + sc, alpha=0.2, color="#d62728")
+    models = [
+        ("Quantum Kernel GP", mq, sq, "o-", "#2166ac"),
+        ("Classical RBF-GP",  mc, sc, "s-", "#d62728"),
+        ("MLP (64-32-16)",     mn, sn, "^-", "#1a9641"),
+    ]
 
-    # Annotate crossover if it exists
-    crossover = [i for i in range(len(ns)-1)
-                 if (mq[i] - mc[i]) * (mq[i+1] - mc[i+1]) < 0]
-    if crossover:
-        ci = crossover[0]
-        ax.axvline(ns[ci], color="k", ls=":", lw=1.2)
-        ax.annotate(f"Crossover ~N={ns[ci]}",
-                    xy=(ns[ci], (mq[ci]+mc[ci])/2),
-                    xytext=(ns[ci]+0.5, (mq[ci]+mc[ci])/2 * 1.2),
-                    fontsize=8, arrowprops=dict(arrowstyle="->"))
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for label, m, s, style, col in models:
+        ax.plot(ns, m, style, color=col, lw=2, ms=7, label=label)
+        ax.fill_between(ns, m - s, m + s, alpha=0.15, color=col)
+
+    # Mark quantum crossovers vs each baseline
+    for label, m_base, _, _, col in models[1:]:
+        cross = [i for i in range(len(ns)-1)
+                 if (mq[i]-m_base[i]) * (mq[i+1]-m_base[i+1]) < 0]
+        if cross:
+            ci = cross[0]
+            ax.axvline(ns[ci], color=col, ls=":", lw=1.0, alpha=0.6)
+            ax.annotate(f"Q×{label.split()[0]} ~N={ns[ci]}",
+                        xy=(ns[ci], max(mq[ci], m_base[ci])),
+                        xytext=(ns[ci]+0.3, max(mq[ci], m_base[ci])*1.1),
+                        fontsize=7, color=col,
+                        arrowprops=dict(arrowstyle="->", color=col))
 
     ax.set_xlabel("Training set size N")
-    ax.set_ylabel("RMSE [µm]  (mean ± std over trials)")
-    ax.set_title("Learning curves — Quantum vs Classical GP\n"
+    ax.set_ylabel("RMSE [µm]  (mean ± std, 10 trials)")
+    ax.set_title("Learning curves — Quantum GP vs Classical GP vs MLP\n"
                  "(SiC dicing, 4H-SiC experimental data)")
     ax.legend()
     ax.grid(alpha=0.3)
     ax.set_xticks(ns)
-
     plt.tight_layout()
+
     if save:
         path = os.path.join(OUT_DIR, "quantum_learning_curves.png")
         plt.savefig(path, dpi=150)
         print(f"  Saved: {path}")
     plt.close()
 
-    print("\n  N  |  Quantum RMSE  |  Classical RMSE")
-    print("  " + "-" * 38)
+    print(f"\n  {'N':>2}  |  {'Quantum':>14}  |  {'Classical GP':>14}  |  {'MLP':>14}")
+    print("  " + "-" * 58)
     for n in ns:
-        print(f"  {n:2d} |  {np.mean(rmse_q[n]):.2f} ± {np.std(rmse_q[n]):.2f} µm  "
-              f"|  {np.mean(rmse_c[n]):.2f} ± {np.std(rmse_c[n]):.2f} µm")
+        print(f"  {n:2d}  |  "
+              f"{np.mean(rmse_q[n]):5.2f} ± {np.std(rmse_q[n]):.2f} µm  |  "
+              f"{np.mean(rmse_c[n]):5.2f} ± {np.std(rmse_c[n]):.2f} µm  |  "
+              f"{np.mean(rmse_n[n]):5.2f} ± {np.std(rmse_n[n]):.2f} µm")
 
 
 def main():
@@ -498,17 +598,22 @@ def main():
                         help="GP noise regularisation (default: 1.0)")
     parser.add_argument("--n-trials",    type=int, default=10,
                         help="Trials per N in ablation (default: 10)")
+    parser.add_argument("--quality",     choices=["all", "AB", "A"], default="all",
+                        help="Data quality filter: all / AB / A (default: all)")
     args = parser.parse_args()
 
     os.makedirs(OUT_DIR, exist_ok=True)
     print("=" * 60)
     print("Quantum Kernel GP — SiC Dicing Surrogate")
-    print(f"  n_qubits={N_QUBITS}  n_layers={args.n_layers}  alpha={args.alpha}")
+    print(f"  n_qubits={N_QUBITS}  n_layers={args.n_layers}  "
+          f"alpha={args.alpha}  quality={args.quality}")
     print("=" * 60)
 
-    X, y = load_data()
+    X, y, alpha_vec = load_data(quality_filter=args.quality)
     print(f"Data: {len(X)} points, features={FEATURE_COLS}")
     print(f"Chipping range: {y.min():.1f}–{y.max():.1f} µm")
+    print(f"Noise σ range: {np.sqrt(alpha_vec).min():.1f}–"
+          f"{np.sqrt(alpha_vec).max():.1f} µm (per-point)")
 
     # ── Kernel matrix visualisation ──────────────────────────────────────────
     plot_kernel_matrix(X, y)
@@ -517,9 +622,9 @@ def main():
         return
 
     # ── Fit both models on all data (for surface plot) ────────────────────────
-    print("\n--- Training Quantum Kernel GP ---")
+    print("\n--- Training Quantum Kernel GP (quality-aware α) ---")
     qgp = QuantumKernelGP(n_layers=args.n_layers, alpha=args.alpha)
-    qgp.fit(X, y)
+    qgp.fit(X, y, alpha_vec=alpha_vec)
 
     cgp = build_classical_gp(alpha=args.alpha)
     plot_prediction_surface(qgp, cgp, X, y)
@@ -576,11 +681,11 @@ def main():
                                 alpha=args.alpha, n_trials=args.n_trials)
 
 
-def main_ablation_only():
+def main_ablation_only(quality: str = "all"):
     """Entry point for ablation-only run (skips LOO)."""
-    X, y = load_data()
+    X, y, _ = load_data(quality_filter=quality)
     os.makedirs(OUT_DIR, exist_ok=True)
-    print("Learning Curve Ablation (quantum vs classical GP)")
+    print(f"Learning Curve Ablation (quality={quality}, N={len(X)})")
     learning_curve_ablation(X, y, n_trials=10)
 
 
