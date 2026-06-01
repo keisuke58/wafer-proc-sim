@@ -1,0 +1,127 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "identifier": "https://doi.org/10.5281/zenodo.20495460",
+  "name": "wafer-proc-sim",
+  "description": "Physics-informed machine learning framework for SiC wafer process simulation. Covers the full semiconductor manufacturing pipeline: FEM dicing/grinding simulation, Gaussian process surrogates, TMCMC Bayesian calibration, equipment manufacturer models (ASML/TEL/Disco/Lasertec/Advantest), AI ASIC supply-chain analysis (Terafab/hyperscalers), and quantum computing device process models. Validated with 66 physics-constrained unit tests against peer-reviewed literature.",
+  "version": "1.0.0",
+  "dateCreated": "2024-01-01",
+  "dateModified": "2026-06-02",
+  "datePublished": "2026-06-02",
+  "license": "https://spdx.org/licenses/MIT",
+  "url": "https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/",
+  "codeRepository": "https://github.com/keisuke58/wafer-proc-sim",
+  "issueTracker": "https://github.com/keisuke58/wafer-proc-sim/issues",
+  "programmingLanguage": [
+    {
+      "@type": "ComputerLanguage",
+      "name": "Python",
+      "version": "3.9+"
+    }
+  ],
+  "runtimePlatform": "Python 3.9+",
+  "operatingSystem": ["Linux", "macOS", "Windows"],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Keisuke",
+      "familyName": "Nishioka",
+      "email": "kei128608@gmail.com",
+      "affiliation": [
+        {
+          "@type": "Organization",
+          "name": "Faculty of Science and Technology, Keio University",
+          "url": "https://www.st.keio.ac.jp/"
+        },
+        {
+          "@type": "Organization",
+          "name": "Institut für Fertigungstechnik und Werkzeugmaschinen, Leibniz Universität Hannover",
+          "url": "https://www.ifum.uni-hannover.de/"
+        }
+      ]
+    }
+  ],
+  "keywords": [
+    "silicon carbide",
+    "SiC dicing",
+    "wafer processing",
+    "semiconductor simulation",
+    "physics-informed machine learning",
+    "Gaussian process",
+    "TMCMC",
+    "Bayesian inference",
+    "FEM",
+    "EUV lithography",
+    "ASML",
+    "TEL",
+    "Disco",
+    "quantum computing",
+    "silicon spin qubit",
+    "surface code QEC",
+    "hyperscaler",
+    "AI ASIC",
+    "Terafab"
+  ],
+  "softwareRequirements": [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "plotly",
+    "streamlit",
+    "joblib",
+    "pandas"
+  ],
+  "applicationCategory": "Scientific/Engineering",
+  "developmentStatus": "active",
+  "referencePublication": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "Bayesian Identification of Interspecies Interaction Parameters in a 5-Species Oral Biofilm Model and Propagation of Posterior Uncertainty to 3D Finite Element Stress Analysis",
+      "identifier": "https://doi.org/10.5281/zenodo.18790007",
+      "datePublished": "2026-02-26",
+      "version": "v2.0.0-paper",
+      "author": [
+        {
+          "@type": "Person",
+          "givenName": "Keisuke",
+          "familyName": "Nishioka",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Institut für Kontinuumsmechanik, Leibniz Universität Hannover"
+          }
+        },
+        {
+          "@type": "Person",
+          "givenName": "Henrike",
+          "familyName": "Klempt",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Institut für Kontinuumsmechanik, Leibniz Universität Hannover"
+          }
+        },
+        {
+          "@type": "Person",
+          "givenName": "Philipp",
+          "familyName": "Junker",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Institut für Kontinuumsmechanik, Leibniz Universität Hannover"
+          }
+        }
+      ],
+      "description": "Primary methodology reference. TMCMC Bayesian identification of a Hamilton 5-species oral biofilm model with multiscale uncertainty propagation (0D ODE → 1D/2D reaction-diffusion PDE → 3D Abaqus FEM) via Dysbiotic Index mapping. The TMCMC calibration framework in wafer-proc-sim is adapted from this work.",
+      "url": "https://zenodo.org/records/18790007"
+    },
+    {
+      "@type": "ScholarlyArticle",
+      "name": "Probabilistic calibration of SiC dicing chipping models via Gaussian process surrogates",
+      "author": {
+        "@type": "Person",
+        "givenName": "Keisuke",
+        "familyName": "Nishioka"
+      },
+      "description": "Manuscript in preparation"
+    }
+  ]
+}

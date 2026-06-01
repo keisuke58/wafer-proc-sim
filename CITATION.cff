@@ -1,0 +1,139 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software in your research, please cite it using
+  the metadata in this file.
+
+title: "wafer-proc-sim: Physics-Informed Machine Learning for SiC Wafer Process Simulation"
+
+type: software
+
+doi: "10.5281/zenodo.20495460"
+
+authors:
+  - family-names: Nishioka
+    given-names: Keisuke
+    affiliation: >-
+      Faculty of Science and Technology, Keio University /
+      Institut für Fertigungstechnik und Werkzeugmaschinen,
+      Leibniz Universität Hannover
+    email: kei128608@gmail.com
+
+repository-code: "https://github.com/keisuke58/wafer-proc-sim"
+
+url: "https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/"
+
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.20495460"
+    description: "Zenodo archive DOI"
+
+abstract: >-
+  wafer-proc-sim is an open-source framework for physics-informed
+  simulation of silicon carbide (SiC) wafer processing, covering the
+  full semiconductor manufacturing pipeline from front-end dicing and
+  grinding through Fab process equipment models to back-end packaging
+  and test. The framework extends the TMCMC Bayesian inference and
+  multiscale FEM methodology developed in Nishioka et al. (2026,
+  doi:10.5281/zenodo.18790007) to the semiconductor domain, integrating
+  Gaussian process (GP) surrogate models for calibration against
+  experimental dicing data. It includes quantitative physics models for
+  semiconductor equipment manufacturers (ASML EUV, TEL, Disco,
+  Lasertec, Advantest, Lam Research, AMAT, KLA), device manufacturers
+  (TSMC, Intel, Samsung, SK Hynix, Nvidia), and emerging technologies
+  including vertically integrated mega-fabs (Terafab), silicon spin
+  qubit fabrication for quantum computing, and hyperscaler custom AI
+  ASIC supply-chain analysis. All models are validated against
+  peer-reviewed literature with 66 physics-constrained unit tests.
+
+keywords:
+  - silicon carbide
+  - SiC wafer dicing
+  - semiconductor process simulation
+  - physics-informed machine learning
+  - Gaussian process surrogate
+  - TMCMC Bayesian inference
+  - multiscale coupling
+  - FEM simulation
+  - EUV lithography
+  - ASML
+  - TEL
+  - Disco
+  - semiconductor equipment
+  - quantum computing
+  - silicon spin qubit
+  - surface code QEC
+  - hyperscaler
+  - AI ASIC
+  - Terafab
+  - semiconductor ecosystem
+  - uncertainty propagation
+
+license: MIT
+
+version: "1.0.0"
+
+date-released: "2026-06-02"
+
+references:
+  - type: software
+    title: >-
+      Bayesian Identification of Interspecies Interaction Parameters
+      in a 5-Species Oral Biofilm Model and Propagation of Posterior
+      Uncertainty to 3D Finite Element Stress Analysis
+    authors:
+      - family-names: Nishioka
+        given-names: Keisuke
+        affiliation: >-
+          Institut für Kontinuumsmechanik,
+          Leibniz Universität Hannover
+      - family-names: Klempt
+        given-names: Henrike
+        affiliation: >-
+          Institut für Kontinuumsmechanik,
+          Leibniz Universität Hannover
+      - family-names: Junker
+        given-names: Philipp
+        affiliation: >-
+          Institut für Kontinuumsmechanik,
+          Leibniz Universität Hannover
+    doi: "10.5281/zenodo.18790007"
+    url: "https://zenodo.org/records/18790007"
+    version: "v2.0.0-paper"
+    date-released: "2026-02-26"
+    repository-code: "https://zenodo.org/records/18790007"
+    notes: >-
+      Primary methodology reference. Establishes the TMCMC Bayesian
+      identification and multiscale FEM uncertainty propagation
+      framework (0D ODE → 1D/2D reaction-diffusion PDE → 3D Abaqus)
+      that is adapted in wafer-proc-sim for semiconductor process
+      calibration. Hamilton 5-species oral biofilm model with
+      Dysbiotic Index (DI) mapping.
+
+  - type: software
+    title: "nishioka_cfrp_gnn: Graph Neural Network Surrogate for CFRP Process Simulation"
+    authors:
+      - family-names: Nishioka
+        given-names: Keisuke
+    doi: "10.5281/zenodo.20495444"
+    url: "https://zenodo.org/records/20495444"
+    repository-code: "https://github.com/keisuke58/nishioka_cfrp_gnn"
+    notes: >-
+      Related software by the same author. GNN-based surrogate model
+      for carbon fibre reinforced polymer (CFRP) process simulation;
+      shares the GP/surrogate methodology with wafer-proc-sim.
+
+  - type: article
+    title: "Probabilistic calibration of SiC dicing chipping models via Gaussian process surrogates"
+    authors:
+      - family-names: Nishioka
+        given-names: Keisuke
+    notes: "Manuscript in preparation"
+
+  - type: conference-paper
+    title: "Physics-informed GP surrogate for SiC blade dicing process optimization"
+    conference:
+      name: "Micro2026"
+    authors:
+      - family-names: Nishioka
+        given-names: Keisuke
+    notes: "Experimental data source (26 dicing data points)"

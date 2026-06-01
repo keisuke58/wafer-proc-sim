@@ -92,9 +92,10 @@ def simulate_device_params(mu_ch: float, Dit: float, seed: int = 42,
     sigma_Vth = 0.3 * (1 + Dit / 5e12)
     V_th = rng.normal(3.5, sigma_Vth, n_die)
 
-    # R_on: µ_ch に反比例, σ = 0.5 mΩ·cm²
-    R_on_center = 5.0 * (900.0 / max(mu_ch, 1.0))
-    sigma_Ron   = 0.5 + 0.3 * (900 - mu_ch) / 900
+    # R_on: µ_ch に反比例 (SiC MOSFET 基準: µ_ref=100 cm²/Vs → R_on=5 mΩ·cm²)
+    MU_REF_SIC  = 100.0
+    R_on_center = 5.0 * (MU_REF_SIC / max(mu_ch, 1.0))
+    sigma_Ron   = 0.5 + 0.3 * (MU_REF_SIC - mu_ch) / MU_REF_SIC
     R_on = rng.normal(R_on_center, max(sigma_Ron, 0.1), n_die)
 
     # I_off: 対数正規分布, Dit が高いと漏れが増える

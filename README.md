@@ -6,6 +6,9 @@ Keisuke Nishioka · Keio University / Leibniz Universität Hannover
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/)
 [![Physics Tests](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495460.svg)](https://doi.org/10.5281/zenodo.20495460)
+[![Method DOI](https://img.shields.io/badge/Method_DOI-10.5281%2Fzenodo.18790007-blue)](https://doi.org/10.5281/zenodo.18790007)
 
 > End-to-end pipeline: ABAQUS FEM → GP surrogate → TMCMC Bayesian inference → TEL/Disco/ASML/Advantest device models → OSAT back-end → quantitative validation against published literature.
 
@@ -232,6 +235,66 @@ python validation/quantitative_validation.py        # Sim vs 5 literature source
 
 ---
 
+## Citing this Software
+
+If you use **wafer-proc-sim** in your research, please cite it as:
+
+### APA
+
+```
+Nishioka, K. (2026). wafer-proc-sim: Physics-Informed Machine Learning for
+SiC Wafer Process Simulation (Version 1.0.0) [Computer software].
+Keio University / Leibniz Universität Hannover.
+https://github.com/keisuke58/wafer-proc-sim
+```
+
+### BibTeX
+
+```bibtex
+@software{nishioka2026wafer,
+  author       = {Nishioka, Keisuke},
+  title        = {{wafer-proc-sim}: Physics-Informed Machine Learning
+                  for {SiC} Wafer Process Simulation},
+  year         = {2026},
+  version      = {1.0.0},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.20495460},
+  url          = {https://doi.org/10.5281/zenodo.20495460}
+}
+```
+
+### Primary Methodology Reference (TMCMC + FEM)
+
+The TMCMC Bayesian inference and multiscale FEM uncertainty-propagation methodology used in this project is formally published and citable:
+
+```bibtex
+@software{nishioka2026biofilm,
+  author       = {Nishioka, Keisuke and Klempt, Henrike and Junker, Philipp},
+  title        = {Bayesian Identification of Interspecies Interaction
+                  Parameters in a 5-Species Oral Biofilm Model and
+                  Propagation of Posterior Uncertainty to 3D Finite
+                  Element Stress Analysis},
+  year         = {2026},
+  version      = {v2.0.0-paper},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.18790007},
+  url          = {https://zenodo.org/records/18790007}
+}
+```
+
+### IEEE
+
+```
+K. Nishioka, "wafer-proc-sim: Physics-Informed Machine Learning for SiC Wafer
+Process Simulation," version 1.0.0, Keio University / Leibniz Universität
+Hannover, 2026. [Online]. Available: https://github.com/keisuke58/wafer-proc-sim
+```
+
+> **DOI:** `10.5281/zenodo.20495460` — archived on Zenodo.
+> Cite via [https://doi.org/10.5281/zenodo.20495460](https://doi.org/10.5281/zenodo.20495460)
+
+---
+
 ## References
 
 | # | Citation |
@@ -246,7 +309,29 @@ python validation/quantitative_validation.py        # Sim vs 5 literature source
 | 8 | Saks et al. (1999) *Appl Phys Lett* — SiC/SiO₂ interface traps |
 | 9 | Ching & Chen, *J. Eng. Mech.* 133(7):816–832, 2007 — TMCMC |
 | 10 | Saltelli et al., *Comp. Phys. Comm.* 181:259–270, 2010 — Sobol |
+| 11 | Veldhorst et al., *Nature Nanotechnology* 9:981–985, 2014 — Si spin qubit |
+| 12 | Koch et al., *Phys. Rev. A* 76:042319, 2007 — Transmon qubit |
+| 13 | Fowler et al., *Phys. Rev. A* 86:032324, 2012 — Surface code threshold |
+| 14 | Natarajan et al., *IEDM* 2023 — Intel 18A RibbonFET / PowerVia |
+| 15 | Olson & Roth, *Mater. Sci. Rep.* 3:1–77, 1988 — SPER velocity in Si |
+| **16** | **Nishioka, Klempt & Junker (2026) Zenodo doi:[10.5281/zenodo.18790007](https://doi.org/10.5281/zenodo.18790007) — TMCMC + multiscale FEM methodology (primary method reference)** |
 
 ---
 
-*Contact: k.nishioka@stud.uni-hannover.de*
+## Author's Published Software (Zenodo)
+
+| Repository | Description | DOI |
+|---|---|---|
+| [wafer-proc-sim](https://github.com/keisuke58/wafer-proc-sim) | **This repo.** Physics-informed ML for SiC wafer processing | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495460.svg)](https://doi.org/10.5281/zenodo.20495460) |
+| [Tmcmc202601](https://github.com/keisuke58/Tmcmc202601) | TMCMC Bayesian ID of 5-species oral biofilm + 3D FEM (Klempt, Junker) | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18790007.svg)](https://doi.org/10.5281/zenodo.18790007) |
+| [nishioka_cfrp_gnn](https://github.com/keisuke58/nishioka_cfrp_gnn) | GNN surrogate for CFRP process simulation | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495444.svg)](https://doi.org/10.5281/zenodo.20495444) |
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+*Contact: kei128608@gmail.com · k.nishioka@stud.uni-hannover.de*

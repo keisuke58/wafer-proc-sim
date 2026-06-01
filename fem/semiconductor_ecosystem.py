@@ -70,6 +70,55 @@ COMPANIES = {
                     "role": "ADAS/Data Center SoC", "ticker": "6526.T"},
     "Infineon":    {"cap_B": 35,   "type": "idm",       "color": "#bcbd22",
                     "role": "SiC Power Device",     "ticker": "IFX.DE"},
+    # 追加装置メーカー
+    "Lam Research":{"cap_B": 90,  "type": "equipment", "color": "#e6550d",
+                    "role": "Plasma Etch/ALD",      "ticker": "LRCX"},
+    "AMAT":        {"cap_B": 170, "type": "equipment", "color": "#c7522a",
+                    "role": "CVD/PVD/CMP/Implant",  "ticker": "AMAT"},
+    "KLA":         {"cap_B": 75,  "type": "equipment", "color": "#1b4a8a",
+                    "role": "Inspection/Metrology", "ticker": "KLAC"},
+    "Teradyne":    {"cap_B": 18,  "type": "equipment", "color": "#8b0000",
+                    "role": "ATE Test",             "ticker": "TER"},
+    # ファウンドリ追加
+    "TSMC":        {"cap_B": 900, "type": "foundry",   "color": "#003366",
+                    "role": "Logic Foundry N2/N3",  "ticker": "TSM"},
+    "SMIC":        {"cap_B": 8,   "type": "foundry",   "color": "#cc0000",
+                    "role": "China Foundry N+2",    "ticker": "688981.SS"},
+    # メモリ追加
+    "Micron":      {"cap_B": 110, "type": "memory",    "color": "#1b5e8a",
+                    "role": "DRAM/NAND/HBM",        "ticker": "MU"},
+    # 材料・ウェーハ追加
+    "Sumco":       {"cap_B": 4.5, "type": "materials", "color": "#003080",
+                    "role": "Si Wafer 300mm",       "ticker": "3436.T"},
+    "Entegris":    {"cap_B": 14,  "type": "materials", "color": "#1a3a1a",
+                    "role": "CMP Slurry/Gas/Filter","ticker": "ENTG"},
+    # OSAT後工程
+    "ASE":         {"cap_B": 15,  "type": "osat",      "color": "#1a4a1a",
+                    "role": "CoWoS/FOWLP Assembly", "ticker": "ASX"},
+    # ファブレス追加
+    "AMD":         {"cap_B": 180, "type": "fabless",   "color": "#8b0000",
+                    "role": "GPU/CPU Chiplet",      "ticker": "AMD"},
+    "Qualcomm":    {"cap_B": 170, "type": "fabless",   "color": "#003060",
+                    "role": "Mobile SoC/5G",        "ticker": "QCOM"},
+    # Hyperscaler カスタムシリコン (2026)
+    "Microsoft":   {"cap_B": 80,  "type": "fabless",   "color": "#00a4ef",
+                    "role": "Maia 200 AI ASIC",        "ticker": "MSFT"},
+    "Google":      {"cap_B": 75,  "type": "fabless",   "color": "#4285f4",
+                    "role": "TPU v6e (Trillium)",      "ticker": "GOOGL"},
+    "AWS":         {"cap_B": 85,  "type": "fabless",   "color": "#ff9900",
+                    "role": "Trainium3 AI ASIC",       "ticker": "AMZN"},
+    "Meta":        {"cap_B": 125, "type": "fabless",   "color": "#1877f2",
+                    "role": "MTIA 500 推論ASIC",        "ticker": "META"},
+    # Terafab エコシステム (2026〜)
+    "Terafab":     {"cap_B": 119, "type": "foundry",   "color": "#b8001f",
+                    "role": "垂直統合メガFab (SpaceX×Tesla×xAI×Intel)",
+                    "ticker": "private"},
+    "xAI":         {"cap_B": 50,  "type": "fabless",   "color": "#c0392b",
+                    "role": "Grok AI / Terafab 需要",   "ticker": "private"},
+    "SpaceX":      {"cap_B": 180, "type": "fabless",   "color": "#1a1a2e",
+                    "role": "宇宙向け RAD-hard AI チップ需要", "ticker": "private"},
+    "Tesla":       {"cap_B": 700, "type": "fabless",   "color": "#cc0000",
+                    "role": "FSD/Optimus エッジ AI 需要", "ticker": "TSLA"},
 }
 
 # バリューチェーン依存関係
@@ -92,6 +141,57 @@ DEPENDENCIES = [
     ("Kioxia",   "NVIDIA",    3, "SSD storage"),
     ("Infineon", "NVIDIA",    3, "data center\npower"),
     ("Samsung",  "NVIDIA",    3, "HBM2/DDR"),
+    # Lam Research & AMAT 依存
+    ("Lam Research", "TSMC",    5, "Plasma Etch"),
+    ("Lam Research", "Samsung", 5, "NAND Etch"),
+    ("Lam Research", "SK Hynix",4, "DRAM Etch"),
+    ("AMAT",         "TSMC",    5, "CVD/CMP"),
+    ("AMAT",         "Samsung", 4, "CVD/Implant"),
+    ("AMAT",         "Intel",   4, "CVD/CMP"),
+    # KLA 依存
+    ("KLA",          "TSMC",    5, "WIS/OVL"),
+    ("KLA",          "Samsung", 4, "WIS/OVL"),
+    ("KLA",          "Intel",   4, "WIS/OVL"),
+    # Teradyne 依存
+    ("Teradyne",     "NVIDIA",  4, "GPU test"),
+    ("Teradyne",     "Qualcomm",4, "SoC test"),
+    # Micron 依存
+    ("TSMC",         "AMD",     5, "GPU mfg"),
+    ("TSMC",         "Qualcomm",5, "SoC mfg"),
+    ("Micron",       "AMD",     3, "GDDR supply"),
+    ("SK Hynix",     "AMD",     4, "HBM supply"),
+    ("Sumco",        "TSMC",    4, "Si wafer"),
+    ("Entegris",     "TSMC",    4, "CMP slurry"),
+    ("Entegris",     "Samsung", 3, "CMP slurry"),
+    ("ASE",          "NVIDIA",  5, "CoWoS assy"),
+    ("ASE",          "AMD",     4, "Pkg assy"),
+    ("SMIC",         "Huawei",  5, "N+2 chip"),
+    # Terafab エコシステム依存関係 (2026〜)
+    ("AMAT",         "Terafab", 5, "CVD/PVD/CMP"),
+    ("Lam Research", "Terafab", 5, "Plasma Etch"),
+    ("TEL",          "Terafab", 5, "ALD/CVD"),
+    ("Lasertec",     "Terafab", 4, "EUV mask\ninspect"),
+    ("KLA",          "Terafab", 4, "WIS/Metrology"),
+    ("Advantest",    "Terafab", 4, "AI chip test"),
+    ("Disco",        "Terafab", 3, "wafer dicing"),
+    ("Intel",        "Terafab", 5, "18A process"),
+    ("Terafab",      "xAI",     5, "Grok chip mfg"),
+    ("Terafab",      "SpaceX",  5, "RAD-hard chip"),
+    ("Terafab",      "Tesla",   5, "FSD/Dojo chip"),
+    ("xAI",          "NVIDIA",  3, "GPU補完"),
+    ("SpaceX",       "Tesla",   2, "技術連携"),
+    # Hyperscaler → TSMC ASIC
+    ("TSMC",         "Microsoft",5, "Maia 200\nmfg"),
+    ("TSMC",         "Google",   5, "TPU v6e\nmfg"),
+    ("TSMC",         "AWS",      5, "Trainium3\nmfg"),
+    ("TSMC",         "Meta",     5, "MTIA 500\nmfg"),
+    ("TSMC",         "Tesla",    5, "AI5 mfg"),
+    ("SK Hynix",     "Tesla",    4, "HBM+LPDDR"),
+    ("AMAT",         "Microsoft",3, "CVD/CMP"),
+    ("Lam Research", "Google",   3, "Etch"),
+    ("KLA",          "AWS",      3, "WIS"),
+    ("Advantest",    "Google",   3, "TPU test"),
+    ("Advantest",    "Microsoft",3, "Maia test"),
 ]
 
 
