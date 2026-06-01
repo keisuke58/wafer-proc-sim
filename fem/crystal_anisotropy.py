@@ -87,8 +87,9 @@ def kic_vs_angle(theta_deg: float) -> float:
     K_max = 2.50  # m 面
     K_min = 2.10  # a 面
     theta_rad = np.radians(theta_deg % 60)  # 60° 周期
-    # 0° と 60° で最大 (m面), 30° で最小 (a面)
-    return K_min + (K_max - K_min) * np.cos(theta_rad * np.pi / 30) ** 2
+    # 0° と 60° で最大 (m面, cos²(0)=1), 30° で最小 (a面, cos²(π/2)=0)
+    # θ∈[0,π/3] → argument ∈ [0,π/2]: multiply by 3 to map π/6→π/2
+    return K_min + (K_max - K_min) * np.cos(theta_rad * 3) ** 2
 
 
 def chipping_factor_vs_angle(theta_deg: float) -> float:

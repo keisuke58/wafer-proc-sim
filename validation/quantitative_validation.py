@@ -105,24 +105,23 @@ def validate_chipping() -> dict:
 
 
 def validate_mosfet_mobility() -> dict:
-    """SiC MOSFET µ_ch vs Dit: Coulomb 散乱モデル検証。"""
-    from fem.tel_process_model import channel_mobility, ald_film
+    """SiC MOSFET µ_inv vs Dit: Matthiessen's rule モデル検証。
+    Calibrated to Chung et al. (2001) IEEE EDL — NO anneal at 1175°C.
+    """
+    from fem.tel_process_model import channel_mobility_inv, ald_film
     exp = MOSFET_EXP
     ald = ald_film(50, 250, "HfO2")
 
-    sim_mu = np.array([channel_mobility(dit * 0.2, ald["Cox_fF_um2"])
+    # Matthiessen's rule: 1/µ = 1/µ_phonon + 1/µ_coulomb + 1/µ_roughness
+    # No empirical scaling — model is directly calibrated to literature
+    sim_mu = np.array([channel_mobility_inv(dit, ald["Cox_fF_um2"])
                        for dit in exp["Dit_cm2eV"]])
 
-    # µ_inv は bulk µ より大幅に低い: スケーリング係数でキャリブレーション
-    # SiC 反転層は表面荒さ・フォノン散乱で bulk の 1/10〜1/20
-    scale = np.mean(exp["mu_inv"]) / np.mean(sim_mu)
-    sim_scaled = sim_mu * scale
-
-    m = _metrics(sim_scaled, exp["mu_inv"])
-    return {"name": "SiC MOSFET µ_ch vs Dit", "source": exp["source"],
-            "sim": sim_scaled, "exp": exp["mu_inv"],
+    m = _metrics(sim_mu, exp["mu_inv"])
+    return {"name": "SiC MOSFET µ_inv vs Dit", "source": exp["source"],
+            "sim": sim_mu, "exp": exp["mu_inv"],
             "x": exp["Dit_cm2eV"], "xlabel": "Dit [cm⁻²eV⁻¹]", "ylabel": "µ_inv [cm²/Vs]",
-            "scale_factor": round(scale, 4),
+            "scale_factor": 1.0,  # no scaling needed after Matthiessen calibration
             **m}
 
 
