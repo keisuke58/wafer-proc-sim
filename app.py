@@ -120,16 +120,16 @@ K&S/Besi Wire Bond / Hybrid bonding          ← 後工程
     st.divider()
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("#### 🎯 対象企業 (就活 / 投資)")
+        st.markdown("#### 🏭 Industry Coverage")
         st.markdown("""
-| 企業 | モデル | 適用 |
+| Company / Process | Model | Physics |
 |---|---|---|
-| **Disco** (6146) | Dicing, Crystal, Bessel | 就活第一志望 |
-| **東京ガス** | Pipeline, LNG, H₂ | 就活第一志望 |
-| **TEL** | ALD, Cleaning, CMP | プロセス上流 |
-| **フェローテック** | SiC CZ Growth | 投資候補 |
-| **信越化学** | Si CZ, V/G則 | 投資対象 |
-| **Lasertec** | SiC/EUV 検査 | 装置関連 |
+| **Disco** — dicing/grinding | Blade, Stealth, Bessel, Crystal | FEM + GP surrogate |
+| **TEL** — wet process | Cleaning → Dit, ALD, CMP | Arrhenius, Matthiessen |
+| **ASML** — lithography | EUV aerial image | Fourier optics |
+| **Advantest** — test | ATE yield, CPGD | Weibull, Monte Carlo |
+| **Lasertec** — inspection | SiC defect, EUV mask | Mie scatter, SNR |
+| **K&S / Besi** — packaging | Wire bond, Hybrid bonding | Coffin-Manson, diffusion |
         """)
     with col_b:
         st.markdown("#### 📊 バリデーション結果")
@@ -156,6 +156,19 @@ elif page == "🔮 GP Surrogate":
         "Predict front chipping from process parameters.  \n"
         "Trained on Micro2026 + Mat2022 experimental data (26 pts, LOO RMSE=2.38µm)."
     )
+    with st.expander("📖 Model Background"):
+        st.markdown("""
+**Gaussian Process (GP) surrogate** replaces expensive ABAQUS FEM runs for real-time prediction.
+
+- **Kernel**: Anisotropic RBF + WhiteKernel — captures length-scale differences across features
+- **Fusion GP**: combines 26 experimental points + 5 FEM-derived fracture proxy features → R²=0.64
+- **Features**: `[cut_depth_um, blade_W_um, feed_mm_s, spindle_rpm]`
+- **Sobol sensitivity**: depth dominates (S₁=0.78), feed secondary (S₁=0.25), spindle negligible
+
+The posterior variance (±σ band) quantifies prediction uncertainty — wider at extrapolated conditions.
+
+*References: Huang et al., Micromachines 17(2):187 (2026); Rasmussen & Williams, GP for ML (2006)*
+        """)
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -217,6 +230,20 @@ elif page == "🔧 Recipe Correction":
         "**Digital Twin closed loop**:  \n"
         "Sensor chipping measurement → TMCMC inverse inference → GP optimal recipe."
     )
+    with st.expander("📖 Model Background"):
+        st.markdown("""
+**TMCMC (Transitional Markov Chain Monte Carlo)** solves the Bayesian inverse problem:
+
+> Given observed chipping χ_obs, infer the posterior p(depth, feed | χ_obs)
+
+The likelihood is defined via the GP surrogate: p(χ_obs | θ) = N(µ_GP(θ), σ²_GP(θ) + σ²_noise).
+
+TMCMC transitions from prior to posterior through intermediate distributions p_j ∝ p(data|θ)^βⱼ (0=β₀<…<βₙ=1), avoiding the direct sampling of the full posterior.
+
+**Optimal recipe** is found by minimising predicted chipping over the safe parameter space (chipping < USL with 95% confidence).
+
+*Reference: Ching & Chen, J. Eng. Mech. 133(7):816 (2007)*
+        """)
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -275,6 +302,18 @@ elif page == "🔧 Recipe Correction":
 elif page == "📊 Process Capability":
     st.title("📊 Process Capability Analysis")
     st.markdown("Live Cp/Cpk/Cpm from simulated production data. Semiconductor standard: **Cpk ≥ 1.67**.")
+    with st.expander("📖 Capability Indices"):
+        st.markdown("""
+| Index | Formula | Meaning |
+|---|---|---|
+| **Cp** | (USL−LSL)/(6σ) | Spread only — ignores mean offset |
+| **Cpk** | min((USL−µ)/3σ, (µ−LSL)/3σ) | Accounts for mean shift |
+| **Cpm** | Cp / √(1+(µ−T)²/σ²) | Penalises deviation from target T |
+
+**Semiconductor convention**: Cpk ≥ 1.33 = capable; ≥ 1.67 = high-quality production.
+
+Process variance here combines GP prediction uncertainty σ_GP and measurement noise σ_meas in quadrature: σ_total = √(σ²_GP + σ²_noise).
+        """)
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -333,6 +372,18 @@ elif page == "📊 Process Capability":
 elif page == "🔪 Blade Wear":
     st.title("🔪 Blade Wear Monitor")
     st.markdown("Exponential degradation model: `chip(n) = chip₀ × exp(α × n / N_life)`")
+    with st.expander("📖 Degradation Physics"):
+        st.markdown("""
+Blade wear in SiC dicing follows an exponential progression driven by progressive grit dulling and bond wear.
+
+**Model**: chip(n) = chip₀ · exp(α · n / N_life)
+
+- **chip₀**: initial chipping at blade start [µm]
+- **α**: wear coefficient (higher = faster degradation, typical 1–3 for SiC)
+- **N_life**: nominal blade life [wafers] from manufacturer spec
+
+**Physics basis**: SiC hardness (HV 2580) wears the diamond grit faster than Si (HV 1100). The exponential form captures the accelerating wear as sharp edges are lost. Replace threshold is set at USL × 0.8 (early warning) and USL (hard limit).
+        """)
 
     from optimization.blade_wear import BladeWearModel
 
@@ -376,6 +427,21 @@ elif page == "🔪 Blade Wear":
 elif page == "💴 Cost per Die":
     st.title("💴 Cost-Per-Die Optimiser")
     st.markdown("Total cost = blade amortisation + machine time + yield loss penalty.")
+    with st.expander("📖 Cost Model"):
+        st.markdown("""
+**Total cost per die** = C_blade + C_machine + C_yield_loss
+
+| Term | Formula |
+|---|---|
+| C_blade | blade_cost / (N_life × dies_per_wafer) |
+| C_machine | (machine_cost/hr) / throughput [dies/hr] |
+| C_yield_loss | die_value × P(defect) |
+
+**Throughput** = f(feed_speed, wafer_diameter, street_pitch).
+**P(defect)** is derived from GP-predicted chipping via a normal CDF mapping to yield loss.
+
+The optimal feed speed minimises total cost — faster feed lowers machine time but raises chipping and yield loss. The model finds the crossover analytically.
+        """)
 
     from optimization.cost_per_die import CostPerDieModel
 
@@ -439,6 +505,20 @@ elif page == "🚨 Anomaly Detection":
     st.markdown(
         "**Layer 1**: GP z-score  |  **Layer 2**: Isolation Forest  |  **Layer 3**: Shewhart chart"
     )
+    with st.expander("📖 Detection Architecture"):
+        st.markdown("""
+Three complementary anomaly detection methods with different sensitivity/specificity tradeoffs:
+
+| Layer | Method | Detects | False-positive risk |
+|---|---|---|---|
+| 1 | **GP z-score** | Statistical outlier vs surrogate prediction | Low (calibrated σ) |
+| 2 | **Isolation Forest** | Density-based multivariate anomaly | Medium |
+| 3 | **Shewhart chart** | Process shift / drift over time | Low (3σ rule) |
+
+An observation is flagged only when **≥ 2 layers agree**, minimising false alarms while maintaining sensitivity.
+
+**Drift simulation**: blade wear or process drift introduces a linear trend in the chipping signal. The 3-layer system is designed to detect this before the USL is breached (early warning at 80% USL).
+        """)
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -507,12 +587,28 @@ elif page == "🚨 Anomaly Detection":
 # Page 7: TEL Cleaning → Dit
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "🧹 TEL Cleaning → Dit":
-    st.title("🧹 TEL 洗浄モデル — Dit → µ_inv Calculator")
+    st.title("🧹 TEL Cleaning → Interface Trap → Mobility")
     st.markdown(
-        "洗浄シーケンス × 薬液条件 → SiC/SiO₂ 界面トラップ密度 (Dit) → "
-        "チャンネル移動度 µ_inv を定量計算。  \n"
-        "**Matthiessen 則**: 1/µ = 1/µ_phonon + 1/µ_coulomb + 1/µ_roughness"
+        "Cleaning sequence → SiC/SiO₂ interface trap density (Dit) → inversion channel mobility µ_inv.  \n"
+        "**Matthiessen's rule**: 1/µ = 1/µ_phonon + 1/µ_Coulomb + 1/µ_roughness"
     )
+    with st.expander("📖 Physics"):
+        st.markdown("""
+**Why SiC cleaning is harder than Si:**
+SiC is chemically inert — standard RCA (SC-1/SC-2) removes organic/metal contamination but leaves carbon clusters (C-clusters) at the surface. These C-clusters are the primary precursor to interface traps at the SiO₂/SiC interface.
+
+**Dit → µ_inv (Matthiessen's rule, calibrated to Chung et al. 2001):**
+
+| Scattering mechanism | µ_limit | Dependence |
+|---|---|---|
+| Surface phonon | ~120 cm²/Vs | temperature |
+| Coulomb (Dit) | B/Dit | ∝ Dit⁻¹ |
+| Surface roughness | ~200 cm²/Vs | Ra² |
+
+**Calibration**: Dit = 1×10¹² cm⁻²eV⁻¹ → µ_inv ≈ 35 cm²/Vs ✓ (NO anneal reference, Chung 2001)
+
+*Bulk Si mobility (1400 cm²/Vs) is irrelevant for SiC MOSFETs — inversion layer mobility is ~20–80 cm²/Vs due to interface scattering.*
+        """)
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -593,12 +689,29 @@ elif page == "🧹 TEL Cleaning → Dit":
 # Page 8: Crystal Anisotropy
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "💎 Crystal Anisotropy":
-    st.title("💎 SiC 結晶異方性 — ダイシング方向最適化")
+    st.title("💎 SiC Crystal Anisotropy — Dicing Direction Optimisation")
     st.markdown(
-        "4H-SiC の破壊靱性は結晶方向依存。  \n"
-        "**m面 {10-10}** が最良、**a面 {11-20}** でチッピング +28%。  \n"
+        "4H-SiC fracture toughness is direction-dependent.  \n"
+        "**m-plane {10-10}** gives best quality; **a-plane {11-20}** increases chipping by ~28%.  \n"
         "*(Optics & Laser Technology 2024)*"
     )
+    with st.expander("📖 Crystal Physics"):
+        st.markdown("""
+4H-SiC has hexagonal symmetry (space group P6₃mc). The fracture toughness K_Ic varies with the crystallographic plane of the cut:
+
+| Plane | Angle θ | K_Ic | Chipping factor |
+|---|---|---|---|
+| {10-10} m-plane | 0° | 2.50 MPa√m | 1.00 (best) |
+| {11-20} a-plane | 30° | 2.10 MPa√m | 1.28 (+28%) |
+
+**Physical reason**: The a-plane {11-20} is a preferred cleavage plane in SiC, meaning crack propagation is easier → more lateral chipping. The m-plane does not coincide with a natural cleavage plane.
+
+**Model**: chipping_corrected = chipping_GP × (K_max/K_Ic(θ))^1.5
+
+The 60° periodicity reflects the hexagonal crystal symmetry.
+
+*Reference: Impact of material anisotropy on ultrafast laser dicing of SiC, Opt. Laser Technol. (2024)*
+        """)
 
     from fem.crystal_anisotropy import (
         kic_vs_angle, chipping_factor_vs_angle,
@@ -657,8 +770,34 @@ elif page == "💎 Crystal Anisotropy":
 # Page 9: Wire Bonding
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "🔗 Wire Bonding":
-    st.title("🔗 ワイヤーボンディング 信頼性予測")
-    st.markdown("Au / Cu / Al ワイヤー材料別の信頼性を Weibull + Coffin-Manson で定量化。")
+    st.title("🔗 Wire Bond Reliability Prediction")
+    st.markdown("Material-dependent reliability quantified via Weibull pull-strength distribution and Coffin-Manson fatigue model.")
+    with st.expander("📖 Reliability Models"):
+        st.markdown("""
+**Pull strength — Weibull distribution:**
+
+P(F ≤ f) = 1 − exp(−(f/η)^β)
+
+- η (scale): characteristic strength [g] — higher for Cu than Au
+- β (shape): failure mode indicator — β > 1: wear-out; typical 6–10 for wire bonds
+- **MIL-STD-883 Method 2023**: minimum 3 g for 25 µm wire
+
+**Heel crack fatigue — Coffin-Manson:**
+
+N_f = C · ε_p^(−m)
+
+where plastic strain amplitude ε_p = ΔCτE · ΔT (CTE mismatch × thermal cycle range).
+
+- Au @ ΔT=100K: N_f ≈ 50,000 cycles (Harman 1997)
+- Cu is ~2× more fatigue-resistant than Au due to higher strength
+
+**IMC growth (Au-Al system) — Arrhenius diffusion:**
+
+d = √(A · t · exp(−Q/k_BT))
+
+- Q = 0.60 eV (grain boundary diffusion, Breach et al. 2004)
+- Calibration: d = 0.29 µm at 125°C/1000h ✓
+        """)
 
     from fem.backend_model import (pull_strength_samples, imc_thickness,
                                     heel_crack_life, wire_inductance, WIRE_MATERIALS)
@@ -721,8 +860,23 @@ elif page == "🔗 Wire Bonding":
 # Page 10: Market Analysis
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "📈 Market Analysis":
-    st.title("📈 SiC 半導体装置 市場分析")
-    st.markdown("SiC パワーデバイス市場 × 装置メーカーのバリューチェーン分析。")
+    st.title("📈 SiC Equipment Market Context")
+    st.markdown("Application-driven demand for SiC power devices and the corresponding equipment value chain (Yole Développement 2024, SEMI).")
+    with st.expander("📖 Data Sources & Methodology"):
+        st.markdown("""
+Market size projections are based on published industry reports:
+
+- **Yole Développement** (2024): SiC power device market by application segment
+- **SEMI** annual semiconductor equipment market data
+- Company annual reports (public filings) for revenue and segment breakdown
+
+**Methodology**:
+- Application split (EV/industrial/telecom) follows Yole 2024 consensus
+- Equipment vendor SiC exposure estimated from public segment disclosures and analyst reports
+- CAGR figures are compound annual growth rates over the 2023–2030 period
+
+*Note: All figures are approximate. Refer to primary sources for investment or business decisions.*
+        """)
 
     import matplotlib.ticker as mticker
 
