@@ -1,6 +1,60 @@
 # wafer-proc-sim 開発ログ
 
-> 2026-05-30 作業まとめ　／　2026-06-01 2nm ノード拡張
+> 2026-05-30 作業まとめ　／　2026-06-01 2nm ノード拡張　／　2026-06-04 TEL FEOL 魔改造　／　**2026-06-04 Keyence フルスタック**
+
+---
+
+## 0-A. Keyence フルスタック — 計測・ビジョン・APC (2026-06-04)
+
+キーエンス株式会社の主要製品群を SiC ダイシングプロセスに統合した 6 モジュール構成。
+商品開発職インターンポートフォリオとして設計し、計測物理 → GP 精度 → APC の因果連鎖を定量化。
+
+### 製品別モジュール
+
+| モジュール | 製品 | 計測原理 | 主要結果 |
+|-----------|------|---------|---------|
+| `fem/keyence_metrology_model.py` | **VK-X3100** 共焦点 | 共焦点 PSF + Beckmann 散乱 | σ_meas=0.28µm → Grade A → GP RMSE 1.62µm |
+| `fem/keyence_lj_profiler.py` | **LJ-X8080** レーザープロファイラ | 三角測量 (30°, 405nm) | σ_kerf=0.8µm、kerf/warp を 64kHz スキャン |
+| `fem/keyence_iv3_vision.py` | **IV3** マシンビジョン | 2D CMOS 0.5µm/px | pass/fail 200die/s、FN率 5%（目視 20% 比） |
+| `fem/keyence_business_model.py` | Keyence 企業分析 | 直販モデル・価値定価 | 営業利益率 55.1%、VK-X 価値定価根拠 |
+| `ml/keyence_quality_gp.py` | VK-X → GP 精度連鎖 | ヘテロセダスティック GP LOO-CV | Grade A n=11: RMSE 0.43µm、Grade D n=25: 3.32µm |
+| `pipeline/keyence_apc.py` | VK-X → EnKF APC | Ensemble Kalman Filter R2R | VK-X σ=0.28µm → RMSE -79.4% vs open-loop |
+
+### 統合パイプライン
+
+`pipeline/keyence_inspection_pipeline.py` — LJ-X（ウェーハ反り確認）→ IV3（インライン全数検査）→ VK-X（10%サンプリング）の 3 段構成。コスト最適化比較:
+
+| 構成 | スループット | 歩留まり精度 | コスト/wafer |
+|------|------------|------------|-------------|
+| VK-X 全数 | 低 | 最高 | ¥40,000 |
+| IV3 のみ | 最高 | FN 5% | ¥2,000 |
+| **IV3 + VK-X 10% (推奨)** | 高 | FN<1% | **¥9,270** |
+
+### テスト
+
+`tests/test_keyence.py` — 13 件 pass (0.53 s)
+
+---
+
+## 0. 魔改造 TEL — FEOL プロセス最適化スタック (2026-06-04)
+
+既存の TEL FEOL 物理 (`fem/tel_process_model.py` ALD/Deal-Grove/Dit/RIE/移動度/MOSFET、
+`fem/tel_cleaning_model.py` 洗浄シーケンス) の上に、レシピ→デバイス性能の最適化スタックを構築。
+
+**土台:** `fem/tel_feol_recipe.py` — `simulate_recipe(recipe, tool_state) -> FOM`。
+8変数レシピ(酸化T/t・anneal・ALD材料/cycles・洗浄/ダイシング/RIEガス) → µ_ch/Dit/V_th/I_on/R_on,sp/均一性/熱予算。
+多目的(µ_ch↑·R_on↓·熱予算↓)・スカラーFOM・ベクトルエンコードを提供。default で µ_ch=75.1 / V_th=3.00。
+
+| モジュール | 手法 | 検証結果 |
+|-----------|------|---------|
+| `ml/tel_feol_surrogate.py` | ARD-RBF GP 代理 (N=120) | µ_ch R²=0.89 / R_on R²=0.87 (hold-out, リークなし) |
+| `optimization/tel_feol_bo.py` | ParEGO 多目的BO → Pareto | HV +25.4% (60 evals)、best µ_ch=92.8 |
+| `pipeline/tel_apc.py` | EnKF run-to-run 制御 (APC) | RMSE 0.336→0.182 (-45.8%, 80ウェーハ) |
+| `optimization/tel_tmcmc_calibration.py` | TMCMC 物理較正 (Ching-Chen) | B_coul=5.4e13 (公称5.5e13)、logZ=-7.09 (brute-force -7.05) |
+| `fem/tel_equipment_competitiveness.py` | 装置スペック→歩留まり MC | 洗浄軸が支配的: TEL歩留100% vs 競合0% |
+
+各モジュールは forward model だけに依存。10エージェント(ビルド5+敵対的物理レビュー5)で構築、全 pass。
+統合テスト `tests/test_tel_feol.py` 9件 pass。図は `results/tel_feol_*.png` 他に出力。
 
 ---
 
