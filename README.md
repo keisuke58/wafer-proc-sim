@@ -2,6 +2,7 @@
 
 **Data-quality-aware heteroscedastic GP surrogate for 4H-SiC blade dicing process optimization**
 
+[![CI](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
