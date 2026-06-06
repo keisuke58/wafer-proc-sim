@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Pragma" content="no-cache" />
+<!--ブラウザにキャッシュさせない処理-->
+<meta http-equiv="Cache-Control" content="no-cache" />
+<!--ブラウザにキャッシュさせない処理-->
+<meta http-equiv="Expires" content="0" />
+<!--ブラウザのキャッシュの有効期限を設定-->
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<!--IEの最新バージョンの標準指定-->
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3, user-scalable=yes" />
+<title>共通 | 株式会社ディスコ</title>
+
+<link rel="stylesheet" type="text/css" href="/css/ress.css" />
+
+<link rel="stylesheet" type="text/css" href="/css/common.css?1780784022" />
+<link rel="stylesheet" type="text/css" href="/css/style.css?1780784022" />
+<link rel="stylesheet" type="text/css" href="/css/gnav_hamburger.css?1780784022" />
+<link rel="stylesheet" type="text/css" href="/css/iconfont/material-design-icons.css" />
+<link rel="stylesheet" type="text/css" href="/css/components/siteki.css?1780784022" />
+<script type="text/javascript" src="/js/oss/jquery-3.7.1.min.js"></script></head>
+
+<body>
+  <div id="wrapper">
+
+
+  </div>
+  <script type="text/javascript">
+//ブラウザの言語設定をみて、各言語Topにリダイレクト
+function getBrowserLANG() {
+  try {
+		return (navigator.browserLanguage || navigator.language || navigator.userLanguage).substr(0,5)
+  }
+  catch(e) {
+    return undefined;
+  }
+}
+
+let browserlng = getBrowserLANG().toLowerCase();
+let browserlng_short = browserlng.substr(0,2);
+		
+if( browserlng_short == 'ja' ){
+	window.open('jp/index.html', '_self');
+}else if(browserlng_short == 'zh'){
+	if(browserlng == 'zh-cn'){
+		window.open('cn_s/index.html', '_self');
+	}else{
+		window.open('cn_t/index.html', '_self');
+	};
+}else if(browserlng_short == 'ko'){
+	window.open('kr/index.html', '_self');
+}else{
+	window.open('eg/index.html', '_self');
+}
+  
+  </script>
+
+</body>
+
+</html>

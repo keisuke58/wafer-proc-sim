@@ -73,6 +73,7 @@ results/*.png
 # Large external datasets (download separately)
 data/external/**/*
 !data/external/.gitkeep
+data/papers/*.pdf
 
 # Simulation run outputs (keep example INPs only)
 runs/*
