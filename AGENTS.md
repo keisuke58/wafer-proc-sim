@@ -38,9 +38,22 @@ Reproduce and extend **4H-SiC blade dicing** surrogate modeling (heteroscedastic
 - Run `pytest tests/test_paper_metrics.py` after GP / data changes
 - Paper metric targets: all grades LOO RMSE ≈ 3.12 µm; Grade A/B LOO RMSE ≈ 1.62 µm, R² ≈ 0.80
 
+## Key docs
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — paper spine + data flow
+- [docs/ZENODO.md](docs/ZENODO.md) — archive / citation (DOI 10.5281/zenodo.20495459)
+- [docs/TIERS.md](docs/TIERS.md) — core vs portfolio modules
+
 ## Dependencies
 
 ```bash
 pip install -e ".[dev]"    # core + pytest
 pip install -e ".[full]"   # + streamlit, pennylane, etc.
+```
+
+## Pre-commit
+
+```bash
+pip install pre-commit && pre-commit install
+pre-commit run --all-files   # optional local check
 ```
