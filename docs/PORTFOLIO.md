@@ -14,6 +14,16 @@ This document covers DISCO-oriented portfolio mapping. It is **not** required fo
 
 ## Interview demo flow
 
+**One command (recommended):**
+
+```bash
+./scripts/demo_disco.sh              # quick: figures + LOO + SW stack (~3 min)
+./scripts/demo_disco.sh --full       # full paper reproduction
+./scripts/demo_disco.sh --streamlit  # quick + launch paper Streamlit app
+```
+
+**Manual steps:**
+
 1. **Core paper** — `./scripts/reproduce_paper.sh` (5 min): heteroscedastic GP LOO, EnKF pipeline
 2. **Process depth** — `python pipeline/run_full_pipeline.py --process stealth`
 3. **Software stack** — `python pipeline/disco_sw_stack.py` (state machine + recipe manager)

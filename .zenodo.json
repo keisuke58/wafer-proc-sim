@@ -1,0 +1,31 @@
+{
+  "title": "wafer-proc-sim: Data-quality-aware heteroscedastic GP surrogate for 4H-SiC blade dicing",
+  "description": "Open-source framework for 4H-SiC blade dicing process optimization combining physics-based simulation, heteroscedastic Gaussian process surrogates, Ensemble Kalman Filter state estimation, and Bayesian optimization. Core paper path is reproducible via scripts/reproduce_paper.sh with CI-regression-tested LOO metrics.",
+  "upload_type": "software",
+  "publication_date": "2026-06-07",
+  "creators": [
+    {
+      "name": "Nishioka, Keisuke",
+      "affiliation": "Keio University / Leibniz University Hannover",
+      "orcid": ""
+    }
+  ],
+  "keywords": [
+    "silicon carbide",
+    "wafer dicing",
+    "heteroscedastic Gaussian process",
+    "process optimization",
+    "semiconductor manufacturing",
+    "surrogate modeling",
+    "Ensemble Kalman Filter"
+  ],
+  "license": "mit",
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "https://github.com/keisuke58/wafer-proc-sim",
+      "scheme": "url"
+    }
+  ],
+  "version": "0.2.0"
+}

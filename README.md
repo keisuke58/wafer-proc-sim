@@ -3,8 +3,10 @@
 **Data-quality-aware heteroscedastic GP surrogate for 4H-SiC blade dicing process optimization**
 
 [![CI](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495459.svg)](https://doi.org/10.5281/zenodo.20495459)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/keisuke58/wafer-proc-sim)](https://github.com/keisuke58/wafer-proc-sim/releases)
 
 ---
 
@@ -56,6 +58,7 @@ python ml/train_from_experimental.py --loo --quality AB
 python pipeline/sic_dicing_pipeline.py --no-plots
 pytest tests/ -v
 streamlit run demos/paper_app.py                    # minimal paper demo
+./scripts/demo_disco.sh                               # DISCO interview demo
 ```
 
 ---
@@ -107,6 +110,7 @@ Full specification: `validation/experimental_data.py`.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Core data flow |
 | [docs/TIERS.md](docs/TIERS.md) | Core vs extension layout |
 | [docs/PORTFOLIO.md](docs/PORTFOLIO.md) | DISCO interview / portfolio mapping |
+| [docs/ZENODO.md](docs/ZENODO.md) | Zenodo DOI & archive instructions |
 | [AGENTS.md](AGENTS.md) | AI agent instructions |
 | [DEVLOG.md](DEVLOG.md) | Development history |
 | [demos/README.md](demos/README.md) | Streamlit & pipeline demos |
@@ -124,6 +128,16 @@ Full specification: `validation/experimental_data.py`.
   year    = {2025},
   note    = {submitted},
   url     = {https://github.com/keisuke58/wafer-proc-sim}
+}
+
+@software{nishioka2026wafer,
+  author    = {Nishioka, Keisuke},
+  title     = {wafer-proc-sim},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {0.2.0},
+  doi       = {10.5281/zenodo.20495459},
+  url       = {https://github.com/keisuke58/wafer-proc-sim}
 }
 ```
 

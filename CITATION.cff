@@ -3,11 +3,13 @@ message: >-
   If you use this software in your research, please cite it using
   the metadata in this file.
 
-title: "wafer-proc-sim: Physics-Informed Machine Learning for SiC Wafer Process Simulation"
+title: >-
+  wafer-proc-sim: Data-quality-aware heteroscedastic GP surrogate
+  for 4H-SiC blade dicing process optimization
 
 type: software
 
-doi: "10.5281/zenodo.20495460"
+doi: "10.5281/zenodo.20495459"
 
 authors:
   - family-names: Nishioka
@@ -24,26 +26,22 @@ url: "https://wafer-proc-sim-o6bmowre8nbaodgkshj6ej.streamlit.app/"
 
 identifiers:
   - type: doi
+    value: "10.5281/zenodo.20495459"
+    description: "Zenodo concept DOI (resolves to latest release)"
+  - type: doi
     value: "10.5281/zenodo.20495460"
-    description: "Zenodo archive DOI"
+    description: "Zenodo v1.0.0 release DOI"
 
 abstract: >-
-  wafer-proc-sim is an open-source framework for physics-informed
-  simulation of silicon carbide (SiC) wafer processing, covering the
-  full semiconductor manufacturing pipeline from front-end dicing and
-  grinding through Fab process equipment models to back-end packaging
-  and test. The framework extends the TMCMC Bayesian inference and
-  multiscale FEM methodology developed in Nishioka et al. (2026,
-  doi:10.5281/zenodo.18790007) to the semiconductor domain, integrating
-  Gaussian process (GP) surrogate models for calibration against
-  experimental dicing data. It includes quantitative physics models for
-  semiconductor equipment manufacturers (ASML EUV, TEL, Disco,
-  Lasertec, Advantest, Lam Research, AMAT, KLA), device manufacturers
-  (TSMC, Intel, Samsung, SK Hynix, Nvidia), and emerging technologies
-  including vertically integrated mega-fabs (Terafab), silicon spin
-  qubit fabrication for quantum computing, and hyperscaler custom AI
-  ASIC supply-chain analysis. All models are validated against
-  peer-reviewed literature with 66 physics-constrained unit tests.
+  wafer-proc-sim is an open-source framework for 4H-SiC blade dicing
+  process optimization. The core contribution is a data-quality-aware
+  heteroscedastic Gaussian process surrogate trained on curated
+  experimental chipping data (N=25; Grade A/B subset N=11 achieves
+  LOO RMSE 1.62 µm, R² 0.80 vs 3.12 µm / 0.34 for mixed-quality data).
+  The pipeline integrates Ensemble Kalman Filter blade-wear tracking and
+  Bayesian recipe optimization. Reproducible via scripts/reproduce_paper.sh
+  with CI-regression-tested metrics. Extension modules cover semiconductor
+  equipment physics (TEL, Keyence, DISCO) for portfolio demonstrations.
 
 keywords:
   - silicon carbide
@@ -70,9 +68,9 @@ keywords:
 
 license: MIT
 
-version: "1.0.0"
+version: "0.2.0"
 
-date-released: "2026-06-02"
+date-released: "2026-06-07"
 
 references:
   - type: software

@@ -9,6 +9,7 @@ Reproduce and extend **4H-SiC blade dicing** surrogate modeling (heteroscedastic
 | Task | Entry point |
 |------|-------------|
 | Reproduce paper | `./scripts/reproduce_paper.sh` |
+| DISCO interview demo | `./scripts/demo_disco.sh` |
 | Train GP | `python ml/train_from_experimental.py --loo --quality AB` |
 | Run pipeline | `python pipeline/sic_dicing_pipeline.py --no-plots` |
 | Run tests | `pytest tests/ -v` |
