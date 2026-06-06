@@ -28,6 +28,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib; matplotlib.rcParams.update({"font.size":13,"axes.titlesize":14,"axes.labelsize":14,"xtick.labelsize":12,"ytick.labelsize":12,"legend.fontsize":12})
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -157,10 +158,10 @@ def plot_all(out_dir=OUT_DIR):
     ax.axvline(0,  color="#2166ac", ls="--", lw=1.5, label="m-face {10-10}")
     ax.axvline(30, color="#d62728", ls="--", lw=1.5, label="a-face {11-20}")
     ax.fill_between(theta_arr, kic_arr, 2.1, alpha=0.15, color="blue")
-    ax.set_xlabel("Dicing direction angle θ [°]", fontsize=10)
-    ax.set_ylabel("Fracture toughness K_Ic [MPa√m]", fontsize=10)
-    ax.set_title("4H-SiC K_Ic Anisotropy\n(0°=m-face, 30°=a-face)", fontsize=10)
-    ax.legend(fontsize=9); ax.grid(alpha=0.2)
+    ax.set_xlabel("Dicing direction angle θ [°]", fontsize=14)
+    ax.set_ylabel("Fracture toughness K_Ic [MPa√m]", fontsize=14)
+    ax.set_title("4H-SiC K_Ic Anisotropy\n(0°=m-face, 30°=a-face)", fontsize=14)
+    ax.legend(fontsize=12); ax.grid(alpha=0.2)
     ax.set_xlim(0, 60)
 
     # ── Panel 2: チッピング補正係数 ───────────────────────────────────────
@@ -176,10 +177,10 @@ def plot_all(out_dir=OUT_DIR):
                 label="Exp: chipping (Optics Laser Tech 2024)")
     ax2.scatter([0, 30], [1.00, 1.20], color="blue",  s=80, zorder=5,
                 label="Exp: roughness")
-    ax2.set_xlabel("Dicing direction angle θ [°]", fontsize=10)
-    ax2.set_ylabel("Correction factor (m-face = 1.0)", fontsize=10)
-    ax2.set_title("Chipping & Roughness Factor\nvs Crystal Direction", fontsize=10)
-    ax2.legend(fontsize=8); ax2.grid(alpha=0.2)
+    ax2.set_xlabel("Dicing direction angle θ [°]", fontsize=14)
+    ax2.set_ylabel("Correction factor (m-face = 1.0)", fontsize=14)
+    ax2.set_title("Chipping & Roughness Factor\nvs Crystal Direction", fontsize=14)
+    ax2.legend(fontsize=12); ax2.grid(alpha=0.2)
     ax2.set_xlim(0, 60)
 
     # ── Panel 3: GP サロゲート補正後チッピング (cut_depth 別) ─────────────
@@ -193,15 +194,15 @@ def plot_all(out_dir=OUT_DIR):
         ax3.plot(theta_arr, corrected, lw=2, color=col, label=f"depth={depth}µm")
     ax3.axvline(0,  color="blue",  ls="--", lw=1.2, alpha=0.7)
     ax3.axvline(30, color="red",   ls="--", lw=1.2, alpha=0.7)
-    ax3.set_xlabel("Dicing direction angle θ [°]", fontsize=10)
-    ax3.set_ylabel("Corrected chipping [µm]", fontsize=10)
-    ax3.set_title("GP Surrogate + Crystal Correction\nChipping vs Direction", fontsize=10)
-    ax3.legend(fontsize=8); ax3.grid(alpha=0.2)
+    ax3.set_xlabel("Dicing direction angle θ [°]", fontsize=14)
+    ax3.set_ylabel("Corrected chipping [µm]", fontsize=14)
+    ax3.set_title("GP Surrogate + Crystal Correction\nChipping vs Direction", fontsize=14)
+    ax3.legend(fontsize=12); ax3.grid(alpha=0.2)
     ax3.set_xlim(0, 60)
 
     fig.suptitle("4H-SiC Crystal Anisotropy — Dicing Direction Optimization\n"
                  "m-face {10-10}: best quality / a-face {11-20}: +28% chipping",
-                 fontsize=11, fontweight="bold")
+                 fontsize=14, fontweight="bold")
     plt.tight_layout()
     out = os.path.join(out_dir, "crystal_anisotropy.png")
     plt.savefig(out, dpi=300, bbox_inches="tight")

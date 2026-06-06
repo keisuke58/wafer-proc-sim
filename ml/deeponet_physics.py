@@ -38,6 +38,7 @@ import torch.optim as optim
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib; matplotlib.rcParams.update({"font.size":13,"axes.titlesize":14,"axes.labelsize":14,"xtick.labelsize":12,"ytick.labelsize":12,"legend.fontsize":12})
 
 torch.manual_seed(7)
 np.random.seed(7)

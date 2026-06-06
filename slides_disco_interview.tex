@@ -11,8 +11,9 @@
 % ── Theme ────────────────────────────────────────────────────────────────────
 \usetheme{Madrid}
 
-% ── Fonts: Times New Roman family ────────────────────────────────────────────
-\usepackage{mathptmx}
+% ── Fonts: Times New Roman (newtx) ───────────────────────────────────────────
+\usefonttheme{serif}          % switch Beamer headings to serif
+\usepackage{newtxtext,newtxmath}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
@@ -89,9 +90,7 @@
   AI-Driven Recipe Optimisation}
 \subtitle{DISCO Corporation --- Interview Presentation}
 \author[K.\ Nishioka]{Keisuke Nishioka}
-\institute[LUH / SFB TRR-298]{%
-  Leibniz University Hannover\\
-  SFB TRR-298 --- Computational Biology}
+\institute{}
 \date{2026}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -120,8 +119,7 @@
      AI-Driven Recipe Optimisation}\\[0.5em]
     {\color{white!80!discoblue}\normalsize DISCO Corporation --- Interview Presentation}\\[0.5em]
     {\color{discoorange}\rule{0.55\textwidth}{0.6pt}}\\[0.6em]
-    {\color{white}\small Keisuke Nishioka\\[0.2em]
-     Leibniz University Hannover / SFB TRR-298\\[0.2em]
+    {\color{white}\small Keisuke Nishioka\\[0.4em]
      2026}
   \end{center}
 
@@ -749,7 +747,6 @@
       \begin{tabular}{ll}
         \toprule
         Background & M.Sc.\ Mech.\ Eng. \\
-        Institute  & LUH / SFB TRR-298 \\
         Languages  & EN / JP / DE \\
         Start      & 2026 (flexible) \\
         \bottomrule

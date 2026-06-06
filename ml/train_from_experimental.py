@@ -178,15 +178,15 @@ def plot_sweeps(
             )
 
         ax.axhline(15.0, color="#d73027", ls="--", lw=1.2, label="Threshold 15 µm")
-        ax.set_xlabel(xlabel, fontsize=11)
-        ax.set_ylabel("Front Chipping [µm]", fontsize=11)
-        ax.legend(fontsize=8)
+        ax.set_xlabel(xlabel, fontsize=14)
+        ax.set_ylabel("Front Chipping [µm]", fontsize=14)
+        ax.legend(fontsize=12)
         ax.grid(alpha=0.25)
 
     fig.suptitle(
         "GP Surrogate — Experimental Data (Micro2026 + Mat2022)\n"
         "Fixed: blade_W=23 µm, others at Micro2026 reference",
-        fontsize=11,
+        fontsize=14,
     )
     plt.tight_layout()
     fig_path = os.path.join(out_dir, "gp_experimental_sweeps.png")
@@ -224,14 +224,14 @@ def plot_heatmap(
         plt.colorbar(im, ax=ax)
         ax.contour(D, F, mu.reshape(D.shape), levels=[15.0],
                    colors="white", linewidths=1.5, linestyles="--")
-        ax.set_xlabel("Cut Depth [µm]", fontsize=11)
-        ax.set_ylabel("Feed Speed [mm/s]", fontsize=11)
-        ax.set_title(title, fontsize=11)
+        ax.set_xlabel("Cut Depth [µm]", fontsize=14)
+        ax.set_ylabel("Feed Speed [mm/s]", fontsize=14)
+        ax.set_title(title, fontsize=14)
 
     axes[0].text(65, 3.0, "← 15 µm threshold", color="white",
-                 fontsize=9, va="top")
+                 fontsize=12, va="top")
     fig.suptitle("4H-SiC Blade Dicing — Chipping Response Surface\n"
-                 "(blade_W=23 µm, spindle=30 krpm, GP trained on Micro2026)", fontsize=11)
+                 "(blade_W=23 µm, spindle=30 krpm, GP trained on Micro2026)", fontsize=14)
     plt.tight_layout()
     fig_path = os.path.join(out_dir, "gp_experimental_heatmap.png")
     plt.savefig(fig_path, dpi=300, bbox_inches="tight")
