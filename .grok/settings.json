@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python pipeline/run_full_pipeline.py --process stealth)",
+      "Bash(python fem/intel_model.py)"
+    ]
+  }
+}
