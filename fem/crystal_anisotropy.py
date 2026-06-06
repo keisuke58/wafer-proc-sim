@@ -204,7 +204,7 @@ def plot_all(out_dir=OUT_DIR):
                  fontsize=11, fontweight="bold")
     plt.tight_layout()
     out = os.path.join(out_dir, "crystal_anisotropy.png")
-    plt.savefig(out, dpi=150, bbox_inches="tight")
+    plt.savefig(out, dpi=300, bbox_inches="tight")
     plt.close()
 
     # サマリー

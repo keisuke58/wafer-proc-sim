@@ -190,7 +190,7 @@ def plot_sweeps(
     )
     plt.tight_layout()
     fig_path = os.path.join(out_dir, "gp_experimental_sweeps.png")
-    plt.savefig(fig_path, dpi=150, bbox_inches="tight")
+    plt.savefig(fig_path, dpi=300, bbox_inches="tight")
     print(f"[✓] Sweep plot → {fig_path}")
     plt.close()
     return fig_path
@@ -234,7 +234,7 @@ def plot_heatmap(
                  "(blade_W=23 µm, spindle=30 krpm, GP trained on Micro2026)", fontsize=11)
     plt.tight_layout()
     fig_path = os.path.join(out_dir, "gp_experimental_heatmap.png")
-    plt.savefig(fig_path, dpi=150, bbox_inches="tight")
+    plt.savefig(fig_path, dpi=300, bbox_inches="tight")
     print(f"[✓] Heatmap → {fig_path}")
     plt.close()
     return fig_path

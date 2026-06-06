@@ -326,7 +326,7 @@ def plot_field(model: PhysicsDeepONet, data: dict, param_idx: int = 0):
     plt.tight_layout()
     out = os.path.join(OUT_DIR, "deeponet_field_comparison.png")
     os.makedirs(OUT_DIR, exist_ok=True)
-    plt.savefig(out, dpi=130, bbox_inches="tight")
+    plt.savefig(out, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Field comparison saved: {out}")
 
