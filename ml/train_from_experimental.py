@@ -131,6 +131,28 @@ def load_data(quality_filter: str = "all"):
     return X, y, df, np.array(alpha_list)
 
 
+def loo_heteroscedastic(quality_filter: str = "all") -> dict:
+    """Leave-one-out CV with per-point heteroscedastic noise (paper metrics)."""
+    from sklearn.model_selection import LeaveOneOut
+    from sklearn.metrics import mean_squared_error, r2_score
+
+    X, y, df, alpha_vec = load_data(quality_filter)
+    loo = LeaveOneOut()
+    preds = np.zeros_like(y)
+    for tr, te in loo.split(X):
+        tmp = ExperimentalGPSurrogate()
+        Xs = tmp.scaler_x.fit_transform(X[tr])
+        ys = tmp.scaler_y.fit_transform(y[tr].reshape(-1, 1)).ravel()
+        tmp.gp.alpha = alpha_vec[tr] / tmp.scaler_y.scale_[0] ** 2
+        tmp.gp.fit(Xs, ys)
+        Xte = tmp.scaler_x.transform(X[te])
+        mu, _ = tmp.gp.predict(Xte, return_std=True)
+        preds[te] = tmp.scaler_y.inverse_transform(mu.reshape(-1, 1)).ravel()
+    rmse = float(np.sqrt(mean_squared_error(y, preds)))
+    r2 = float(r2_score(y, preds))
+    return {"rmse": rmse, "r2": r2, "n": len(y), "quality": quality_filter, "loo_preds": preds}
+
+
 # ── Sweep helpers ─────────────────────────────────────────────────────────────
 
 def _sweep_array(vary_feat: str, x_vals: np.ndarray, fixed: dict) -> np.ndarray:
@@ -263,24 +285,8 @@ def main():
 
     if args.loo:
         print("\n[*] LOO cross-validation (with per-point quality noise) …")
-        # Temporarily pass alpha_vec to gp.alpha for LOO
-        from sklearn.model_selection import LeaveOneOut
-        from sklearn.metrics import mean_squared_error, r2_score
-        loo   = LeaveOneOut()
-        preds = np.zeros_like(y)
-        scaler_y_tmp = model.scaler_y
-        for tr, te in loo.split(X):
-            tmp = ExperimentalGPSurrogate()
-            Xs = tmp.scaler_x.fit_transform(X[tr])
-            ys = tmp.scaler_y.fit_transform(y[tr].reshape(-1,1)).ravel()
-            tmp.gp.alpha = alpha_vec[tr] / tmp.scaler_y.scale_[0]**2
-            tmp.gp.fit(Xs, ys)
-            Xte = tmp.scaler_x.transform(X[te])
-            mu, _ = tmp.gp.predict(Xte, return_std=True)
-            preds[te] = tmp.scaler_y.inverse_transform(mu.reshape(-1,1)).ravel()
-        rmse = float(np.sqrt(mean_squared_error(y, preds)))
-        r2   = float(r2_score(y, preds))
-        print(f"  LOO RMSE = {rmse:.2f} µm    R² = {r2:.4f}")
+        metrics = loo_heteroscedastic(args.quality)
+        print(f"  LOO RMSE = {metrics['rmse']:.2f} µm    R² = {metrics['r2']:.4f}")
 
     print("\n[*] Fitting on full dataset …")
     model.fit(X, y)

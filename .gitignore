@@ -26,17 +26,71 @@ abaqusis.env
 abaqus_acis.log
 *.env
 
-# Python cache
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
 
-# Jupyter checkpoints
+# Jupyter
 .ipynb_checkpoints/
 
-# Keep results/ but ignore large binary ODB
-runs/**/*.odb
+# LaTeX / Beamer build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
 
-# Keep INP files (human-readable, useful)
-!*.inp
-*.mov
+# Generated results (reproduce with scripts/reproduce_paper.sh)
+results/*.pkl
+results/*.pt
+results/*.npz
+results/*.jsonl
+results/d360_frames/
+results/demo_*.csv
+results/synthetic_*.csv
+results/pipeline_log.jsonl
+
+# Keep committed paper figures; ignore ad-hoc PNG dumps
+results/*.png
+!paper/**/figures/*.png
+
+# Large external datasets (download separately)
+data/external/**/*
+!data/external/.gitkeep
+
+# Simulation run outputs (keep example INPs only)
+runs/*
+!runs/examples/
+runs/examples/*
+!runs/examples/.gitkeep
+!runs/**/*.inp
+
+# Slides / demo build output
+demos/**/*.pdf
+slides_*.pdf
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Streamlit secrets
+.streamlit/secrets.toml
