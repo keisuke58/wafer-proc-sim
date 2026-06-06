@@ -37,14 +37,26 @@ Data quality stratification dominates data quantity for small-n process surrogat
 ```
 wafer-proc-sim/
 ├── fem/                        # Physics simulation models
-│   ├── dicing_blade_2d.py      # 2D FEM blade dicing
+│   ├── dicing_blade_2d.py      # 2D FEM blade dicing (fracture/chipping)
 │   ├── dicing_blade_3d.py      # 3D FEM blade dicing
 │   ├── crystal_anisotropy.py   # 4H-SiC anisotropy
+│   ├── blade_thermal_wear_2d.py    # Cutting heat + Taylor/Archard tool wear
+│   ├── stage_vibration_modal.py   # Chuck stage modal analysis (f1 vs f_blade)
+│   ├── stage_cad_geometry.py      # Parametric CAD geometry + DXF/JSON export
+│   ├── grinding_warpage_2d.py     # Backside grinding → residual stress → warpage
+│   ├── kabra_thermal_2d.py        # KABRA® laser slicing thermo-mechanical FEM
+│   ├── cmp_dry_polish_model.py    # CMP/Dry polish: Preston eq. + Arrhenius chem
+│   ├── stealth_dicing_crack_model.py  # Stealth dicing: K_I / XFEM crack propagation
+│   ├── plasma_etch_profile_model.py   # Plasma DRIE: Bosch ARDE + sidewall geometry
+│   ├── dbg_sdbg_model.py          # DBG/SDBG: Weibull die strength improvement
+│   ├── spindle_motor_control.py   # PMSM + FOC spindle motor electrical model
+│   └── wafer_thickness_sensor.py  # Eddy current + capacitive in-process sensor
 │   ├── cfrp_cutting_model.py   # CFRP cutting (milling/drilling/AWJ)
 │   ├── cfrp_defect_model.py    # CFRP NDT physics (5 methods)
 │   └── [30+ industry models]   # Market and competitive analysis
 ├── ml/
 │   ├── train_from_experimental.py  # Heteroscedastic GP surrogate
+│   ├── recipe_optimizer.py         # Multi-objective BO recipe control (SW layer)
 │   ├── cfrp_defect_detection.py    # CFRP anomaly + classification + sizing
 │   └── quantum_kernel_advanced.py  # Quantum kernel GP (experimental)
 ├── pipeline/
@@ -133,6 +145,22 @@ Full specification: `validation/experimental_data.py`.
   url     = {https://github.com/keisuke58/wafer-proc-sim}
 }
 ```
+
+---
+
+## Career Context
+
+This repository was developed as a research portfolio targeting **DISCO Corporation — all five engineering tracks**.
+
+| DISCO 職種 | カバレッジ | 主要ファイル |
+|---|---|---|
+| **メカ** (機械設計・構造FEM) | ◎ | `fem/disco_machine_struct.py` — スピンドルハウジング剛性・軸受選定・フレームモーダル・振動絶縁・熱膨張・公差積み上げ<br>`fem/dicing_blade_2d.py`, `3d.py` — ブレードFEM破壊解析<br>`fem/stage_vibration_modal.py`, `fem/stage_cad_geometry.py` — ステージ動特性・CAD |
+| **エレキ** (電気・制御・センサ) | ◎ | `fem/disco_elec_system.py` — DCバス設計・スピンドルインバータ熱計算・XYリニアモーター電流/位置制御・ビジョンLED同期・EMI予算・安全PLC(IEC 62061 SIL-2)<br>`fem/spindle_motor_control.py` — PMSM + FOC<br>`fem/wafer_thickness_sensor.py` — 渦電流/容量センサ + EnKF |
+| **プロセス** (プロセス研究・条件最適化) | ◎ | `fem/kabra_thermal_2d.py`, `fem/cmp_dry_polish_model.py`, `fem/stealth_dicing_crack_model.py`, `fem/plasma_etch_profile_model.py`, `fem/dbg_sdbg_model.py`<br>`optimization/bayesian_opt.py`, `optimization/tmcmc_dicing.py` |
+| **R&D** (先行研究・代理モデル) | ◎ | `ml/surrogate_gp.py`, `ml/train_from_experimental.py` — ヘテロセダスティックGP LOO-CV<br>`ml/recipe_optimizer.py` — 多目的BO<br>`ml/multifidelity_gp.py`, `ml/active_learning.py` — 次世代手法 |
+| **ソフト** (機械制御ソフト・パイプライン) | ◎ | `pipeline/disco_sw_stack.py` — 状態機械(IEC 61131-3準拠)・レシピ管理・1msRTループ・データヒストリアン・オペレータAPI・SW-FMEA<br>`pipeline/sic_dicing_pipeline.py`, `pipeline/keyence_apc.py` — APCパイプライン |
+
+**面接戦略**: 2次面接まで。各面接官の職種に応じて上記ファイルをデモとして提示し、「理論→実装→検証」の一貫性をアピール。
 
 ---
 
