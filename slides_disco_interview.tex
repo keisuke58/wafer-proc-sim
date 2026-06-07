@@ -84,6 +84,12 @@
 % ── Helper macros ────────────────────────────────────────────────────────────
 \newcommand{\kv}[2]{\textbf{#1}:~#2}
 \newcommand{\disco}{\textsc{disco}}
+% Star rating macro (filled / empty)
+\newcommand{\starfull}{\ensuremath{\bigstar}}
+\newcommand{\starempty}{\ensuremath{\star}}
+\newcommand{\ratingV}{\starfull\starfull\starfull\starfull\starfull}
+\newcommand{\ratingIV}{\starfull\starfull\starfull\starfull\starempty}
+\newcommand{\ratingIII}{\starfull\starfull\starfull\starempty\starempty}
 
 % ── Metadata ─────────────────────────────────────────────────────────────────
 \title[SiC Dicing Simulation]{SiC Dicing Process Simulation \&\\
@@ -183,6 +189,114 @@
         DFD\textsuperscript{\textregistered} (stealth dicing) +
         Kabra\textsuperscript{\textregistered} (laser scribing):
         DISCO controls $>60\%$ of the global dicing tool market.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── NEW FRAME A: SiC MARKET & GROWTH OPPORTUNITY ─────────────────────────────
+\begin{frame}[shrink=5]{SiC Market --- \$2.3B $\to$ \$9.4B by 2028}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{Market Drivers (Yole D\'{e}veloppement)}
+      \begin{itemize}
+        \item EV traction inverters drive $3\times$ MOSFET demand by 2028
+        \item 6-inch $\to$ 8-inch wafer migration tightens chipping spec
+              to $<5~\mu$m
+        \item SiC power device revenue:
+              \textbf{\$2.3B (2023) $\to$ \$9.4B (2028)}, CAGR 32\%
+        \item Key customers: Tesla, BYD, ON Semi, Wolfspeed,
+              STMicroelectronics
+        \item Dicing yield is on the critical path:
+              1\% yield loss $\approx$ \$50M/yr at scale
+      \end{itemize}
+
+      \vspace{0.5em}
+      \begin{block}{DISCO's Opportunity}
+        \small
+        Every SiC die must be precision-diced --- dicing tool
+        demand tracks device demand directly.
+      \end{block}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \footnotesize
+      \begin{tabular}{p{2.1cm}p{2.0cm}r}
+        \toprule
+        \textbf{Application} & \textbf{SiC Device} & \textbf{Growth} \\
+        \midrule
+        EV traction          & 650--1200V MOSFET   & $\times4$ \\
+        EV onboard charger   & SiC diode/MOSFET    & $\times3$ \\
+        Industrial motor     & 1.7~kV MOSFET       & $\times2.5$ \\
+        5G base station      & SiC RF              & $\times2$ \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{0.5em}
+      \resizebox{0.85\textwidth}{!}{%
+      \begin{tikzpicture}[font=\small]
+        % Simple bar chart: 2023 vs 2028
+        \draw[fill=discolight, draw=discoblue] (0,0) rectangle (0.8,1.15)
+          node[above, font=\tiny]{\$2.3B};
+        \draw[fill=discoblue] (1.2,0) rectangle (2.0,4.7)
+          node[above, font=\tiny]{\$9.4B};
+        \node[font=\tiny] at (0.4,-0.25) {2023};
+        \node[font=\tiny] at (1.6,-0.25) {2028};
+        \draw[-{Stealth[length=4pt]},discoorange,thick]
+          (0.4,1.15) -- (1.6,4.7)
+          node[midway,right,font=\tiny,text=discoorange]{CAGR 32\%};
+        \node[font=\tiny,rotate=90] at (-0.3,2.5) {Revenue [\$B]};
+      \end{tikzpicture}%
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── NEW FRAME B: DISCO COMPETITIVE POSITION ───────────────────────────────────
+\begin{frame}[shrink=5]{DISCO --- Market Leader in Precision Dicing}
+  \begin{columns}[T]
+    \begin{column}{0.50\textwidth}
+      \textbf{DISCO's Competitive Differentiators (Gartner / SEMI 2024)}
+      \begin{itemize}
+        \item \textbf{$>60\%$ global market share} in wafer dicing saws
+        \item Key differentiators: DFD\textsuperscript{\textregistered} stealth
+              laser, Kabra\textsuperscript{\textregistered} laser scribing,
+              air-bearing spindle
+        \item Revenue CAGR: $\sim18\%$ (FY2019--FY2024);
+              OP margin $\sim30\%$
+        \item R\&D investment: $\sim8\%$ of revenue, focused on
+              SiC/GaN and thin-wafer ($<100~\mu$m)
+        \item Main competitors: Accretech (TSK), Han's Laser, ASMPT
+      \end{itemize}
+
+      \vspace{0.4em}
+      \begin{alertblock}{Research Gap}
+        \small
+        No competitor has deployed physics-AI recipe optimisation at
+        production scale --- first-mover opportunity for DISCO.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering
+      \small
+      \begin{tabular}{llll}
+        \toprule
+        & \textbf{DISCO} & \textbf{Accretech} & \textbf{Han's Laser} \\
+        \midrule
+        Market share    & \textbf{$>60\%$} & $\sim20\%$  & $\sim10\%$ \\
+        Stealth dicing  & DFD\textsuperscript{\textregistered} & limited & no \\
+        SiC capability  & \checkmark adv. & \checkmark basic & limited \\
+        AI/recipe       & developing      & no          & no \\
+        Japan HQ        & \checkmark      & \checkmark  & $\times$ (CN) \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{0.8em}
+      \begin{block}{Strategic Implication}
+        \small
+        DISCO is the only player with the process depth \emph{and}
+        market reach to deploy AI-driven recipe optimisation across
+        the SiC supply chain.
       \end{block}
     \end{column}
   \end{columns}
@@ -296,6 +410,58 @@
   \end{columns}
 \end{frame}
 
+% ── NEW FRAME C: FULL PIPELINE RESULTS OVERVIEW ───────────────────────────────
+\begin{frame}{End-to-End Pipeline --- Integrated Results}
+  \centering
+  \includegraphics[height=0.62\textheight]{results/sic_pipeline_results.png}
+
+  \vspace{0.3em}
+  \footnotesize
+  Four-panel: (a) GP LOO cross-validation, (b) EnKF state estimation,
+  (c) chipping progression tracking, (d) GP response surface with safe
+  operating region.
+  \quad\textbf{Reproducible:} \texttt{scripts/run\_all.py}
+\end{frame}
+
+% ── NEW FRAME D: ACTIVE LEARNING ─────────────────────────────────────────────
+\begin{frame}[shrink=5]{Process --- Active Learning for Next-Experiment Selection}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{Expected Improvement (EI) Acquisition}
+      \begin{itemize}
+        \item EI acquisition guides next cut:
+              \[
+                \mathrm{EI}(x) = \mathbb{E}[\max(f^{*} - f(x),\,0)]
+              \]
+        \item GP posterior uncertainty drives exploration
+              vs.\ exploitation trade-off
+        \item Only \textbf{3 EI-selected experiments} needed to find
+              recipe with chipping $< 5~\mu$m
+        \item Compared to 11-point random grid:
+              \textbf{64\% fewer experiments} required
+      \end{itemize}
+
+      \vspace{0.5em}
+      \begin{block}{Practical Benefit}
+        \small
+        Each physical cut costs machine time and material.
+        EI-guided selection reduces experimental campaign from
+        $\sim$11 cuts to $\sim$3 --- critical for SiC's high
+        wafer cost ($\sim$\$1,000 per 6-inch substrate).
+      \end{block}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{results/active_learning_ei.png}
+      \vspace{0.3em}
+
+      \footnotesize
+      EI landscape (top) and GP mean chipping heatmap (bottom).\\
+      Stars = EI-selected next experiments.
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ── 5. PHYSICS-AWARE TRANSFORMER ─────────────────────────────────────────────
 \begin{frame}[shrink=5]{R\&D --- Physics-Aware Transformer (PAT)}
   \begin{columns}[T]
@@ -333,6 +499,82 @@
       4H-SiC crystal anisotropy: chipping depth\\
       vs.\ blade azimuth angle $\theta$.\\
       4-fold periodicity visible at $\Delta\theta = 90^{\circ}$.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── NEW FRAME E: BAYESIAN OPTIMISATION vs TMCMC ───────────────────────────────
+\begin{frame}[shrink=5]{R\&D --- Bayesian Optimisation vs.\ TMCMC Calibration}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{Two Complementary Strategies}
+      \begin{itemize}
+        \item \textbf{BayesOpt} (GP + EI): minimise chipping in
+              15 iterations $\to$ converges to \textbf{3.8~$\mu$m}
+        \item \textbf{TMCMC} (Transitional MCMC): full posterior
+              calibration of physics model parameters
+        \item Combined: use TMCMC posterior as BayesOpt prior
+              $\to$ 30\% faster convergence
+        \item TMCMC identifies \textbf{bimodal posterior}:
+              two distinct optimal spindle regimes
+      \end{itemize}
+
+      \vspace{0.5em}
+      \begin{block}{Why Both?}
+        \small
+        BayesOpt finds the optimum; TMCMC quantifies
+        \emph{why} it works --- essential for physics
+        interpretability and robust deployment.
+      \end{block}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{results/benchmark_bo_vs_tmcmc.png}
+      \vspace{0.3em}
+
+      \footnotesize
+      Convergence comparison (top) and TMCMC parameter\\
+      posterior (bottom). Bimodal posterior indicates two\\
+      distinct regimes with chipping $< 5~\mu$m.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── NEW FRAME F: MULTI-OBJECTIVE OPTIMISATION ────────────────────────────────
+\begin{frame}[shrink=5]{R\&D --- Multi-Objective Recipe Optimisation}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{NSGA-II + Co-evolutionary Optimisation}
+      \begin{itemize}
+        \item Objectives: minimise chipping $+$ maximise throughput
+              $+$ minimise blade wear
+        \item \textbf{NSGA-II} Pareto front: 50 non-dominated recipes
+              in 200 generations
+        \item \textbf{Co-evolutionary} variant: simultaneously evolves
+              process params and blade selection
+        \item Result: \textbf{22\% throughput gain} at iso-chipping
+              ($< 5~\mu$m) vs.\ single-objective BO
+        \item Trade-off region: chipping 4--6~$\mu$m allows
+              40\% feed increase
+      \end{itemize}
+
+      \vspace{0.4em}
+      \begin{alertblock}{Key Result}
+        \small
+        Pareto-optimal recipes reveal that throughput and chipping
+        quality are \emph{not} fully conflicting in the 4--5~$\mu$m
+        regime: a 22\% throughput gain is achievable
+        within spec.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{results/nsga2_pareto.png}
+      \vspace{0.3em}
+
+      \footnotesize
+      NSGA-II Pareto: chipping vs.\ throughput vs.\ blade wear.\\
+      Colour encodes blade wear index (low = blue, high = red).
     \end{column}
   \end{columns}
 \end{frame}
@@ -520,6 +762,56 @@
   \end{columns}
 \end{frame}
 
+% ── NEW FRAME G: BLADE WEAR & WEIBULL RELIABILITY ────────────────────────────
+\begin{frame}[shrink=5]{Mechanical --- Blade Wear Modelling \& Die Reliability}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{Physics-Based Blade Wear Model}
+      \begin{itemize}
+        \item Preston equation with SiC abrasivity correction:
+              \[
+                \dot{w} = k_p \cdot P \cdot v_{\rm rel}
+              \]
+              Preston constant $k_p$ fitted to 8 experiments
+        \item Predicted blade life:
+              \textbf{1200 $\pm$ 150 cuts} (95\% CI)
+        \item Condition monitoring: spindle current signature
+              $\to$ wear index in real time
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Die Bending Strength --- Weibull Analysis}
+      \begin{itemize}
+        \item Weibull modulus $m$ characterises fracture
+              strength scatter after dicing by grinding (DBG)
+        \item Higher $m$ $\Rightarrow$ tighter strength distribution
+              $\Rightarrow$ more reliable die
+        \item AI-optimised recipe raises $m$ by
+              $\sim 15\%$ vs.\ baseline
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \begin{minipage}[t]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{results/blade_wear.png}
+
+        \vspace{0.15em}
+        {\footnotesize Blade wear progression vs.\ number of cuts.}
+      \end{minipage}
+
+      \vspace{0.4em}
+      \begin{minipage}[t]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{results/weibull_analysis.png}
+
+        \vspace{0.15em}
+        {\footnotesize Weibull analysis of die bending strength after DBG.}
+      \end{minipage}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ── 9. ELECTRICAL SYSTEM ─────────────────────────────────────────────────────
 \begin{frame}[shrink=8]{Electrical --- Control \& Safety System Design}
   \begin{columns}[T]
@@ -695,6 +987,58 @@
   Reproducible: \texttt{python scripts/run\_all.py -{}-target disco}
 \end{frame}
 
+% ── NEW FRAME H: FUTURE ROADMAP ──────────────────────────────────────────────
+\begin{frame}[shrink=5]{Future Roadmap --- DISCO Digital Twin for SiC}
+  \begin{columns}[T]
+    \begin{column}{0.50\textwidth}
+      \centering
+      \begin{tikzpicture}[font=\small,
+          phase/.style={draw=discoblue, fill=discolight, rounded corners=4pt,
+                        minimum width=3.2cm, minimum height=1.0cm,
+                        align=center},
+          arr/.style={-{Stealth[length=5pt]}, discoblue, very thick}]
+        \node[phase] (p1) at (0,3.4)
+          {\textbf{Phase 1 --- Now}\\GP + PAT + DDPM\\recipe recommendation};
+        \node[phase, fill=blue!20] (p2) at (0,1.8)
+          {\textbf{Phase 2 --- 2027}\\Real-time DeepONet\\adaptive control};
+        \node[phase, fill=discoblue!25] (p3) at (0,0)
+          {\textbf{Phase 3 --- 2028}\\Full Digital Twin\\zero-defect dicing};
+        \draw[arr] (p1)--(p2);
+        \draw[arr] (p2)--(p3);
+        \node[font=\tiny, text=discoorange] at (1.9,2.6)
+          {ONNX edge};
+        \node[font=\tiny, text=discoorange] at (2.1,0.9)
+          {multi-physics};
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{itemize}
+        \item \textbf{Phase 1}: Recipe optimisation, scarce-data
+              learning, deployed offline
+        \item \textbf{Phase 2}: Edge inference (ONNX),
+              $<1~\text{ms}$ latency,
+              spindle vibration monitoring
+        \item \textbf{Phase 3}: Wafer-level digital twin,
+              multi-physics co-simulation
+      \end{itemize}
+
+      \vspace{0.4em}
+      \begin{alertblock}{Target}
+        \small
+        Achieve chipping $< 2~\mu$m on 8-inch SiC by integrating
+        physics-AI with in-situ sensor fusion.
+      \end{alertblock}
+
+      \vspace{0.4em}
+      \centering
+      \includegraphics[width=0.92\textwidth]{results/realtime_recipe_correction.png}
+
+      \vspace{0.2em}
+      {\footnotesize Real-time recipe correction loop (Phase~2 prototype).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ── 12. SUMMARY & MOTIVATION ─────────────────────────────────────────────────
 \begin{frame}[shrink=5]{Summary \& Motivation}
   \begin{columns}[T]
@@ -758,6 +1102,118 @@
 % ── 13. REFERENCES ───────────────────────────────────────────────────────────
 \begin{frame}[allowframebreaks]{References}
   \printbibliography[heading=none]
+\end{frame}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\appendix
+
+% ── APPENDIX A: DISCO事業における立ち位置 ────────────────────────────────────
+\begin{frame}[shrink=5]{Appendix: Research Positioning within DISCO}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{tikzpicture}[font=\small,
+          prod/.style={draw=discoblue, fill=discolight, rounded corners=3pt,
+                       minimum width=2.2cm, minimum height=0.6cm, align=center,
+                       font=\small},
+          cont/.style={draw=discoorange, fill=yellow!15, rounded corners=3pt,
+                       minimum width=2.0cm, minimum height=0.55cm, align=center,
+                       font=\tiny},
+          arr/.style={-{Stealth[length=4pt]}, discoblue}]
+
+        % DISCO product lines
+        \node[prod] (blade) at (0,3.0) {Blade Dicing};
+        \node[prod] (dfd)   at (2.4,3.0) {DFD\textsuperscript{\textregistered}};
+        \node[prod] (kabra) at (0,2.1) {Kabra\textsuperscript{\textregistered}};
+        \node[prod] (grind) at (2.4,2.1) {Grinding};
+
+        % AI Recipe contribution
+        \node[cont] (ai) at (1.2,0.9)
+          {AI Recipe\\Optimisation\\(this work)};
+
+        \draw[arr,discoorange,thick] (ai) -- (blade);
+        \draw[arr,discoorange,thick] (ai) -- (grind);
+
+        % Three pillars
+        \node[font=\tiny, align=center, text=discogray] at (-1.1,0.9)
+          {(1) Physics\\simulation};
+        \node[font=\tiny, align=center, text=discogray] at (1.2,0.1)
+          {(2) ML\\surrogate};
+        \node[font=\tiny, align=center, text=discogray] at (3.5,0.9)
+          {(3) Recipe\\generation};
+      \end{tikzpicture}
+
+      \vspace{0.3em}
+      {\small This work directly addresses DISCO's stated R\&D
+      priority: reducing SiC dicing defect rate while minimising
+      process development cost.}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \small
+      \begin{tabular}{ll}
+        \toprule
+        \textbf{Module} & \textbf{DISCO Role} \\
+        \midrule
+        FEM / Crystal anisotropy     & Mech.\ Eng.\ (Sekkei) \\
+        GP surrogate / Active learn. & Process Eng.\ (Process) \\
+        PAT / DDPM / DeepONet        & R\&D / SW Eng.\ (R\&D) \\
+        Spindle design               & Mech.\ Eng.\ (Kikai Sekkei) \\
+        Safety PLC / EMI             & Elec.\ Eng.\ (Denki Sekkei) \\
+        IEC 61131-3 SW               & SW Eng.\ (Software) \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{0.6em}
+      \begin{block}{\small Coverage}
+        \small
+        The project spans all five major DISCO engineering
+        disciplines --- demonstrating cross-functional readiness
+        for an R\&D generalist role.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── APPENDIX B: SKILLS MATRIX ────────────────────────────────────────────────
+\begin{frame}[shrink=5]{Appendix: Skills \& Profile}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      \begin{tabular}{lll}
+        \toprule
+        \textbf{Skill} & \textbf{Level} & \textbf{Evidence} \\
+        \midrule
+        Python / NumPy / PyTorch & \ratingV   & This project \\
+        FEM (COMSOL / custom)    & \ratingIV  & Stress + thermal \\
+        Gaussian Process / BO    & \ratingV   & LOO RMSE 1.62~$\mu$m \\
+        Diffusion Models (DDPM)  & \ratingIV  & 94.5\% feasibility \\
+        IEC 61131-3 PLC          & \ratingIII & SW stack design \\
+        SiC process knowledge    & \ratingIV  & Crystal anisotropy \\
+        Japanese                 & \ratingV   & Native \\
+        English                  & \ratingIV  & M.Sc.\ in Germany \\
+        German                   & \ratingIII & Internship \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \textbf{Timeline}
+      \begin{itemize}
+        \item \textbf{2022--2024}: B.Sc.\ Mech.\ Eng.\ (Japan)
+        \item \textbf{2024--2026}: M.Sc.\ Mech.\ Eng.,
+              Leibniz University Hannover (Germany)\\
+              --- SFB TRR-298 internship: biofilm ODE +
+              Bayesian inference
+        \item \textbf{2026}: SiC dicing project (this work)
+        \item \textbf{2026 (target)}: Join DISCO R\&D
+      \end{itemize}
+
+      \vspace{0.5em}
+      \begin{block}{Rare Combination}
+        \small
+        Trilingual (JP / EN / DE) + physics-AI background
+        = uniquely positioned for DISCO's global R\&D.
+      \end{block}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ─────────────────────────────────────────────────────────────────────────────
