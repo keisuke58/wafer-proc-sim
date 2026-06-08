@@ -521,13 +521,91 @@ def _plot_limits():
     print(f"\n  Saved: {out}")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 7. Literature validation — compare model vs. experimental data
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def validate_against_literature() -> dict:
+    """
+    Cross-check wafer_thinning_critical_thickness() against HBM paper data.
+
+    HBM paper (Materials 2024, PMC11595813) measures chip fracture strength
+    after 3-point bending for three singulation methods on Si(111).
+
+    We back-calculate the effective Griffith flaw size implied by each process,
+    then re-run our model with that flaw size and compare the predicted fracture
+    stress against the measured value.
+    """
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from validation.experimental_data import (
+        CHIP_STRENGTH_MPa, effective_flaw_size_um, gf_to_mpa
+    )
+
+    methods = ("stealth_dicing", "blade_dicing", "laser_grooving")
+    thicknesses = (60, 90, 120)
+
+    rows = []
+    for method in methods:
+        for t_um in thicknesses:
+            sigma_exp = CHIP_STRENGTH_MPa.get((method, t_um))
+            if sigma_exp is None:
+                continue
+            a_eff_um  = effective_flaw_size_um(method, t_um)
+            # Model prediction at that flaw size
+            w = wafer_thinning_critical_thickness(
+                Si, flaw_size_nm=a_eff_um * 1e3, wafer_diameter_mm=4.0
+            )
+            sigma_model = w["griffith_frac_stress_MPa"]
+            err_pct = (sigma_model - sigma_exp) / sigma_exp * 100
+
+            rows.append({
+                "method":       method,
+                "thickness_um": t_um,
+                "sigma_exp_MPa":   sigma_exp,
+                "a_eff_um":        a_eff_um,
+                "sigma_model_MPa": sigma_model,
+                "error_pct":       err_pct,
+            })
+
+    return rows
+
+
+def print_validation():
+    rows = validate_against_literature()
+
+    print("\n" + "═" * 72)
+    print("  Literature Validation — Griffith model vs. HBM paper (PMC11595813)")
+    print("  Si(111) chip 3PB strength: back-calc a_eff → re-predict σ_f")
+    print("═" * 72)
+    print(f"  {'Method':<18} {'t[µm]':>6} {'σ_exp':>8} {'a_eff':>8} "
+          f"{'σ_model':>8} {'err%':>7}")
+    print("  " + "-" * 60)
+    for r in rows:
+        flag = "✅" if abs(r["error_pct"]) < 5 else ("⚠️ " if abs(r["error_pct"]) < 15 else "❌")
+        print(f"  {r['method']:<18} {r['thickness_um']:>6} "
+              f"{r['sigma_exp_MPa']:>7.0f}M "
+              f"{r['a_eff_um']:>7.2f}µ "
+              f"{r['sigma_model_MPa']:>7.0f}M "
+              f"{r['error_pct']:>+6.1f}%  {flag}")
+    print()
+    print("  Note: σ_model = K_Ic/√(πa_eff) — tautological at 60µm (by construction).")
+    print("  Physical insight: a_eff encodes process damage depth:")
+    print("    stealth_dicing : ~1–2 µm   (modified layer, minimal mechanical damage)")
+    print("    blade_dicing   : ~8–10 µm  (subsurface microcracks from abrasion)")
+    print("    laser_grooving : ~90 µm    (HAZ + thermal cracking)")
+    print()
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 PLANCK_EV_NM = 1239.84
 
 def main():
     parser = argparse.ArgumentParser(description="Physical limits of DISCO processes")
-    parser.add_argument("--plot", action="store_true")
+    parser.add_argument("--plot",     action="store_true")
+    parser.add_argument("--validate", action="store_true",
+                        help="Cross-check against HBM paper data")
     parser.add_argument("--material", default="Si",
                         choices=["Si", "SiC", "GaN", "Diamond"])
     args = parser.parse_args()
@@ -535,7 +613,6 @@ def main():
     mat_map = {"Si": Si, "SiC": SiC, "GaN": GaN, "Diamond": Diamond}
     print_roadmap()
 
-    # Detailed Griffith for selected material
     w = wafer_thinning_critical_thickness(mat_map[args.material])
     print(f"  Detailed Griffith analysis: {args.material}")
     print(f"    σ_fracture (Griffith): {w['griffith_frac_stress_MPa']:.0f} MPa")
@@ -543,6 +620,9 @@ def main():
     print(f"    Safety factor @ 25µm:  {w['safety_at_25um']:.2f}")
     print(f"    Safety factor @ 10µm:  {w['safety_at_10um']:.2f}")
     print(f"    Safety factor @  5µm:  {w['safety_at_5um']:.2f}")
+
+    if args.validate:
+        print_validation()
 
     if args.plot:
         _plot_limits()
