@@ -154,24 +154,48 @@ def simulate_doe(X: np.ndarray, noise_frac: float = 0.04,
 
     if os.path.exists(_fem_path):
         import pandas as pd
-        from sklearn.neighbors import KNeighborsRegressor
-        df   = pd.read_csv(_fem_path)
-        # Map FEM DOE outputs → our three targets
+        from sklearn.gaussian_process import GaussianProcessRegressor
+        from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
+        from sklearn.preprocessing import StandardScaler
+
+        df    = pd.read_csv(_fem_path)
         X_fem = df[["power_W", "speed_mm_s", "focus_depth_um"]].values
-        # throughput_proxy is speed/HAZ — re-normalise to mm²/s units
         tp_fem = df["speed_mm_s"].values * df["kerf_quality"].values
         Y_fem  = np.column_stack([
             df["haz_radius_um"].values,
             df["kerf_quality"].values,
             tp_fem,
         ])
-        # Use 5-NN interpolation to evaluate at arbitrary query points X
-        knn = KNeighborsRegressor(n_neighbors=5, weights="distance")
-        knn.fit(X_fem, Y_fem)
-        Y_pred = knn.predict(X)
+
+        # Use only viable points (T_peak > T_damage) for GP fit — flat response
+        # elsewhere is handled by the GP prior mean (zero after scaling)
+        viable = df["above_damage_thr"].values.astype(bool)
+        X_fit  = X_fem[viable]
+        Y_fit  = Y_fem[viable]
+
+        # Normalise inputs
+        sx = StandardScaler()
+        X_fit_s = sx.fit_transform(X_fit)
+        X_q_s   = sx.transform(X)
+
+        kernel = (ConstantKernel(1.0) * Matern(nu=2.5, length_scale=1.0,
+                  length_scale_bounds=(0.1, 10.0)) + WhiteKernel(1e-3))
+
+        Y_pred = np.zeros((len(X), Y_fem.shape[1]))
+        for j in range(Y_fem.shape[1]):
+            sy = StandardScaler()
+            y_s = sy.fit_transform(Y_fit[:, j:j+1]).ravel()
+            gp  = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=3,
+                                            normalize_y=False, random_state=42)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                gp.fit(X_fit_s, y_s)
+            mu, _ = gp.predict(X_q_s, return_std=True)
+            Y_pred[:, j] = sy.inverse_transform(mu.reshape(-1, 1)).ravel()
+
         rng = np.random.RandomState(99)
-        noise = 1 + noise_frac * rng.randn(*Y_pred.shape)
-        Y_pred = np.clip(Y_pred * noise, 0, None)
+        noise   = 1 + noise_frac * rng.randn(*Y_pred.shape)
+        Y_pred  = np.clip(Y_pred * noise, 0, None)
         Y_pred[:, 1] = np.clip(Y_pred[:, 1], 0, 1)
         return Y_pred
 
