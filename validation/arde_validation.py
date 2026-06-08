@@ -181,7 +181,7 @@ def print_arde_model_table():
     print()
 
 
-def run(xlsx_path: str | None = None, verbose: bool = True):
+def run(xlsx_path: str | None = None, verbose: bool = True, skip_gp: bool = False):
     path = xlsx_path or _DATASET
     if not os.path.exists(path):
         raise FileNotFoundError(
@@ -215,7 +215,8 @@ def run(xlsx_path: str | None = None, verbose: bool = True):
     # GP surrogate
     if verbose:
         print("── GP Surrogate Fit (etch rate vs process params) ────────────────────")
-    gp, scaler, rmse, r2 = fit_gp_surrogate(groups)
+    gp, scaler, rmse, r2 = (None, None, None, None) if skip_gp \
+                            else fit_gp_surrogate(groups)
     if gp is not None and verbose:
         print(f"  5-fold CV RMSE : {rmse:.4f} (normalized units)")
         print(f"  5-fold CV R²   : {r2:.3f}")
@@ -354,6 +355,10 @@ if __name__ == "__main__":
     parser.add_argument("--quiet",    action="store_true")
     parser.add_argument("--plot-dir", default=None,
                         help="Directory to save figures (e.g. results/arde/)")
+    parser.add_argument("--no-gp",   action="store_true",
+                        help="Skip slow GP fitting (figures 1+2 only)")
     args = parser.parse_args()
-    result = run(xlsx_path=args.dataset, verbose=not args.quiet)
-    plot(result, save_dir=args.plot_dir)
+    result = run(xlsx_path=args.dataset, verbose=not args.quiet,
+                 skip_gp=args.no_gp)
+    if args.plot_dir is not None:
+        plot(result, save_dir=args.plot_dir)
