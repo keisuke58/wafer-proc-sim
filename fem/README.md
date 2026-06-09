@@ -14,6 +14,37 @@
 | `stealth_dicing_crack_model.py` | Stealth dicing K_I / crack propagation |
 | `dbg_sdbg_model.py` | DBG/SDBG Weibull die strength |
 
+## Performance: vectorized hot-loop kernels
+
+| Module | Role |
+|--------|------|
+| `laser_groove_vectorized.py` | NumPy / numba / C++ kernels for the stealth-dicing model |
+| `_stealth_kernel.cpp` | Real C++ compute kernel (pybind11) |
+| `build_cpp_kernel.sh` | Builds the C++ extension in place |
+| `bench_stealth_dicing.py` | Benchmark: scalar vs NumPy vs numba vs C++ |
+
+The scalar `stealth_dicing()` in `laser_groove_thermal_2d.py` is the readable
+reference, but parameter sweeps and the Bayesian optimizer call it thousands of
+times — a per-point Python/`math` loop. `laser_groove_vectorized.py` moves only
+that hot loop to native code while keeping the orchestration in Python. The
+kernel preference inside `stealth_dicing_chipping_fast()` is **C++ → numba →
+NumPy**, each selected automatically with transparent fallback:
+
+- `stealth_dicing_vec(...)` — fully NumPy-vectorized (C under the hood, **zero
+  new dependencies**); evaluates a whole parameter grid in one array op.
+- **C++ kernel** (`_stealth_kernel.cpp`, pybind11) — the production-shaped path:
+  Python orchestration on top, compiled C++ underneath, mirroring how DISCO's
+  on-tool stack is layered (`pipeline/disco_sw_stack.py`). Build with
+  `bash fem/build_cpp_kernel.sh`; the compiled `.so` is git-ignored, so when it
+  is absent the wrapper falls back to numba, then NumPy.
+- **numba** `@njit` kernel — used when numba is installed and the C++ kernel is
+  not built.
+
+All paths are numerically identical to the scalar reference
+(`tests/test_laser_vectorized.py`). Measured on 200k points
+(`python fem/bench_stealth_dicing.py`): NumPy **~179×**, C++ **~214×** vs the
+scalar loop.
+
 ## Keyence stack (tested: `tests/test_keyence.py`)
 
 | Module | Product |

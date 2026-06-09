@@ -95,3 +95,5 @@ slides_*.pdf
 
 # Streamlit secrets
 .streamlit/secrets.toml
+# Compiled pybind11 C++ kernel (build with fem/build_cpp_kernel.sh)
+fem/_stealth_kernel*.so
