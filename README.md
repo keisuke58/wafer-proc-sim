@@ -154,20 +154,22 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 |---|------------|:------:|-------------|----------------|
 | 1 | **組み込みシステム** | ★★★★★ | `embedded/motor_ctrl_sm.cpp` | PMSM FOC, 10kHz ISR, デジタル制御 |
 | 2 | **割り込み・DMA** | ★★★★★ | `embedded/rtos_scheduler.cpp` | 割り込み駆動タスク起動, コンテキストスイッチ |
-| 3 | **RTOS・タスク管理** | ★★★★★ | `embedded/rtos_scheduler.cpp` | Rate Monotonic, RM利用率上限, 応答時間解析 |
+| 3 | **RTOS・タスク管理** | ★★★★★ | `embedded/rtos_scheduler.cpp` | Rate Monotonic, RM利用率上限 n(2^(1/n)−1), 応答時間解析 |
 | 4 | **状態機械** | ★★★★★ | `pipeline/_state_machine.cpp`, `embedded/motor_ctrl_sm.cpp` | FSM, IDLE/CUTTING/FAULT遷移, IEC 61508 |
-| 5 | **ネットワーク・プロトコル** | ★★★★ | `comms/ethercat_frame_kernel.cpp`, `comms/modbus_rtu_kernel.cpp` | EtherCAT (IEC 61158), Modbus RTU, L2フレーム |
-| 6 | **情報理論・誤り検出** | ★★★★ | `comms/modbus_rtu_kernel.cpp` | CRC-16/IBM (多項式 x¹⁶+x¹⁵+x²+1), エラー検出率 |
-| 7 | **アルゴリズム・データ構造** | ★★★★ | `optimization/_nsga2_kernel.cpp`, `ml/_enkf_kernel.cpp` | NSGA-II非支配ソート O(MN²), EnKFアンサンブル更新 |
-| 8 | **品質管理 (SPC・Cpk)** | ★★★★ | `pipeline/spc_monitor.cpp` | X̄-R管理図, WECO 8ルール, Cp/Cpk/EWMA |
-| 9 | **信頼性・RASIS** | ★★★ | `machine/reliability_kernel.cpp` | MTBF/MTTR/稼働率, 直列/並列システム, Weibull, OEE |
-| 10 | **データベース (SQL)** | ★★★ | `data/process_db.py` | 3NF正規化, SELECT/JOIN/GROUP BY/VIEW, SQLite ACID |
-| 11 | **OS・プロセス管理** | ★★★ | `embedded/rtos_scheduler.cpp` | プリエンプション, タスク状態遷移, スケジューリング |
-| 12 | **論理設計** | ★★★ | `embedded/motor_ctrl_sm.cpp` | 状態符号化, フリップフロップ相当の遷移論理 |
-| 13 | **セキュリティ** | ★★★ | `comms/modbus_rtu_kernel.cpp` | CRCによる完全性検証 (RASIS: Integrity) |
-| 14 | **UML・設計手法** | ★★ | 下記アーキテクチャ図 (Architecture 節) | ステートマシン図, コンポーネント図相当 |
+| 5 | **TCP/IP・ネットワーク (L3/L4)** | ★★★★ | `comms/ip_packet_kernel.cpp` | IPv4ヘッダ, インターネットチェックサム, TCP 3ウェイハンドシェイク, 状態遷移 |
+| 6 | **ネットワーク (L2・産業プロトコル)** | ★★★★ | `comms/ethercat_frame_kernel.cpp`, `comms/modbus_rtu_kernel.cpp` | EtherCAT (IEC 61158), Modbus RTU, L2フレーム |
+| 7 | **セキュリティ** | ★★★★ | `comms/hmac_auth.cpp` | SHA-256 (FIPS 180-4), HMAC-SHA256 (RFC 2104), チャレンジ・レスポンス, IEC 62443 OT |
+| 8 | **情報理論・誤り検出** | ★★★★ | `comms/modbus_rtu_kernel.cpp` | CRC-16/IBM (多項式 x¹⁶+x¹⁵+x²+1), エラー検出率 |
+| 9 | **アルゴリズム・データ構造** | ★★★★ | `optimization/_nsga2_kernel.cpp`, `ml/_enkf_kernel.cpp` | NSGA-II非支配ソート O(MN²), EnKFアンサンブル更新 |
+| 10 | **品質管理 (SPC・Cpk)** | ★★★★ | `pipeline/spc_monitor.cpp` | X̄-R管理図, WECO 8ルール, Cp/Cpk/EWMA |
+| 11 | **OS・メモリ管理** | ★★★ | `embedded/memory_pool.cpp` | 固定サイズプール O(1), スタックアロケータ, 断片化ゼロ, malloc禁止の理由 |
+| 12 | **信頼性・RASIS** | ★★★ | `machine/reliability_kernel.cpp` | MTBF/MTTR/稼働率, 直列/並列システム, Weibull, OEE |
+| 13 | **データベース (SQL)** | ★★★ | `data/process_db.py` | 3NF正規化, SELECT/JOIN/GROUP BY/VIEW, SQLite ACID |
+| 14 | **論理設計** | ★★★ | `embedded/motor_ctrl_sm.cpp` | 状態符号化, フリップフロップ相当の遷移論理 |
+| 15 | **UML・設計手法** | ★★ | Architecture 節 / `pipeline/_state_machine.cpp` | ステートマシン図, コンポーネント図相当 |
 
-> AP試験頻出テーマを **DISCO DFL7160 ダイシングソーのデジタルツイン** に直接マッピング。  
+> AP試験全テクノロジ系主要分野を **DISCO DFL7160 ダイシングソーのデジタルツイン** に直接マッピング。  
+> OSI L2 (EtherCAT/Modbus) → L3/L4 (IPv4/TCP) → L7 (HMAC認証) の全層実装。  
 > ソフトウェア職種の技術面接では「応用情報で学んだ○○を実装した経験」として提示できる。
 
 ---

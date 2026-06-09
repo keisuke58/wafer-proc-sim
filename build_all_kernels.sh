@@ -133,6 +133,15 @@ build_spc() {
 build_reliability() {
     build_kernel "machine/reliability_kernel.cpp"   "_reliability_kernel"    "${HERE}/machine"
 }
+build_hmac() {
+    build_kernel "comms/hmac_auth.cpp"              "_hmac_auth_kernel"      "${HERE}/comms"
+}
+build_mempool() {
+    build_kernel "embedded/memory_pool.cpp"         "_memory_pool_kernel"    "${HERE}/embedded"
+}
+build_ip() {
+    build_kernel "comms/ip_packet_kernel.cpp"       "_ip_packet_kernel"      "${HERE}/comms"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -164,6 +173,9 @@ case "${TARGET}" in
         build_ethercat
         build_spc
         build_reliability
+        build_hmac
+        build_mempool
+        build_ip
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -189,11 +201,15 @@ case "${TARGET}" in
     ethercat)         build_ethercat         ;;
     spc)              build_spc              ;;
     reliability)      build_reliability      ;;
+    hmac)             build_hmac             ;;
+    mempool)          build_mempool          ;;
+    ip)               build_ip               ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
         echo "Valid: all stealth arde nsga2 motion enkf statemachine spindle frame"
-        echo "       5axis inverter encoder recipe interlock kerf motor_sm rtos modbus ethercat spc reliability heat_diffusion"
+        echo "       5axis inverter encoder recipe interlock kerf motor_sm rtos modbus ethercat"
+        echo "       spc reliability hmac mempool ip heat_diffusion"
         exit 1
         ;;
 esac
