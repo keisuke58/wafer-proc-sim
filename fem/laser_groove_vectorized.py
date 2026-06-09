@@ -137,6 +137,20 @@ except ImportError:  # pragma: no cover - exercised only when numba absent
     _NUMBA_AVAILABLE = False
 
 
+# ── Optional compiled C++ kernel (pybind11) ──────────────────────────────────
+# The fastest / most "production-shaped" path: a real C++ kernel crossing the
+# Python↔C++ FFI boundary the way DISCO's on-tool software stack is layered
+# (Python orchestration on top, compiled C++ underneath). Build with
+# `bash fem/build_cpp_kernel.sh`; if the compiled module is absent the wrapper
+# falls back to numba, then NumPy — callers never need to know which ran.
+try:
+    from fem import _stealth_kernel as _cpp_kernel  # compiled .so, git-ignored
+
+    _CPP_AVAILABLE = True
+except ImportError:
+    _CPP_AVAILABLE = False
+
+
 if _NUMBA_AVAILABLE:
 
     @njit(parallel=True, fastmath=True, cache=True)
@@ -198,8 +212,9 @@ def stealth_dicing_chipping_fast(
     """
     Fastest available path for the most-swept output: surface chipping [µm].
 
-    Uses the compiled numba kernel when available, otherwise the NumPy
-    vectorized kernel. Inputs are broadcast to a common 1-D shape.
+    Kernel preference: compiled C++ (pybind11) → numba @njit → NumPy
+    vectorized. All three are numerically identical; only the backend differs.
+    Inputs are broadcast to a common shape.
     """
     rp = LASER_REGIMES.get(pulse_regime, LASER_REGIMES["ps"])
     F_th_MPI = rp["F_th_J_cm2"] * (4.0 ** _N_PHOTON) ** (1.0 / _N_PHOTON)
@@ -215,6 +230,12 @@ def stealth_dicing_chipping_fast(
     )
     shape = arrs[0].shape
     flat = [np.ascontiguousarray(a).ravel() for a in arrs]
+
+    if _CPP_AVAILABLE:
+        P, v, f_hz, n_p, focal_z, NA, n_lay = flat
+        out = _cpp_kernel.stealth_chipping(
+            P, v, f_hz, n_p, focal_z, NA, n_lay, F_th_MPI)
+        return out.reshape(shape)
 
     if _NUMBA_AVAILABLE:
         out = _stealth_chipping_kernel(*flat, F_th_MPI)

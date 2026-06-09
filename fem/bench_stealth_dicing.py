@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fem.laser_groove_thermal_2d import DEFAULT, stealth_dicing
 from fem.laser_groove_vectorized import (
+    _CPP_AVAILABLE,
     _NUMBA_AVAILABLE,
     stealth_dicing_vec,
     stealth_dicing_chipping_fast,
@@ -87,9 +88,12 @@ def main():
     print(f"  numpy vectorized   : {t_numpy*1e3:10.2f} ms   "
           f"({n/t_numpy:,.0f} pts/s)   {t_scalar/t_numpy:,.1f}x")
 
-    if _NUMBA_AVAILABLE:
-        # Warm up the JIT (first call compiles), then time.
-        stealth_dicing_chipping_fast(
+    # ── 3. numba @njit (only if the C++ kernel is NOT preferred ahead of it) ──
+    # When the C++ kernel is built it takes priority inside `_fast`, so to time
+    # numba in isolation we exercise the kernel via numpy fallback emulation:
+    # call _fast only when the active backend matches the label.
+    if _NUMBA_AVAILABLE and not _CPP_AVAILABLE:
+        stealth_dicing_chipping_fast(  # warm up JIT
             laser_power_W=P[:8], scan_speed_mm_s=V[:8], focal_depth_um=D[:8])
 
         def numba_fast():
@@ -99,8 +103,21 @@ def main():
         t_numba = _time(numba_fast)
         print(f"  numba @njit        : {t_numba*1e3:10.2f} ms   "
               f"({n/t_numba:,.0f} pts/s)   {t_scalar/t_numba:,.1f}x")
-    else:
+    elif not _NUMBA_AVAILABLE:
         print("  numba @njit        :  (not installed — pip install numba)")
+
+    # ── 4. Compiled C++ kernel (pybind11) — the production-shaped path ───────
+    if _CPP_AVAILABLE:
+        # _fast prefers C++ when it is built, so this times the C++ backend.
+        def cpp_fast():
+            return stealth_dicing_chipping_fast(
+                laser_power_W=P, scan_speed_mm_s=V, focal_depth_um=D)
+
+        t_cpp = _time(cpp_fast)
+        print(f"  C++ (pybind11)     : {t_cpp*1e3:10.2f} ms   "
+              f"({n/t_cpp:,.0f} pts/s)   {t_scalar/t_cpp:,.1f}x")
+    else:
+        print("  C++ (pybind11)     :  (not built — bash fem/build_cpp_kernel.sh)")
 
     print("─" * 56)
 

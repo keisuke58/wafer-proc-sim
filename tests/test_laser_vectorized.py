@@ -67,6 +67,31 @@ def test_vectorized_matches_scalar():
             )
 
 
+def test_cpp_kernel_matches_scalar_if_built():
+    """If the pybind11 C++ kernel is compiled, it must match the scalar ref."""
+    pytest.importorskip("fem._stealth_kernel")
+    from fem._stealth_kernel import stealth_chipping
+
+    P, V, D = _grid()
+    F_th_MPI = (
+        __import__("fem.laser_groove_thermal_2d", fromlist=["LASER_REGIMES"])
+        .LASER_REGIMES["ps"]["F_th_J_cm2"] * (4.0 ** 3) ** (1.0 / 3.0)
+    )
+    f_hz = np.full_like(P, DEFAULT["pulse_freq_kHz"] * 1e3)
+    n_p = np.full_like(P, 2.0)
+    NA = np.full_like(P, 0.65)
+    n_lay = np.full_like(P, 2.0)
+    cpp = stealth_chipping(P, V, f_hz, n_p, D, NA, n_lay, F_th_MPI)
+
+    for i in range(P.size):
+        ref = stealth_dicing(dict(
+            DEFAULT, laser_power_W=float(P[i]), scan_speed_mm_s=float(V[i]),
+            focal_depth_um=float(D[i]), pulse_regime="ps",
+            numerical_aperture=0.65, n_layers=2, n_passes=2,
+        ))
+        assert cpp[i] == pytest.approx(ref["surface_chipping_um"], abs=2e-3)
+
+
 def test_fast_path_matches_vectorized_chipping():
     P, V, D = _grid()
     fast = stealth_dicing_chipping_fast(
