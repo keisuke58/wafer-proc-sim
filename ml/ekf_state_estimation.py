@@ -52,6 +52,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 
+# C++ EnKF kernel — build with: bash build_all_kernels.sh
+try:
+    from ml import _enkf_kernel as _cpp_enkf
+    _CPP_ENKF = True
+except ImportError:
+    _CPP_ENKF = False
+
 # ── Reference recipe (fixed during simulation) ───────────────────────────────
 D_NOM    = 200.0   # µm  nominal cut depth
 BLADE_W  = 23.0    # µm  blade kerf width
@@ -170,27 +177,29 @@ class EnsembleKalmanFilter:
         # 1. Forecast
         xf = self._forecast()                              # (N, 3)
 
-        # 2. Predicted observations with perturbed obs noise
-        v  = self.rng.normal(0.0, np.sqrt(self.R), self.N)
+        # 2. Observation noise perturbations
+        v = self.rng.normal(0.0, np.sqrt(self.R), self.N)
+
+        if _CPP_ENKF:
+            yf = _cpp_enkf.three_state_obs(
+                np.ascontiguousarray(xf, np.float64), D_NOM, BLADE_W)
+            self.ensemble = _cpp_enkf.enkf_analysis(
+                np.ascontiguousarray(xf, np.float64), yf, y_obs, v, self.R)
+            return
+
+        # Python fallback
         yf = np.array([observation_model(xf[i]) for i in range(self.N)])  # (N,)
-        yf_pert = yf + v                                   # perturbed
+        yf_pert = yf + v
 
-        # 3. Ensemble cross-covariances
-        xf_bar = xf.mean(axis=0, keepdims=True)           # (1,3)
+        xf_bar = xf.mean(axis=0, keepdims=True)
         yf_bar = yf.mean()
-
-        dX = xf - xf_bar                                   # (N,3)
-        dY = yf - yf_bar                                   # (N,)
-
-        P_xy = (dX.T @ dY) / (self.N - 1)                 # (3,)  vector
-        P_yy = float((dY @ dY) / (self.N - 1))             # scalar
-
-        # 4. Kalman gain (3,) vector
-        K = P_xy / (P_yy + self.R)                         # (3,)
-
-        # 5. Analysis update
-        innovation = y_obs - yf_pert                       # (N,)  vector
-        self.ensemble = xf + np.outer(innovation, K)       # (N,3)
+        dX = xf - xf_bar
+        dY = yf - yf_bar
+        P_xy = (dX.T @ dY) / (self.N - 1)
+        P_yy = float((dY @ dY) / (self.N - 1))
+        K = P_xy / (P_yy + self.R)
+        innovation = y_obs - yf_pert
+        self.ensemble = xf + np.outer(innovation, K)
 
 
 # ════════════════════════════════════════════════════════════════════════════

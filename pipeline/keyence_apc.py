@@ -50,6 +50,13 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from fem.keyence_metrology_model import TOOL_SIGMA
 
+# C++ EnKF kernel — build with: bash build_all_kernels.sh
+try:
+    from ml import _enkf_kernel as _cpp_enkf
+    _CPP_ENKF = True
+except ImportError:
+    _CPP_ENKF = False
+
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -128,6 +135,18 @@ class BladeWearEnKF:
 
     def update(self, feed_applied: float, y_meas: float) -> np.ndarray:
         """計測 y_meas (ノイズ込みチッピング幅) で解析更新 (analysis step)."""
+        v = self.rng.normal(0.0, np.sqrt(self.R), self.n)
+
+        if _CPP_ENKF:
+            xf = np.ascontiguousarray(self.ens, np.float64)
+            self.ens, _ = _cpp_enkf.blade_wear_update(
+                xf, feed_applied, y_meas, v, self.R,
+                CHIP0_UM, FEED_NOMINAL, WEAR_SCALE, FEED_EXPONENT,
+                0.0, 2.0, 0.5, 1.5,
+            )
+            return self.state_mean()
+
+        # Python fallback
         hx     = np.array([chip_forward(feed_applied, m[0], m[1])
                             for m in self.ens])
         x_mean = self.ens.mean(axis=0)
@@ -136,14 +155,11 @@ class BladeWearEnKF:
         dX = self.ens - x_mean          # (n, 2)
         dH = hx - h_mean                # (n,)
 
-        P_xh = (dX * dH[:, None]).sum(axis=0) / (self.n - 1)   # (2,)
-        P_hh = (dH**2).sum() / (self.n - 1) + self.R            # scalar
+        P_xh = (dX * dH[:, None]).sum(axis=0) / (self.n - 1)
+        P_hh = (dH**2).sum() / (self.n - 1) + self.R
 
-        K = P_xh / P_hh                 # Kalman gain (2,)
-
-        # 観測摂動付き更新 (perturbed-observations EnKF)
-        y_pert = y_meas + np.sqrt(self.R) * self.rng.standard_normal(self.n)
-        innov  = y_pert - hx
+        K = P_xh / P_hh
+        innov  = (y_meas + v) - hx
         self.ens = self.ens + innov[:, None] * K[None, :]
         self.ens[:, 0] = np.maximum(self.ens[:, 0], 0.0)
         self.ens[:, 1] = np.clip(self.ens[:, 1], 0.5, 1.5)

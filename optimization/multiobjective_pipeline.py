@@ -114,13 +114,27 @@ def pipeline_objectives(x: np.ndarray) -> np.ndarray:
 # NSGA-II 実装
 # ════════════════════════════════════════════════════════════════════════════
 
+# C++ kernel (pybind11) — build with: bash build_all_kernels.sh
+try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+    from optimization import _nsga2_kernel as _cpp_nsga2
+    _CPP_NSGA2 = True
+except ImportError:
+    _CPP_NSGA2 = False
+
+
 def dominates(f_a: np.ndarray, f_b: np.ndarray) -> bool:
     """f_a が f_b を支配: 全目的で a ≤ b かつ少なくとも1つで a < b。"""
     return bool(np.all(f_a <= f_b) and np.any(f_a < f_b))
 
 
 def fast_nondominated_sort(F: np.ndarray) -> list:
-    """高速非支配ソート → フロントのリストを返す。"""
+    """高速非支配ソート → フロントのリストを返す。C++ カーネル優先、なければ Python。"""
+    if _CPP_NSGA2:
+        return _cpp_nsga2.nondominated_sort(np.ascontiguousarray(F, np.float64))
+
+    # Python fallback
     n = len(F)
     dom_count = np.zeros(n, dtype=int)
     dominated_by = [[] for _ in range(n)]
@@ -151,7 +165,11 @@ def fast_nondominated_sort(F: np.ndarray) -> list:
 
 
 def crowding_distance(F: np.ndarray, front: list) -> np.ndarray:
-    """混雑距離の計算。"""
+    """混雑距離の計算。C++ カーネル優先、なければ Python。"""
+    if _CPP_NSGA2:
+        return _cpp_nsga2.crowding_distance(np.ascontiguousarray(F, np.float64), front)
+
+    # Python fallback
     l   = len(front)
     dist = np.zeros(l)
     if l <= 2:

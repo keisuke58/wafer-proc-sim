@@ -241,6 +241,61 @@ def plasma_aspect_ratio_limit(
     }
 
 
+# ── Vectorized ARDE (C++ kernel with NumPy fallback) ─────────────────────────
+
+try:
+    from fem import _arde_kernel as _cpp_arde
+    _CPP_ARDE = True
+except ImportError:
+    _CPP_ARDE = False
+
+
+def plasma_arde_vec(
+    trench_width_um,
+    wafer_thickness_um,
+    pressure_mTorr=10.0,
+    AR_crit_ref: float = 8.0,
+    arde_exp: float = 2.0,
+    min_rate_frac: float = 0.05,
+):
+    """
+    Vectorized ARDE model. All arguments may be scalars or array-likes;
+    NumPy broadcasting is applied before dispatch.
+
+    Returns a dict with keys:
+        AR_crit, AR_max, current_AR, etch_rate, feasible  (all same-shape arrays)
+
+    Backend: compiled C++ (pybind11) if built, else pure NumPy.
+    """
+    arrs = np.broadcast_arrays(
+        np.asarray(trench_width_um, np.float64),
+        np.asarray(wafer_thickness_um, np.float64),
+        np.asarray(pressure_mTorr, np.float64),
+    )
+    shape = arrs[0].shape
+    flat  = [np.ascontiguousarray(a).ravel() for a in arrs]
+    w, t, p = flat
+
+    if _CPP_ARDE:
+        result = _cpp_arde.arde_sweep(w, t, p, AR_crit_ref, arde_exp, min_rate_frac)
+        return {k: v.reshape(shape) for k, v in result.items()}
+
+    # NumPy fallback — identical arithmetic.
+    P_ref     = 10.0
+    p_safe    = np.maximum(p, 1.0)
+    AR_crit   = AR_crit_ref * np.sqrt(p_safe / P_ref)
+    AR_max    = AR_crit * np.power(1.0 / min_rate_frac - 1.0, 1.0 / arde_exp)
+    cur_AR    = t / w
+    etch_rate = 1.0 / (1.0 + np.power(cur_AR / AR_crit, arde_exp))
+    return {
+        "AR_crit":    AR_crit.reshape(shape),
+        "AR_max":     AR_max.reshape(shape),
+        "current_AR": cur_AR.reshape(shape),
+        "etch_rate":  etch_rate.reshape(shape),
+        "feasible":   (cur_AR < AR_max).reshape(shape),
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. Diamond semiconductor — laser ablation wavelength limit
 # ═══════════════════════════════════════════════════════════════════════════════

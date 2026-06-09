@@ -22,9 +22,19 @@ PLCopen Motion Control (MC_MoveAbsolute, MC_Home)
 import time
 import json
 import collections
+import os as _os
+import sys as _sys
 from enum import Enum, auto
 from dataclasses import dataclass, field, asdict
 from typing import Callable
+
+# C++ RT motion kernel (pybind11) — build with: bash build_all_kernels.sh
+_sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+try:
+    from pipeline import _motion_kernel as _cpp_motion
+    _CPP_MOTION = True
+except ImportError:
+    _CPP_MOTION = False
 
 
 # ── 1. State Machine ──────────────────────────────────────────────────────────
@@ -155,6 +165,33 @@ class MotionController:
 
     def move_to(self, target_mm: float, n_cycles: int = 500) -> list[dict]:
         self._log.clear()
+
+        if _CPP_MOTION:
+            r = _cpp_motion.move_to(
+                start_mm=self.axis.pos_mm,
+                target_mm=target_mm,
+                Kp=self.Kp,
+                max_vel_mms=self.max_vel,
+                dt_s=self.DT_S,
+                settle_um=1.0,
+                max_cycles=n_cycles,
+            )
+            pos_arr = r["pos_mm"]
+            err_arr = r["error_um"]
+            vel_arr = r["vel_mms"]
+            for i in range(len(pos_arr)):
+                self._log.append({
+                    "pos_mm":   round(float(pos_arr[i]), 6),
+                    "error_um": round(float(err_arr[i]), 3),
+                    "vel_mms":  round(float(vel_arr[i]), 3),
+                })
+            # sync axis state to final position
+            self.axis.pos_mm   = float(pos_arr[-1])
+            self.axis.vel_mms  = float(vel_arr[-1])
+            self.axis.error_mm = float(err_arr[-1]) * 1e-3
+            return self._log
+
+        # Python fallback
         for _ in range(n_cycles):
             error = target_mm - self.axis.pos_mm
             cmd_vel = np.clip_scalar(self.Kp * error, -self.max_vel, self.max_vel)
