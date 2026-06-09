@@ -15,41 +15,86 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 ## Architecture
 
+### System overview
+
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Python Orchestration Layer                       │
-│   notebooks/  ·  ml/  ·  analysis/  ·  pipeline/  ·  optimization/    │
-└────────────────────────────┬───────────────────────────────────────────┘
-                             │  pybind11 / PyO3 FFI
-        ┌────────────────────┼────────────────────────┐
-        │                   │                        │
-        ▼                   ▼                        ▼
- ┌─────────────┐   ┌─────────────────┐   ┌─────────────────────┐
- │  C++ Kernels│   │  CUDA Kernel    │   │  Rust Kernels       │
- │  (pybind11) │   │  (nvcc sm_89)   │   │  (PyO3 / maturin)   │
- │             │   │                 │   │                     │
- │ Spindle FOC │   │  2D heat PDE    │   │  SpindleKernel      │
- │ SVPWM inv.  │   │  TILE=16 shmem  │   │  nondominated_sort  │
- │ Quad encoder│   │  Neumann BC     │   │  rbf_kernel_matrix  │
- │ Frame FEM   │   │  + source field │   └─────────────────────┘
- │ 5-axis traj │   │  (blade heat)   │
- │ Recipe seq. │   └─────────────────┘   ┌─────────────────────┐
- │ Interlock   │                         │  IEC 61131-3 ST     │
- │ EnKF (APC)  │   ┌─────────────────┐   │  (OpenPLC / CODESYS)│
- │ GP inference│   │  Go Telemetry   │   │                     │
- │ MPC optim.  │   │  HTTP :8080     │   │  SpindleFB          │
- │ NSGA-II     │   │  /health        │   │  InterlockFB        │
- └──────┬──────┘   │  /simulate      │   │  RecipeSeqFB        │
-        │          │  /ws  (10 Hz)   │   │  DicingController   │
-        ▼          └─────────────────┘   └─────────────────────┘
- ┌─────────────┐
- │DiscoMachine │  ← unified C++ class, one tick() per 10 µs
- │             │
- │ SpindleState│  PMSM dq-axis + PI-FOC
- │ InverterState  SVPWM + dead-time compensation
- │ MotionState │  P-ctrl XYZθ + 4× quadrature encoder
- │ E-STOP latch│  blade depth / overspeed / door interlock
- └─────────────┘
+╔══════════════════════════════════════════════════════════════════════════════╗
+║   wafer-proc-sim  ·  DISCO DFL7160  Digital Twin  &  APC Suite              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │  PYTHON   notebooks · ml/ · analysis/ · pipeline/ · optimization/     │
+ └────────────────────────┬───────────────────────────────────────────────┘
+          pybind11 FFI    │                                      PyO3 FFI
+ ┌────────────────────────▼───────────────────────────────────────────────┐
+ │  NATIVE KERNELS                                                        │
+ │                                                                        │
+ │ ┌─ C++  (14 shared libs) ───────────────────────────────────────────┐ │
+ │ │                                                                   │ │
+ │ │  Electrical            Motion / Mechanical    ML / APC            │ │
+ │ │  ┌──────────────┐      ┌─────────────────┐   ┌────────────────┐  │ │
+ │ │  │ _spindle     │      │ _encoder   4×AB │   │ _enkf  EnKF    │  │ │
+ │ │  │  PMSM+PI-FOC │      │ _5axis  traj.   │   │ _gp    RBF+EI  │  │ │
+ │ │  │ _inverter    │      │ _frame_fem  FEM  │   │ _mpc   GP-MPC  │  │ │
+ │ │  │  SVPWM       │      └─────────────────┘   │ _nsga2 827×    │  │ │
+ │ │  └──────────────┘                             └────────────────┘  │ │
+ │ │                                                                   │ │
+ │ │  Safety / Sequencing                                              │ │
+ │ │  ┌───────────────────────────────────────────────────────────┐   │ │
+ │ │  │  _recipe  12-step FSM  ·  _interlock  IEC 61508  ·        │   │ │
+ │ │  │  _motion  P-ctrl       ·  _state_machine                  │   │ │
+ │ │  └───────────────────────────────────────────────────────────┘   │ │
+ │ └───────────────────────────────┬───────────────────────────────────┘ │
+ │                                 │ integrate                            │
+ │ ┌─ DiscoMachine  (unified twin) ▼──────────────────────────────────┐  │
+ │ │                                                                   │  │
+ │ │   tick()  ──── every 10 µs ────────────────────────────────►    │  │
+ │ │    │                                                              │  │
+ │ │    ├─ SpindleState   ω, i_d, i_q  →  T_e [N·m]                  │  │
+ │ │    ├─ InverterState  SVPWM sector  →  duty_a/b/c  →  P_sw [W]   │  │
+ │ │    ├─ MotionState    err → v_cmd   →  pos_mm  →  encoder counts  │  │
+ │ │    └─ E-STOP         overspeed / blade-depth / door  →  latch    │  │
+ │ │                                                                   │  │
+ │ │   simulate(N) → telemetry dict     get_state() → full snapshot   │  │
+ │ └───────────────────────────────────────────────────────────────────┘  │
+ │                                                                        │
+ │ ┌─ CUDA  sm_89  RTX 4090 ────────┐  ┌─ Rust  PyO3 / maturin ───────┐ │
+ │ │  ∂T/∂t = α∇²T + Q/ρc          │  │  SpindleKernel  (FOC)        │ │
+ │ │  TILE=16 shared-mem tiling     │  │  nondominated_sort           │ │
+ │ │  Neumann BC + blade source Q   │  │  rbf_kernel_matrix           │ │
+ │ │  ~150× vs NumPy FD             │  │  IEC 61508 memory-safe       │ │
+ │ └────────────────────────────────┘  └──────────────────────────────┘ │
+ └────────────────────────────────────────────────────────────────────────┘
+           ║                                       ║
+           ║ same physics, different language       ║ streams state
+           ▼                                       ▼
+ ┌───────────────────────────────────┐   ┌────────────────────────────────┐
+ │  IEC 61131-3  Structured Text     │   │  Go  Telemetry  :8080          │
+ │                                   │   │                                │
+ │  DicingController  ◄─ PROGRAM     │   │  GET  /health                  │
+ │   ├─ SpindleFB    PMSM + PI-FOC   │   │  POST /simulate  →  JSON       │
+ │   ├─ InterlockFB  IEC 61508 SIL-1 │   │  GET  /ws        →  10 Hz WS   │
+ │   └─ RecipeSeqFB  CASE state FSM  │   │                                │
+ │                                   │   │  Go → subprocess → C++ .so    │
+ │  OpenPLC  ·  CODESYS  ·  TwinCAT  │   └────────────────────────────────┘
+ └───────────────────────────────────┘
+```
+
+### DiscoMachine control loop
+
+```
+     Python call                C++ tick()  (10 µs / cycle)
+    ─────────────               ─────────────────────────────────────────
+    sim.set_target()  ──────►  [1] Speed error → i_q_ref  (FOC outer)
+    sim.simulate(N)            [2] PI current ctrl  v_d, v_q
+                               [3] dq Euler:  Δi_d, Δi_q, Δω  (PMSM)
+                               [4] Clarke + SVPWM → duty_a/b/c, sector
+                               [5] Dead-time comp + P_sw accumulation
+                               [6] P-ctrl  err_xyz → v_cmd → Δpos
+                               [7] 4× quadrature → encoder counts
+                               [8] E-STOP check (6 sensors)
+                               [9] Telemetry ring buffer append
+    sim.get_state()   ◄──────  {ω, i_q, T_e, x, y, z, duties, mode}
 ```
 
 ---
