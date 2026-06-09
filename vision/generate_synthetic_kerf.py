@@ -32,12 +32,17 @@ class KerfImageConfig:
     kerf_width_mm: float = 2.0         # visible kerf width [mm]
     pixel_per_mm: float = 10.0         # camera resolution [px/mm]
     kerf_center_frac: float = 0.5      # kerf centre as fraction of W
-    wall_brightness: float = 220.0     # peak specular brightness [0-255]
+    wall_brightness: float = 160.0     # peak specular wall brightness ABOVE substrate [0-255]
     wall_sigma_px: float = 2.0         # Gaussian wall-edge spread [px]
-    substrate_mean: float = 140.0      # silicon reflectance [0-255]
+    substrate_mean: float = 60.0       # silicon substrate reflectance [0-255]
+    # Design constraint: substrate_mean + wall_brightness + 5×substrate_noise < 255
+    # to avoid saturation clipping that shifts the signed-Sobel zero-crossing.
+    # 60 + 160 + 5×6 = 250 < 255 ✓  (>99.99 % of pixels are unclipped)
+    # Physical note: real DISCO cameras are set to ~70 % of full-scale so walls
+    # are bright (~200 DN) but not saturated.
     substrate_noise: float = 6.0       # surface texture σ [0-255]
-    kerf_void_mean: float = 18.0       # kerf interior brightness [0-255]
-    kerf_void_noise: float = 4.0       # kerf interior noise σ
+    kerf_void_mean: float = 15.0       # kerf interior brightness [0-255]
+    kerf_void_noise: float = 3.0       # kerf interior noise σ
     sensor_noise: float = 5.0          # camera Gaussian noise σ
     chipping_severity: float = 0.0     # 0 = none, 1 = heavy chipping
     chipping_extent_px: float = 6.0    # max lateral chip extent [px]

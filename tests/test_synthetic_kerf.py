@@ -44,7 +44,8 @@ class TestGenerateSyntheticKerf:
         cx = int((gt["kerf_left_px"] + gt["kerf_right_px"]) / 2)
         void_mean = float(img[:, cx].mean())
         substrate_mean_approx = float(img[:, 5].mean())  # far left = substrate
-        assert void_mean < substrate_mean_approx - 50.0, (
+        # With substrate_mean=60 and kerf_void_mean=15, gap≈45 DN
+        assert void_mean < substrate_mean_approx - 35.0, (
             f"Kerf void ({void_mean:.1f}) should be much darker than substrate ({substrate_mean_approx:.1f})"
         )
 
