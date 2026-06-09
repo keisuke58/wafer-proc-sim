@@ -54,6 +54,12 @@ build_statemachine() {
 build_spindle() {
     build_kernel "fem/_spindle_kernel.cpp"        "_spindle_kernel"  "${HERE}/fem"
 }
+build_frame() {
+    build_kernel "fem/_frame_stiffness_kernel.cpp" "_frame_stiffness_kernel" "${HERE}/fem"
+}
+build_5axis() {
+    build_kernel "pipeline/_5axis_interpolation.cpp" "_5axis_interpolation" "${HERE}/pipeline"
+}
 
 case "${TARGET}" in
     all)
@@ -64,6 +70,8 @@ case "${TARGET}" in
         build_enkf
         build_statemachine
         build_spindle
+        build_frame
+        build_5axis
         ;;
     stealth)       build_stealth       ;;
     arde)          build_arde          ;;
@@ -72,8 +80,10 @@ case "${TARGET}" in
     enkf)          build_enkf          ;;
     statemachine)  build_statemachine  ;;
     spindle)       build_spindle       ;;
+    frame)         build_frame         ;;
+    5axis)         build_5axis         ;;
     *)
-        echo "Unknown target '${TARGET}'. Valid: all stealth arde nsga2 motion enkf statemachine spindle"
+        echo "Unknown target '${TARGET}'. Valid: all stealth arde nsga2 motion enkf statemachine spindle frame 5axis"
         exit 1
         ;;
 esac
