@@ -137,11 +137,38 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 | 職種 | Required Skills | Covered by |
 |------|----------------|------------|
-| **ソフトウェア開発** | C++, embedded, real-time, Python | `machine/`, `fem/`, `pipeline/` 14 C++ kernels |
-| **電気・制御** | PMSM, FOC, SVPWM, PLC (IEC 61131-3) | `SpindleFB.st`, `_spindle_kernel`, `_servo_inverter_kernel` |
-| **プロセス技術** | APC, GP regression, Bayesian opt | `_enkf_kernel`, `_gp_inference_kernel`, `_mpc_kernel` |
-| **生産技術** | Tolerance, yield, multi-objective opt | `analysis/tolerance_stack.py`, `_nsga2_kernel` |
-| **機械設計** | FEM, stiffness, thermal PDE | `_frame_stiffness_kernel`, `_heat_diffusion_kernel.cu` |
+| **機械エンジニア** | FEM, stiffness, thermal PDE, 5-axis motion, vibration, warpage | `_frame_stiffness_kernel`, `_heat_diffusion_kernel.cu`, `_5axis_interpolation`, `grinding_warpage_2d/3d.py`, `stage_vibration_modal.py`, `dicing_blade_2d/3d.py`, `stage_cad_geometry.py` |
+| **電気・制御エンジニア** | PMSM, FOC, SVPWM, PLC (IEC 61131-3) | `SpindleFB.st`, `_spindle_kernel`, `_servo_inverter_kernel`, `_encoder_kernel` |
+| **プロセス研究** | APC, GP regression, Bayesian opt, EnKF | `_enkf_kernel`, `_gp_inference_kernel`, `_mpc_kernel`, `hybrid_process_gp.py`, `surrogate_grinding.py` |
+| **R&D（先行研究）** | Laser/plasma physics, TAIKO®/KABRA digital twin, GaN, die strength | `kabra_thermal_2d.py`, `laser_groove_thermal_2d.py`, `plasma_bosch_model.py`, `gan_dicing_model.py`, `taiko_grinding_gp.py`, `bayesian_opt_grinding.py`, `die_strength_gp.py`, `hybrid_bonding_model.py` |
+| **ソフトウェア開発** | C++, embedded, real-time, Python, Rust, Go | `machine/`, `pipeline/` 14 C++ kernels, `rust/` PyO3, `telemetry/` WebSocket |
+| **生産技術** | Tolerance, yield, multi-objective opt | `analysis/tolerance_stack.py`, `_nsga2_kernel`, `validation/` |
+
+---
+
+---
+
+## 応用情報技術者試験 (AP試験) カバレッジ
+
+| # | AP試験 分野 | 重要度 | 実装ファイル | 具体的なトピック |
+|---|------------|:------:|-------------|----------------|
+| 1 | **組み込みシステム** | ★★★★★ | `embedded/motor_ctrl_sm.cpp` | PMSM FOC, 10kHz ISR, デジタル制御 |
+| 2 | **割り込み・DMA** | ★★★★★ | `embedded/rtos_scheduler.cpp` | 割り込み駆動タスク起動, コンテキストスイッチ |
+| 3 | **RTOS・タスク管理** | ★★★★★ | `embedded/rtos_scheduler.cpp` | Rate Monotonic, RM利用率上限, 応答時間解析 |
+| 4 | **状態機械** | ★★★★★ | `pipeline/_state_machine.cpp`, `embedded/motor_ctrl_sm.cpp` | FSM, IDLE/CUTTING/FAULT遷移, IEC 61508 |
+| 5 | **ネットワーク・プロトコル** | ★★★★ | `comms/ethercat_frame_kernel.cpp`, `comms/modbus_rtu_kernel.cpp` | EtherCAT (IEC 61158), Modbus RTU, L2フレーム |
+| 6 | **情報理論・誤り検出** | ★★★★ | `comms/modbus_rtu_kernel.cpp` | CRC-16/IBM (多項式 x¹⁶+x¹⁵+x²+1), エラー検出率 |
+| 7 | **アルゴリズム・データ構造** | ★★★★ | `optimization/_nsga2_kernel.cpp`, `ml/_enkf_kernel.cpp` | NSGA-II非支配ソート O(MN²), EnKFアンサンブル更新 |
+| 8 | **品質管理 (SPC・Cpk)** | ★★★★ | `pipeline/spc_monitor.cpp` | X̄-R管理図, WECO 8ルール, Cp/Cpk/EWMA |
+| 9 | **信頼性・RASIS** | ★★★ | `machine/reliability_kernel.cpp` | MTBF/MTTR/稼働率, 直列/並列システム, Weibull, OEE |
+| 10 | **データベース (SQL)** | ★★★ | `data/process_db.py` | 3NF正規化, SELECT/JOIN/GROUP BY/VIEW, SQLite ACID |
+| 11 | **OS・プロセス管理** | ★★★ | `embedded/rtos_scheduler.cpp` | プリエンプション, タスク状態遷移, スケジューリング |
+| 12 | **論理設計** | ★★★ | `embedded/motor_ctrl_sm.cpp` | 状態符号化, フリップフロップ相当の遷移論理 |
+| 13 | **セキュリティ** | ★★★ | `comms/modbus_rtu_kernel.cpp` | CRCによる完全性検証 (RASIS: Integrity) |
+| 14 | **UML・設計手法** | ★★ | 下記アーキテクチャ図 (Architecture 節) | ステートマシン図, コンポーネント図相当 |
+
+> AP試験頻出テーマを **DISCO DFL7160 ダイシングソーのデジタルツイン** に直接マッピング。  
+> ソフトウェア職種の技術面接では「応用情報で学んだ○○を実装した経験」として提示できる。
 
 ---
 

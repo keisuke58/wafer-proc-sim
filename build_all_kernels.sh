@@ -112,6 +112,27 @@ build_gp() {
 build_mpc() {
     build_kernel "pipeline/_mpc_kernel.cpp"        "_mpc_kernel"            "${HERE}/pipeline"
 }
+build_kerf() {
+    build_kernel "vision/kerf_detection_kernel.cpp" "_kerf_detection_kernel" "${HERE}/vision"
+}
+build_motor_sm() {
+    build_kernel "embedded/motor_ctrl_sm.cpp"       "_motor_ctrl_sm_kernel"  "${HERE}/embedded"
+}
+build_rtos() {
+    build_kernel "embedded/rtos_scheduler.cpp"      "_rtos_scheduler_kernel" "${HERE}/embedded"
+}
+build_modbus() {
+    build_kernel "comms/modbus_rtu_kernel.cpp"      "_modbus_rtu_kernel"     "${HERE}/comms"
+}
+build_ethercat() {
+    build_kernel "comms/ethercat_frame_kernel.cpp"  "_ethercat_frame_kernel" "${HERE}/comms"
+}
+build_spc() {
+    build_kernel "pipeline/spc_monitor.cpp"         "_spc_monitor_kernel"    "${HERE}/pipeline"
+}
+build_reliability() {
+    build_kernel "machine/reliability_kernel.cpp"   "_reliability_kernel"    "${HERE}/machine"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -136,6 +157,13 @@ case "${TARGET}" in
         build_machine
         build_gp
         build_mpc
+        build_kerf
+        build_motor_sm
+        build_rtos
+        build_modbus
+        build_ethercat
+        build_spc
+        build_reliability
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -154,11 +182,18 @@ case "${TARGET}" in
     machine)          build_machine          ;;
     gp)               build_gp               ;;
     mpc)              build_mpc              ;;
+    kerf)             build_kerf             ;;
+    motor_sm)         build_motor_sm         ;;
+    rtos)             build_rtos             ;;
+    modbus)           build_modbus           ;;
+    ethercat)         build_ethercat         ;;
+    spc)              build_spc              ;;
+    reliability)      build_reliability      ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
         echo "Valid: all stealth arde nsga2 motion enkf statemachine spindle frame"
-        echo "       5axis inverter encoder recipe interlock heat_diffusion"
+        echo "       5axis inverter encoder recipe interlock kerf motor_sm rtos modbus ethercat spc reliability heat_diffusion"
         exit 1
         ;;
 esac
