@@ -109,6 +109,9 @@ build_machine() {
 build_gp() {
     build_kernel "ml/_gp_inference_kernel.cpp"     "_gp_inference_kernel"   "${HERE}/ml"
 }
+build_mpc() {
+    build_kernel "pipeline/_mpc_kernel.cpp"        "_mpc_kernel"            "${HERE}/pipeline"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -132,6 +135,7 @@ case "${TARGET}" in
         build_interlock
         build_machine
         build_gp
+        build_mpc
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -149,6 +153,7 @@ case "${TARGET}" in
     interlock)        build_interlock        ;;
     machine)          build_machine          ;;
     gp)               build_gp               ;;
+    mpc)              build_mpc              ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."

@@ -1,203 +1,270 @@
 # wafer-proc-sim
 
-**Physics-informed GP surrogate + Bayesian optimization for semiconductor wafer processing**
+**DISCO semiconductor dicing saw — digital twin & APC simulation suite**
 
-[![CI](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/keisuke58/wafer-proc-sim/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20495459.svg)](https://doi.org/10.5281/zenodo.20495459)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/keisuke58/wafer-proc-sim)](https://github.com/keisuke58/wafer-proc-sim/releases)
+[![Tests](https://img.shields.io/badge/tests-279%20passing-brightgreen)](#quick-start)
+[![Languages](https://img.shields.io/badge/languages-Python%20%7C%20C%2B%2B%20%7C%20CUDA%20%7C%20Rust%20%7C%20Go%20%7C%20IEC%2061131--3-blue)](#language-coverage)
+
+Physics-accurate simulation of a DISCO DFL7160-class dicing saw.
+Hot loops in **C++ / CUDA** (pybind11), orchestration in **Python**,
+PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critical kernels in **Rust**.
 
 ---
 
-## Overview
+## Architecture
 
-`wafer-proc-sim` combines physics-based simulation, **heteroscedastic Gaussian process surrogates**, and Bayesian optimization for semiconductor wafer process modeling. Three main capabilities:
-
-1. **GP surrogate (blade dicing)** — data-quality-stratified heteroscedastic GP for 4H-SiC dicing chipping
-2. **KABRA® laser-slicing BO** — multi-objective TuRBO optimizer for DISCO KABRA process (HAZ / quality / throughput)
-3. **Physical process limits** — first-principles models for six DISCO processes (blade, stealth, thinning, plasma, diamond ablation)
-
-Developed to support:
-
-> **"Data Quality-Aware Heteroscedastic Gaussian Process Surrogate  
-> for 4H-SiC Blade Dicing Process Optimization"**  
-> K. Nishioka et al. — *Precision Engineering* (submitted)
-
-**Core finding (blade dicing)**: 11 high-quality datapoints outperform 25 mixed-quality datapoints.  
-**Core finding (KABRA BO)**: TuRBO achieves **+71.3% throughput** vs. 15 W / 200 mm/s baseline.
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Python Orchestration Layer                       │
+│   notebooks/  ·  ml/  ·  analysis/  ·  pipeline/  ·  optimization/    │
+└────────────────────────────┬───────────────────────────────────────────┘
+                             │  pybind11 / PyO3 FFI
+        ┌────────────────────┼────────────────────────┐
+        │                   │                        │
+        ▼                   ▼                        ▼
+ ┌─────────────┐   ┌─────────────────┐   ┌─────────────────────┐
+ │  C++ Kernels│   │  CUDA Kernel    │   │  Rust Kernels       │
+ │  (pybind11) │   │  (nvcc sm_89)   │   │  (PyO3 / maturin)   │
+ │             │   │                 │   │                     │
+ │ Spindle FOC │   │  2D heat PDE    │   │  SpindleKernel      │
+ │ SVPWM inv.  │   │  TILE=16 shmem  │   │  nondominated_sort  │
+ │ Quad encoder│   │  Neumann BC     │   │  rbf_kernel_matrix  │
+ │ Frame FEM   │   │  + source field │   └─────────────────────┘
+ │ 5-axis traj │   │  (blade heat)   │
+ │ Recipe seq. │   └─────────────────┘   ┌─────────────────────┐
+ │ Interlock   │                         │  IEC 61131-3 ST     │
+ │ EnKF (APC)  │   ┌─────────────────┐   │  (OpenPLC / CODESYS)│
+ │ GP inference│   │  Go Telemetry   │   │                     │
+ │ MPC optim.  │   │  HTTP :8080     │   │  SpindleFB          │
+ │ NSGA-II     │   │  /health        │   │  InterlockFB        │
+ └──────┬──────┘   │  /simulate      │   │  RecipeSeqFB        │
+        │          │  /ws  (10 Hz)   │   │  DicingController   │
+        ▼          └─────────────────┘   └─────────────────────┘
+ ┌─────────────┐
+ │DiscoMachine │  ← unified C++ class, one tick() per 10 µs
+ │             │
+ │ SpindleState│  PMSM dq-axis + PI-FOC
+ │ InverterState  SVPWM + dead-time compensation
+ │ MotionState │  P-ctrl XYZθ + 4× quadrature encoder
+ │ E-STOP latch│  blade depth / overspeed / door interlock
+ └─────────────┘
+```
 
 ---
 
-## Key Results
+## Module Map
 
-### Blade Dicing GP Surrogate
+| Directory | Language | Description |
+|-----------|----------|-------------|
+| `fem/` | C++ + CUDA | Spindle FOC, SVPWM inverter, ABZ encoder, Euler-Bernoulli frame FEM, **2D wafer heat diffusion** |
+| `ml/` | C++ | EnKF blade-wear APC, GP inference (RBF kernel, EI, UCB acquisition) |
+| `pipeline/` | C++ | 5-axis dicing trajectory, recipe sequencer, interlock monitor, **GP-surrogate MPC** |
+| `optimization/` | C++ | NSGA-II multi-objective (quality × throughput × wear Pareto front) |
+| `machine/` | C++ | `DiscoMachine` — all subsystems in one deterministic tick loop |
+| `analysis/` | Python | Tolerance stack-up (worst-case / RSS / Monte Carlo, Cpk) |
+| `plc/` | IEC 61131-3 | `SpindleFB`, `InterlockFB`, `RecipeSeqFB`, `DicingController` |
+| `rust/` | Rust / PyO3 | `SpindleKernel`, `nondominated_sort`, `rbf_kernel_matrix` — memory-safe, IEC 61508 compatible |
+| `telemetry/` | Go | HTTP + WebSocket server streaming `DiscoMachine` state in real time |
+| `tests/` | Python | **279 tests** — physics invariants + C++/Python parity + integration |
 
-| Method | LOO RMSE | LOO R² | n |
-|--------|----------|--------|---|
-| Homoscedastic GP (all grades) | 3.12 µm | 0.34 | 25 |
-| **Heteroscedastic GP (Grade A/B)** | **1.62 µm** | **0.80** | **11** |
-| GP + EnKF (real-time) | 1.54 µm | — | 80 wafers sim |
+---
 
-### KABRA® Laser-Slicing Bayesian Optimization (TuRBO)
+## Kernel Benchmark  (C++ / CUDA vs Python / NumPy)
 
-| Scenario | Optimal (P / v / d) | HAZ | Quality | Throughput | vs. Baseline |
-|----------|---------------------|-----|---------|------------|--------------|
-| quality_first | 22.2 W / 303 mm/s / 100 µm | 121.4 µm | 0.987 | 296.0 mm²/s | **+71.3%** |
-| balanced | 22.2 W / 303 mm/s / 100 µm | 121.4 µm | 0.987 | 296.0 mm²/s | **+71.3%** |
-| speed_first | 22.2 W / 303 mm/s / 100 µm | 121.4 µm | 0.987 | 296.0 mm²/s | **+71.3%** |
+| Kernel | Python | C++ | Speedup |
+|--------|--------|-----|:-------:|
+| NSGA-II nondom sort (N=300, obj=3) | 623 ms | 0.75 ms | **827×** |
+| Quadrature encoder decode (N=100 k) | 33 ms | 0.15 ms | **215×** |
+| EnKF analysis (NE=200, Nx=3) | 0.40 ms | 0.004 ms | **89×** |
+| SVPWM batch (N=10 000) | 130 ms | 8.5 ms | **15×** |
+| GP RBF kernel matrix (N=300, D=8) | 10.9 ms | 0.83 ms | **13×** |
+| GP predict mean (M=500, N=200, D=6) | 5.3 ms | 1.7 ms | **3×** |
+| **CUDA** 2D heat diffusion 256×256 | 12 ms/step ¹ | **0.08 ms/step** ² | **~150×** |
 
-Leeftink et al. (arXiv:2511.23141) report +34% throughput on Si wafer using GP+BO (DISCO LASER1205).
+> ¹ NumPy `np.roll` FD on i9-13900K.  ² RTX 4090, sm_89 (Vancouver node).  
+> Run `python benchmark_all_kernels.py` or `python fem/test_heat_diffusion.py` to reproduce.
 
-### Physical Process Limits
+---
 
-| Process | Physical Limit | Model |
-|---------|---------------|-------|
-| Blade dicing kerf | **7.2 µm** (current: 23 µm → 68% headroom) | Euler plate buckling |
-| Wafer thinning (safety) | SF = 58.5 @ 25 µm, 11.7 @ 5 µm | Timoshenko plate bending |
-| Plasma DRIE AR | AR_crit = 8 @ 10 mTorr, AR_max ≈ 35 | ARDE empirical (JVST 2017) |
-| Stealth dicing focus | Layer thickness ≥ 3.3 µm (Rayleigh z_R) | Gaussian optics |
-| Diamond laser kerf | 0.42 µm @ 193 nm (ArF only) | Photon energy threshold |
+## DISCO 職種カバレッジ
 
-Validated against HBM fracture data (Materials 2024): stealth a_eff ≈ 1.6 µm vs. blade 8.6 µm vs. laser 91 µm.
+| 職種 | Required Skills | Covered by |
+|------|----------------|------------|
+| **ソフトウェア開発** | C++, embedded, real-time, Python | `machine/`, `fem/`, `pipeline/` 14 C++ kernels |
+| **電気・制御** | PMSM, FOC, SVPWM, PLC (IEC 61131-3) | `SpindleFB.st`, `_spindle_kernel`, `_servo_inverter_kernel` |
+| **プロセス技術** | APC, GP regression, Bayesian opt | `_enkf_kernel`, `_gp_inference_kernel`, `_mpc_kernel` |
+| **生産技術** | Tolerance, yield, multi-objective opt | `analysis/tolerance_stack.py`, `_nsga2_kernel` |
+| **機械設計** | FEM, stiffness, thermal PDE | `_frame_stiffness_kernel`, `_heat_diffusion_kernel.cu` |
+
+---
+
+## Language Coverage
+
+```
+Python          ████████████████████  orchestration, ML, analysis, notebooks
+C++ (pybind11)  █████████████████     14 compiled hot-loop kernels
+IEC 61131-3     ████████              PLC function blocks (OpenPLC / CODESYS)
+Rust (PyO3)     ████                  memory-safe kernel alternatives
+Go              ████                  HTTP/WebSocket telemetry server
+CUDA (nvcc)     ████                  GPU 2D heat diffusion (RTX 4090, sm_89)
+```
 
 ---
 
 ## Quick Start
 
+### Build C++ kernels
+
 ```bash
-git clone https://github.com/keisuke58/wafer-proc-sim.git
-cd wafer-proc-sim
+pip install pybind11
+bash build_all_kernels.sh        # builds all 15 C++ kernels
+```
 
-pip install -e ".[dev]"
-./scripts/reproduce_paper.sh       # paper figures + LOO metrics
+### Run tests
 
-# KABRA BO (TuRBO multi-objective)
-python sic/sic_kabra_gp.py         # synthetic DOE
-python sic/sic_kabra_gp.py --use-fem  # analytical Rosenthal-Bessel DOE
+```bash
+python -m pytest tests/ -q       # 279 tests, ~60 s
+```
 
-# Physical process limits
-python sic/physical_limits.py --validate   # with HBM literature validation
+### Run digital twin
 
-# DRIE ARDE validation (requires Access-2024-18513 dataset)
-python validation/arde_validation.py
+```python
+from machine import _disco_machine as m
 
-# Analytical FEM DOE for KABRA
-python fem/generate_doe.py --output fem/kabra_doe_data.csv
+sim = m.DiscoMachine(m.MachineParams())
+sim.set_target(50.0, 25.0, -0.2)   # x, y, z target [mm]
+r   = sim.simulate(5000)            # 5000 × 10 µs = 50 ms
 
-# Streamlit demo
-streamlit run streamlit_app.py
+s = sim.get_state()
+print(f"Speed:  {s['omega_rpm']:,.0f} rpm")
+print(f"X pos:  {s['x_mm']:.3f} mm")
+print(f"Mode:   {s['mode']}")
+```
+
+### Wafer thermal simulation
+
+```python
+from fem.dicing_heat_sim import DicingHeatSim
+
+sim = DicingHeatSim(nx=256, ny=256, dx=20e-6)   # SiC defaults
+sim.run_lane(y_mm=2.56, feed_mms=80.0, Q_W_per_m2=5e7)
+print(f"Peak wafer temp: {sim.peak_temp:.1f} °C")  # build with CUDA for GPU
+```
+
+### MPC / APC optimizer
+
+```python
+import numpy as np
+from pipeline import _mpc_kernel as mpc
+
+p = mpc.MPCParams()
+p.horizon = 10;  p.w_wear = 0.8    # penalise wear more
+
+# x0 = [blade_wear_um, material_hardness, depth_um]
+x0 = np.array([15.0, 7.5, 20.0])
+# Provide GP training data (see ml/ examples for full workflow)
+result = mpc.mpc_optimize(x0, Xtr, alpha_q, Xtr, alpha_w, ls, sf,
+                           u_prev_feed=80.0, u_prev_rpm=30000.0, params=p)
+print(f"Optimal feed: {result['feed_rate_mms']:.1f} mm/s  "
+      f"rpm: {result['spindle_rpm']:.0f}")
+
+pareto = mpc.mpc_pareto_front(x0, Xtr, alpha_q, Xtr, alpha_w, ls, sf, p)
+print(f"Pareto front: {len(pareto)} non-dominated actions")
+```
+
+### Build CUDA kernel  (Vancouver RTX 4090)
+
+```bash
+CUDA_ARCH=sm_89 bash build_all_kernels.sh heat_diffusion
+python fem/test_heat_diffusion.py   # reports GPU name + ~150× speedup
+```
+
+### Build Rust kernel
+
+```bash
+pip install maturin
+cd rust && maturin develop --release
+python -c "from wafer_proc_sim import SpindleKernel; k=SpindleKernel(); print(k.tick(30000,10))"
+```
+
+### Run Go telemetry server
+
+```bash
+cd telemetry && go mod tidy && go run .
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/simulate -d '{"n_steps":5000}'
+# WebSocket: ws://localhost:8080/ws  → JSON frames at 10 Hz
+```
+
+### Compile PLC programs
+
+```
+OpenPLC Editor (free):
+  1. Create new project → Add POU
+  2. Import plc/SpindleFB.st, InterlockFB.st, RecipeSeqFB.st, DicingController.st
+  3. Build (F5) → Simulate → monitor variables via Modbus TCP
 ```
 
 ---
 
-## Repository Structure
+## Physical Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| Max spindle speed | 35 000 rpm |
+| Spindle motor | PMSM, p=4 pole pairs, ψ=0.08 Wb |
+| Wafer material | SiC (α = 84×10⁻⁶ m²/s, ρc = 2.5×10⁶ J/m³K) |
+| Control cycle | 10 µs |
+| DC bus voltage | 600 V |
+| Coolant fault threshold | < 0.5 L/min |
+| Blade wear warn | > 30 µm |
+
+---
+
+## Project Structure
 
 ```
 wafer-proc-sim/
-├── sic/
-│   ├── physical_limits.py        # First-principles process limits (6 DISCO processes)
-│   ├── sic_kabra_gp.py           # KABRA® GP surrogate + TuRBO multi-objective BO
-│   └── sic_vs_si_analysis.py     # SiC vs Si property comparison
-├── validation/
-│   ├── experimental_data.py      # Curated SiC dicing dataset (quality A–D) + HBM fracture data
-│   ├── arde_validation.py        # ARDE model validation (Access-2024 15k ICP etch dataset)
-│   └── quantitative_validation.py
-├── fem/
-│   ├── kabra_thermal_2d.py       # ABAQUS 2D thermo-mechanical FEM (KABRA)
-│   ├── generate_doe.py           # Pure-Python Rosenthal-Bessel analytical DOE
-│   ├── kabra_doe_data.csv        # Generated DOE (360 pts, 4 params × 3 outputs)
-│   └── <100+ industry models>    # TEL, Keyence, ASML, DISCO competitive analysis…
-├── references/
-│   ├── papers/                   # Downloaded PDFs (HBM, DREI, stealth dicing, BO)
-│   └── repos/                    # Cloned open-source tools (ViennaPS, Access-2024, etc.)
-├── ml/train_from_experimental.py # Heteroscedastic GP surrogate
-├── pipeline/sic_dicing_pipeline.py
-├── streamlit_app.py              # Live monitor + KABRA BO + physical limits demo
-└── tests/test_paper_metrics.py   # LOO metric regression (CI)
-```
-
----
-
-## Dataset
-
-### Blade Dicing (curated)
-
-| Key | Reference | DOI | n | Grade |
-|-----|-----------|-----|---|-------|
-| Micro2026 | Wang Y. et al., *Micromachines* 17(2):187, 2026 | [10.3390/mi17020187](https://doi.org/10.3390/mi17020187) | 19 | A/C |
-| Mat2022 | Feng Y. et al., *Materials* 15(22):8083, 2022 | [10.3390/ma15228083](https://doi.org/10.3390/ma15228083) | 10 | D |
-
-### Open External Datasets
-
-| Dataset | Source | Purpose |
-|---------|--------|---------|
-| Access-2024-18513 | Guo et al., IEEE Access (2024) | 15k ICP etch samples (Cl₂/HBr/O₂), ARDE validation |
-| HBM Fracture | Kang et al., Materials 17(22):5529 (2024) | 3PB chip strength, stealth/blade/laser comparison |
-| ETH DRIE | Legtenberg et al., arXiv:2104.02763 (2021) | Bosch DRIE ARDE etch lag < 1.5% |
-
-Quality grades: A = direct SEM + reported σ, B = digitized, C = interpolated, D = estimated.
-
----
-
-## Physics Models
-
-### Blade Dicing
-- Lawn–Evans lateral crack: $c_l = C (E/H)^{0.4} (P/K_\text{Ic})^{0.5}$
-- 4H-SiC crystallographic anisotropy (K_Ic × 1.20 on {0001})
-- Ensemble Kalman Filter for real-time blade wear estimation
-- Euler plate buckling for minimum kerf: $t_\text{min} = a\sqrt{12(1-\nu^2)\sigma_y / (\pi^2 E)}$
-
-### KABRA® Laser Slicing
-- Rosenthal–Bessel moving Gaussian source: $\Delta T_\text{max} = P_\text{abs} G(Pe) / (2\pi k w_0)$
-- TuRBO trust-region Bayesian optimization (Eriksson 2019)
-- Multi-objective scalarization: $J = w_\text{haz}\hat{h} + w_q(1-q) + w_\text{tp}(1-\hat{v})$
-
-### Plasma DRIE / ARDE
-- $R/R_0 = 1/(1 + (AR/AR_\text{crit})^n)$, $AR_\text{crit}(P) = 8\sqrt{P/10\,\text{mTorr}}$ (JVST 2017)
-
----
-
-## Documentation
-
-| Doc | Purpose |
-|-----|---------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Core data flow |
-| [docs/TIERS.md](docs/TIERS.md) | Core vs extension layout |
-| [docs/PORTFOLIO.md](docs/PORTFOLIO.md) | DISCO interview / portfolio mapping |
-| [docs/ZENODO.md](docs/ZENODO.md) | Zenodo DOI & archive instructions |
-| [AGENTS.md](AGENTS.md) | AI agent instructions |
-| [DEVLOG.md](DEVLOG.md) | Development history |
-
----
-
-## Citation
-
-```bibtex
-@article{nishioka2025sic,
-  title   = {Data Quality-Aware Heteroscedastic {Gaussian} Process Surrogate
-             for {4H-SiC} Blade Dicing Process Optimization},
-  author  = {Nishioka, Keisuke},
-  journal = {Precision Engineering},
-  year    = {2025},
-  note    = {submitted},
-  url     = {https://github.com/keisuke58/wafer-proc-sim}
-}
-
-@software{nishioka2026wafer,
-  author    = {Nishioka, Keisuke},
-  title     = {wafer-proc-sim},
-  year      = {2026},
-  publisher = {Zenodo},
-  version   = {0.2.0},
-  doi       = {10.5281/zenodo.20495459},
-  url       = {https://github.com/keisuke58/wafer-proc-sim}
-}
+├── fem/                C++ / CUDA — spindle, inverter, encoder, thermal
+│   ├── _spindle_kernel.cpp
+│   ├── _servo_inverter_kernel.cpp
+│   ├── _encoder_kernel.cpp
+│   ├── _frame_stiffness_kernel.cpp
+│   ├── _heat_diffusion_kernel.cu   ← CUDA, RTX 4090
+│   └── dicing_heat_sim.py          ← Python wrapper (CUDA + NumPy fallback)
+├── ml/                 C++ — APC, GP, MPC
+│   ├── _enkf_kernel.cpp
+│   └── _gp_inference_kernel.cpp
+├── pipeline/           C++ — motion, recipe, interlock, MPC
+│   ├── _5axis_interpolation.cpp
+│   ├── _recipe_sequencer.cpp
+│   ├── _interlock_monitor.cpp
+│   └── _mpc_kernel.cpp             ← GP-surrogate MPC optimizer
+├── optimization/       C++ — NSGA-II
+│   └── _nsga2_kernel.cpp
+├── machine/            C++ — unified digital twin
+│   └── _disco_machine.cpp
+├── analysis/           Python — tolerance stack-up
+├── plc/                IEC 61131-3 — PLC function blocks
+│   ├── SpindleFB.st
+│   ├── InterlockFB.st
+│   ├── RecipeSeqFB.st
+│   └── DicingController.st
+├── rust/               Rust / PyO3 — memory-safe kernels
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── telemetry/          Go — HTTP/WebSocket server
+│   ├── main.go
+│   └── go.mod
+├── tests/              279 pytest tests
+├── benchmark_all_kernels.py
+└── build_all_kernels.sh
 ```
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).  
-Contact: Keisuke Nishioka · kei128608@gmail.com
+MIT — see [LICENSE](LICENSE).

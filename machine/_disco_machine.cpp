@@ -146,7 +146,8 @@ public:
           spindle_cmd_rpm(0)
     {
         _reset_spindle();
-        motion = {};
+        inverter = {};
+        motion   = {};
     }
 
     // ── control interface ─────────────────────────────────────────────────
