@@ -103,6 +103,12 @@ build_recipe() {
 build_interlock() {
     build_kernel "pipeline/_interlock_monitor.cpp" "_interlock_monitor"     "${HERE}/pipeline"
 }
+build_machine() {
+    build_kernel "machine/_disco_machine.cpp"      "_disco_machine"         "${HERE}/machine"
+}
+build_gp() {
+    build_kernel "ml/_gp_inference_kernel.cpp"     "_gp_inference_kernel"   "${HERE}/ml"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -124,6 +130,8 @@ case "${TARGET}" in
         build_encoder
         build_recipe
         build_interlock
+        build_machine
+        build_gp
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -139,6 +147,8 @@ case "${TARGET}" in
     encoder)          build_encoder          ;;
     recipe)           build_recipe           ;;
     interlock)        build_interlock        ;;
+    machine)          build_machine          ;;
+    gp)               build_gp               ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
