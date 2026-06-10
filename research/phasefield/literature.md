@@ -59,6 +59,95 @@
 | 22 | Zolesi, Carrara, De Lorenzis | 2024 | On the efficiency of the implementation of phase-field fracture in FEniCSx | GitHub: `FEniCSx-phasefield` |
 | 23 | Bleyer et al. | 2022 | Numerical tours of computational mechanics with FEniCSx | `comet-fenics.readthedocs.io` |
 
+## Layer 4b: Bayes以外の推論・シミュレーション手法（候補比較）
+
+> ユーザー指示: TMCMCは手段。Bayes以外のMLやSimulation手法も候補として把握しておく。
+
+### A. Simulation-Based Inference (SBI) / 尤度なし推論
+
+| 手法 | 略称 | 主要論文 | 特徴 | Bayes? |
+|---|---|---|---|---|
+| Sequential Neural Posterior Estimation | SNPE-C | Cranmer, Brehmer, Louppe (2020) PNAS | シミュレーターから直接posterior学習。尤度不要 | ○ amortized |
+| Neural Likelihood Estimation | NLE | Papamakarios et al. (2019) NeurIPS | L(θ|x)をネットで推定 | ○ |
+| Approximate Bayesian Computation | ABC | Sunnaker et al. (2013) PLOS Comp. Biol. | summary statistics比較。古典的 | ○ |
+
+**wafer-proc-simとの接続**: SNPE-C は FEniCSx シミュレーターを black-box 扱いでき、sign-only (binary) observation にも適用可。probit 尤度を陽示的に書かなくてよい → Novel A の代替実装として有力。
+
+---
+
+### B. Physics-Informed Neural Network (PINN) 逆問題
+
+| アプローチ | 論文 | 内容 |
+|---|---|---|
+| PINN forward | Raissi, Perdikaris, Karniadakis (2019) J. Comput. Phys. 378 | PDE残差をlossに組み込む |
+| PINN inverse | Raissi et al. (2020) Science 367 | 観測データ + PDE → G_c, E の同定 |
+| HP-VPINN | Kharazmi et al. (2021) Comput. Methods Appl. Mech. Eng. | variational formulation |
+| PINN PF fracture | Goswami, Anitescu, Chatzi, Rabczuk (2020) Eng. Fract. Mech. | PFモデルをPINNで解く |
+
+**特徴**: G_c(θ) を neural network parameterize → end-to-end 勾配降下で MAP 推定。  
+**限界**: 不確かさ定量化 (UQ) が難しい。点推定のみ。Bayesian PINN (B-PINN) で拡張可能。  
+**Lalain 2021**: B-PINN — DropOut + Laplace approximation で posterior 近似。
+
+---
+
+### C. Neural Operator (DeepONet / FNO) + 逆問題
+
+| 手法 | 論文 |
+|---|---|
+| DeepONet | Lu, Jin, Pang, Zhang, Karniadakis (2021) Nature Machine Intelligence |
+| FNO (Fourier Neural Operator) | Li et al. (2021) ICLR |
+| UNet-FNO hybrid | Wen et al. (2022) Water Resources Research |
+
+**wafer-proc-sim接続**: FNO で (Gc, β, ℓ) → d(x) を学習したら、逆問題は  
+  `argmin_{θ} || d_FNO(θ) - y_obs ||`  
+これは Bayesian posterior の MAP 推定に使える (Novel C のコア)。  
+UQ が必要ならこの surrogate を SMC/NUTS のコールで使う。
+
+---
+
+### D. 微分可能シミュレーション (Differentiable Simulation)
+
+| 手法 | ライブラリ | 特徴 |
+|---|---|---|
+| JAX + FEM | JAX-FEM (Xue et al. 2023), ngsolve+JAX | auto-diff through FEM solver |
+| adjoint method | FEniCSx/dolfin-adjoint | adjoint PDE → ∂J/∂θ analytically |
+| implicit differentiation | jaxopt | 制約付き最適化の微分 |
+
+**特徴**: dolfin-adjoint を使えば FEniCSx solver を通じた勾配が計算できる → L-BFGS で Gc(θ) を直接最適化。  
+**限界**: 確率的フレームワークでない → UQ なし。ただし MAP 推定として速い。  
+**Bayesian との組み合わせ**: adjoint で log-posterior の gradient → HMC/NUTS に渡す。これが最も効率的な Bayes 推論になる可能性。
+
+---
+
+### E. 変分ベイズ / 近似推論
+
+| 手法 | 論文 | 特徴 |
+|---|---|---|
+| Mean-field VI | Blei, Kucukelbir, McAuliffe (2017) JASA | 最速・精度↓ |
+| Normalizing Flows | Rezende & Mohamed (2015) ICML | 柔軟な posterior |
+| Stein Variational GD | Liu & Wang (2016) NeurIPS | 粒子ベース、勾配必要 |
+| Laplace Approximation | MacKay (1992) | 2次近似、実装簡単 |
+
+---
+
+### 手法選択マトリクス（修論戦略）
+
+| 手法 | UQ | 実装コスト | 速度 | 推奨シナリオ |
+|---|---|---|---|---|
+| TMCMC / SMC | ○ full posterior | 中 (既存コード流用) | 遅 | surrogate併用で ◎ |
+| HMC/NUTS (NumPyro) | ○ full posterior | 低 (JAX) | 中-速 | adjoint勾配が取れる場合 ◎ |
+| SNPE-C (SBI) | ○ amortized | 中-高 | 速 (amortized) | black-box simulator, 多数実験 ◎ |
+| PINN inverse | △ MAP only | 中 | 速 | 初期MAP推定・warm start ◎ |
+| FNO surrogate + MCMC | ○ full | 高 | 速 (surrogate後) | スケールアップ時 ◎ |
+| dolfin-adjoint + L-BFGS | △ MAP only | 低 | 最速 | 検証・baseline ◎ |
+
+**推奨戦略 (修論)**:  
+1. `dolfin-adjoint + L-BFGS` → baseline MAP (実装1-2週間)  
+2. `TMCMC or NUTS` + PINN surrogate → full posterior (メイン貢献)  
+3. `SNPE-C` → 比較実験 (時間があれば)
+
+---
+
 ## 読む順番ロードマップ
 
 ```
