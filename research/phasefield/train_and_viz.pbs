@@ -1,0 +1,48 @@
+#!/bin/bash
+#PBS -N at2_fm_train
+#PBS -q default
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=06:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/train_and_viz.pbs.log
+
+# Train Flow Matching + DDPM on the AT2 field dataset, then render the
+# crack-uncertainty figure for each.  Runs entirely on one frontale node (CPU).
+
+set -e
+cd /home/nishioka/git/wafer-proc-sim
+
+export OMP_NUM_THREADS=24
+export OPENBLAS_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+DATA=research/phasefield/at2_fields_1k.npz
+RES=research/phasefield/results
+mkdir -p $RES
+
+echo "[$(date)] host=$(hostname)  start"
+
+# ── Flow Matching ──────────────────────────────────────────────────────────
+echo "[$(date)] training Flow Matching (500 epochs) ..."
+$PY research/phasefield/train_field_model.py \
+    --data $DATA --method fm --epochs 500 --batch-size 32 --threads 24 \
+    --out $RES/field_fm.pt
+
+echo "[$(date)] rendering FM crack bands ..."
+$PY research/phasefield/visualize_crack_bands.py \
+    --ckpt $RES/field_fm.pt --method fm --n-samples 64 --guidance 3.0 --cpu \
+    --out $RES/crack_bands_fm.png
+
+# ── DDPM (comparison) ────────────────────────────────────────────────────────
+echo "[$(date)] training DDPM (500 epochs, T=300) ..."
+$PY research/phasefield/train_field_model.py \
+    --data $DATA --method ddpm --epochs 500 --batch-size 32 --T 300 --threads 24 \
+    --out $RES/field_ddpm.pt
+
+echo "[$(date)] rendering DDPM crack bands ..."
+$PY research/phasefield/visualize_crack_bands.py \
+    --ckpt $RES/field_ddpm.pt --method ddpm --n-samples 64 --guidance 3.0 --cpu \
+    --out $RES/crack_bands_ddpm.png
+
+echo "[$(date)] finished — figures in $RES/"

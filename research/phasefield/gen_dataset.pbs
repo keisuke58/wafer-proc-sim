@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -N at2_gen_1k
+#PBS -q default
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/at2_gen_1k.pbs.log
+
+# AT2 phase-field dataset generation for conditional DDPM / Flow Matching.
+# Runs 1000 forward simulations across 22 workers on one frontale node.
+
+set -e
+cd /home/nishioka/git/wafer-proc-sim
+
+# Single-threaded BLAS so workers don't oversubscribe cores
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+
+echo "[$(date)] host=$(hostname)  starting 1000-sample AT2 generation"
+
+$PY -c "
+import sys, time
+sys.path.insert(0, '.')
+from research.phasefield.diffusion_field_ddpm import generate_field_dataset, FULL_CFG
+
+t0 = time.time()
+ds = generate_field_dataset(
+    1000,
+    cfg=FULL_CFG,
+    save_path='research/phasefield/at2_fields_1k.npz',
+    n_workers=22,
+    seed=0,
+    verbose=True,
+)
+print(f'[DONE] {(time.time()-t0)/60:.1f} min  fields={ds.fields.shape}', flush=True)
+"
+
+echo "[$(date)] finished"
