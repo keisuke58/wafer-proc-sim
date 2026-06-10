@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -N at2_mse
+#PBS -q default
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/mse_only.pbs.log
+
+# MSE deterministic surrogate baseline — runs in parallel with the FM+DDPM job
+# (40411) on a separate frontale node, for the 3-way comparison.
+
+set -e
+cd /home/nishioka/git/wafer-proc-sim
+
+export OMP_NUM_THREADS=24
+export OPENBLAS_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+DATA=research/phasefield/at2_fields_1k.npz
+RES=research/phasefield/results
+mkdir -p $RES
+
+echo "[$(date)] host=$(hostname)  start MSE surrogate"
+
+$PY research/phasefield/train_field_model.py \
+    --data $DATA --method mse --epochs 500 --batch-size 32 --threads 24 \
+    --out $RES/field_mse.pt
+
+echo "[$(date)] rendering MSE crack bands ..."
+$PY research/phasefield/visualize_crack_bands.py \
+    --ckpt $RES/field_mse.pt --method mse --n-samples 64 --guidance 3.0 --cpu \
+    --out $RES/crack_bands_mse.png
+
+echo "[$(date)] finished — $RES/crack_bands_mse.png"

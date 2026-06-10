@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -N at2_validate
+#PBS -q default
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/validate.pbs.log
+set -e
+cd /home/nishioka/git/wafer-proc-sim
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+RES=research/phasefield/results
+for M in ddpm fm mse; do
+  echo "[$(date)] validate $M"
+  $PY research/phasefield/validate_crack_angle.py \
+      --ckpt $RES/field_${M}.pt --method $M --n-samples 64 --cpu \
+      --out $RES/validate_phi_${M}.png
+done
+echo "[$(date)] done"
