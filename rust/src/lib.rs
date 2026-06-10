@@ -101,12 +101,12 @@ impl SpindleKernel {
             te_log.push(te);
         }
 
+        let final_rpm = omega_log.last().copied().unwrap_or(0.0) * 60.0 / std::f64::consts::TAU;
         let d = PyDict::new_bound(py);
         d.set_item("omega_rad_s", omega_log)?;
         d.set_item("i_q",        iq_log)?;
         d.set_item("T_e_Nm",     te_log)?;
-        d.set_item("speed_rpm",
-            omega_log.last().copied().unwrap_or(0.0) * 60.0 / std::f64::consts::TAU)?;
+        d.set_item("speed_rpm",  final_rpm)?;
         Ok(d.into())
     }
 
