@@ -160,6 +160,15 @@ build_in_situ() {
 build_recipe_opt() {
     build_kernel "pipeline/recipe_optimizer_kernel.cpp" "_recipe_optimizer_kernel" "${HERE}/pipeline"
 }
+build_gan() {
+    build_kernel "materials/gan_dicing_kernel.cpp"  "_gan_dicing_kernel"  "${HERE}/materials"
+}
+build_ga2o3() {
+    build_kernel "materials/ga2o3_kernel.cpp"        "_ga2o3_kernel"       "${HERE}/materials"
+}
+build_inp() {
+    build_kernel "materials/inp_dicing_kernel.cpp"  "_inp_dicing_kernel"  "${HERE}/materials"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -200,6 +209,9 @@ case "${TARGET}" in
         build_wafer_warp
         build_in_situ
         build_recipe_opt
+        build_gan
+        build_ga2o3
+        build_inp
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -234,6 +246,9 @@ case "${TARGET}" in
     wafer_warp)       build_wafer_warp       ;;
     in_situ)          build_in_situ          ;;
     recipe_opt)       build_recipe_opt       ;;
+    gan)              build_gan              ;;
+    ga2o3)            build_ga2o3            ;;
+    inp)              build_inp              ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
