@@ -7,6 +7,7 @@
 #PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/at2_gen_1k.pbs.log
 
 # AT2 phase-field dataset generation for conditional DDPM / Flow Matching.
+# Samples (Gc, ell, beta, theta) on a 4D Latin hypercube.
 # Runs 1000 forward simulations across 22 workers on one frontale node.
 
 set -e

@@ -37,20 +37,22 @@ from research.phasefield.diffusion_field_ddpm import (
 )
 
 
-# Parameter settings to visualise: (label, Gc, ell, beta)
+# Parameter settings to visualise: (label, Gc, ell, beta, theta_deg)
+# Sweep theta at fixed SiC-like beta to show sin(2θ) crack deflection.
 SETTINGS = [
-    ("isotropic\nβ=0.0",      8e-4, 0.04,  0.0),
-    ("SiC-like\nβ=−0.40",     8e-4, 0.04, -0.40),
-    ("strong aniso\nβ=−0.70", 8e-4, 0.04, -0.70),
+    ("β=−0.40\nθ=0°",  8e-4, 0.04, -0.40,  0.0),
+    ("β=−0.40\nθ=45°", 8e-4, 0.04, -0.40, 45.0),
+    ("β=−0.40\nθ=90°", 8e-4, 0.04, -0.40, 90.0),
 ]
 
 
 def load_model(ckpt_path: str, device: torch.device
                ) -> tuple[FieldDenoiser, dict]:
-    ck    = torch.load(ckpt_path, map_location=device)
-    ny    = int(ck.get("ny", 40))
-    nx    = int(ck.get("nx", 80))
-    model = FieldDenoiser(ny=ny, nx=nx).to(device)
+    ck       = torch.load(ckpt_path, map_location=device)
+    ny       = int(ck.get("ny", 40))
+    nx       = int(ck.get("nx", 80))
+    cond_dim = int(ck.get("cond_dim", 3))   # 3 = old checkpoints, 4 = theta-aware
+    model    = FieldDenoiser(ny=ny, nx=nx, cond_dim=cond_dim).to(device)
     model.load_state_dict(ck["model"])
     model.eval()
     return model, ck
@@ -63,18 +65,18 @@ def draw(model: FieldDenoiser, ck: dict, method: str, n_samples: int,
     fig, axes = plt.subplots(n_show + 2, n_set,
                              figsize=(3.2 * n_set, 2.0 * (n_show + 2)))
 
-    for col, (label, Gc, ell, beta) in enumerate(SETTINGS):
+    for col, (label, Gc, ell, beta, theta) in enumerate(SETTINGS):
         if method == "fm":
-            fields = sample_fields_fm(model, Gc=Gc, ell=ell, beta=beta,
+            fields = sample_fields_fm(model, Gc=Gc, ell=ell, beta=beta, theta=theta,
                                       n_samples=n_samples, n_steps=20,
                                       guidance_scale=guidance, device=device)
         elif method == "ddpm":
             sched  = DDPMSchedule(T=int(ck.get("schedule_T", 300)), device=device)
-            fields = sample_fields(model, sched, Gc=Gc, ell=ell, beta=beta,
+            fields = sample_fields(model, sched, Gc=Gc, ell=ell, beta=beta, theta=theta,
                                    n_samples=n_samples,
                                    guidance_scale=guidance, device=device)
         else:  # mse
-            fields = predict_fields_mse(model, Gc=Gc, ell=ell, beta=beta,
+            fields = predict_fields_mse(model, Gc=Gc, ell=ell, beta=beta, theta=theta,
                                         n_samples=n_samples, device=device)
 
         mean = fields.mean(axis=0)
@@ -107,7 +109,8 @@ def draw(model: FieldDenoiser, ck: dict, method: str, n_samples: int,
             ax.set_ylabel("std[d]\n(uncertainty)", fontsize=8)
         fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
-    method_name = "Flow Matching" if method == "fm" else "DDPM"
+    method_name = {"fm": "Flow Matching", "ddpm": "DDPM",
+                   "mse": "MSE surrogate (deterministic)"}[method]
     fig.suptitle(f"Crack-pattern uncertainty — {method_name} "
                  f"(N={n_samples}, w={guidance})", fontsize=12)
     fig.tight_layout(rect=(0, 0, 1, 0.97))

@@ -68,9 +68,10 @@ from research.phasefield.at2_simulator_2d import PFParams2D, SimConfig2D, run_fo
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Physical parameter ranges ─────────────────────────────────────────────────
-_GC_LO,   _GC_HI   = 2e-4, 3e-3   # fracture energy [N/m]
-_ELL_LO,  _ELL_HI  = 0.02, 0.10   # length scale [m]
-_BETA_LO, _BETA_HI = -0.8,  0.8   # anisotropy coefficient
+_GC_LO,    _GC_HI    = 2e-4, 3e-3   # fracture energy [N/m]
+_ELL_LO,   _ELL_HI   = 0.02, 0.10   # length scale [m]
+_BETA_LO,  _BETA_HI  = -0.8,  0.8   # anisotropy coefficient
+_THETA_LO, _THETA_HI =  0.0, 90.0   # cleavage-plane angle [deg]
 
 _E_FIXED  = 1.0
 _NU_FIXED = 0.25
@@ -84,14 +85,15 @@ FULL_CFG = SimConfig2D(nx=80, ny=40, n_steps=100)  # ~500 ms/sim on CPU
 # ── Normalisation ─────────────────────────────────────────────────────────────
 
 def _norm_cond(Gc: np.ndarray, ell: np.ndarray,
-               beta: np.ndarray) -> np.ndarray:
-    """Map (Gc, ell, beta) → c ∈ [0,1]³  (log-scale for Gc, ell)."""
+               beta: np.ndarray, theta: np.ndarray) -> np.ndarray:
+    """Map (Gc, ell, beta, theta_deg) → c ∈ [0,1]⁴  (log-scale for Gc, ell)."""
     lg = math.log(_GC_HI)  - math.log(_GC_LO)
     le = math.log(_ELL_HI) - math.log(_ELL_LO)
     c0 = (np.log(Gc)  - math.log(_GC_LO))  / lg
     c1 = (np.log(ell) - math.log(_ELL_LO)) / le
-    c2 = (beta - _BETA_LO) / (_BETA_HI - _BETA_LO)
-    return np.stack([c0, c1, c2], axis=-1).astype(np.float32)
+    c2 = (beta  - _BETA_LO)  / (_BETA_HI  - _BETA_LO)
+    c3 = (theta - _THETA_LO) / (_THETA_HI - _THETA_LO)
+    return np.stack([c0, c1, c2, c3], axis=-1).astype(np.float32)
 
 
 def _field_to_x(d: np.ndarray) -> np.ndarray:
@@ -116,9 +118,10 @@ class AT2FieldDataset:
 
 def _run_one(args: tuple) -> tuple[int, np.ndarray, float]:
     """Worker for multiprocessing: (index, params_tuple, cfg) → (i, d_field, crack_angle)."""
-    i, Gc, ell, beta, cfg_dict = args
+    i, Gc, ell, beta, theta_deg, cfg_dict = args
     cfg = SimConfig2D(**cfg_dict)
-    params = PFParams2D(Gc=Gc, ell=ell, E=_E_FIXED, nu=_NU_FIXED, beta=beta)
+    params = PFParams2D(Gc=Gc, ell=ell, E=_E_FIXED, nu=_NU_FIXED, beta=beta,
+                        theta_cut=math.radians(theta_deg))
     res = run_forward_2d(params, cfg)
     return i, res.d_field, res.crack_angle
 
@@ -149,21 +152,23 @@ def generate_field_dataset(
 
     try:
         from scipy.stats import qmc
-        lhs = qmc.LatinHypercube(d=3, seed=seed).random(n=n_samples)
+        lhs = qmc.LatinHypercube(d=4, seed=seed).random(n=n_samples)
     except ImportError:
-        lhs = np.random.default_rng(seed).uniform(size=(n_samples, 3))
+        lhs = np.random.default_rng(seed).uniform(size=(n_samples, 4))
 
     lg = math.log(_GC_HI)  - math.log(_GC_LO)
     le = math.log(_ELL_HI) - math.log(_ELL_LO)
-    Gc_arr   = np.exp(lhs[:, 0] * lg + math.log(_GC_LO))
-    ell_arr  = np.exp(lhs[:, 1] * le + math.log(_ELL_LO))
-    beta_arr = lhs[:, 2] * (_BETA_HI - _BETA_LO) + _BETA_LO
+    Gc_arr    = np.exp(lhs[:, 0] * lg + math.log(_GC_LO))
+    ell_arr   = np.exp(lhs[:, 1] * le + math.log(_ELL_LO))
+    beta_arr  = lhs[:, 2] * (_BETA_HI  - _BETA_LO)  + _BETA_LO
+    theta_arr = lhs[:, 3] * (_THETA_HI - _THETA_LO) + _THETA_LO
 
     fields = np.empty((n_samples, 1, ny, nx), dtype=np.float32)
-    cond   = _norm_cond(Gc_arr, ell_arr, beta_arr)
+    cond   = _norm_cond(Gc_arr, ell_arr, beta_arr, theta_arr)
     angles = np.empty(n_samples, dtype=np.float32)
 
-    args = [(i, float(Gc_arr[i]), float(ell_arr[i]), float(beta_arr[i]), cfg_dict)
+    args = [(i, float(Gc_arr[i]), float(ell_arr[i]), float(beta_arr[i]),
+             float(theta_arr[i]), cfg_dict)
             for i in range(n_samples)]
 
     if n_workers > 1:
@@ -177,15 +182,16 @@ def generate_field_dataset(
                 if verbose and (done + 1) % 50 == 0:
                     print(f"  [{done+1:>4}/{n_samples}] completed")
     else:
-        for i, Gc, ell, beta, _ in args:
-            params = PFParams2D(Gc=Gc, ell=ell, E=_E_FIXED, nu=_NU_FIXED, beta=beta)
+        for i, Gc, ell, beta, theta_deg, _ in args:
+            params = PFParams2D(Gc=Gc, ell=ell, E=_E_FIXED, nu=_NU_FIXED, beta=beta,
+                                theta_cut=math.radians(theta_deg))
             res = run_forward_2d(params, cfg)
             fields[i, 0] = _field_to_x(res.d_field)
             angles[i]    = res.crack_angle
             if verbose and (i + 1) % 50 == 0:
                 print(f"  [{i+1:>4}/{n_samples}]  Gc={Gc_arr[i]:.1e}  "
                       f"ell={ell_arr[i]:.3f}  beta={beta_arr[i]:+.2f}  "
-                      f"phi={res.crack_angle:+.1f}°")
+                      f"theta={theta_arr[i]:.1f}°  phi={res.crack_angle:+.1f}°")
 
     ds = AT2FieldDataset(fields=fields, cond=cond, ny=ny, nx=nx)
     if save_path:
@@ -309,7 +315,7 @@ class FieldDenoiser(nn.Module):
 
     def __init__(self, ny: int = 40, nx: int = 80,
                  ch: tuple[int, ...] = (16, 32, 64, 128),
-                 emb_dim: int = 128):
+                 emb_dim: int = 128, cond_dim: int = 4):
         super().__init__()
         assert ny % 8 == 0 and nx % 8 == 0, \
             f"ny={ny}, nx={nx} must both be divisible by 8"
@@ -319,7 +325,7 @@ class FieldDenoiser(nn.Module):
         # Embeddings: time (sinusoidal) + cond (MLP) → emb_dim each, summed
         self.t_emb = SinusoidalEmb(emb_dim)
         self.c_emb = nn.Sequential(
-            nn.Linear(3, emb_dim), nn.SiLU(),
+            nn.Linear(cond_dim, emb_dim), nn.SiLU(),
             nn.Linear(emb_dim, emb_dim),
         )
 
@@ -378,11 +384,12 @@ def train_ddpm(
     Returns (model, schedule) ready for sample_fields().
     Prints loss every 50 epochs.
     """
-    dev   = device or DEVICE
-    sched = DDPMSchedule(T=T, device=dev)
-    model = FieldDenoiser(ny=dataset.ny, nx=dataset.nx).to(dev)
+    dev      = device or DEVICE
+    cond_dim = dataset.cond.shape[1]
+    sched    = DDPMSchedule(T=T, device=dev)
+    model    = FieldDenoiser(ny=dataset.ny, nx=dataset.nx, cond_dim=cond_dim).to(dev)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"FieldDenoiser: {n_params:,} parameters  device={dev}")
+    print(f"FieldDenoiser: {n_params:,} parameters  cond_dim={cond_dim}  device={dev}")
 
     fields = torch.from_numpy(dataset.fields).to(dev)
     cond   = torch.from_numpy(dataset.cond).to(dev)
@@ -427,19 +434,21 @@ def sample_fields(
     Gc:             float,
     ell:            float,
     beta:           float,
+    theta:          float = 0.0,
     n_samples:      int   = 8,
     guidance_scale: float = 3.0,
     device:         torch.device | None = None,
 ) -> np.ndarray:
     """
-    Draw n_samples damage fields conditioned on (Gc, ell, beta).
+    Draw n_samples damage fields conditioned on (Gc, ell, beta, theta_deg).
 
     Returns
     -------
     np.ndarray  shape (n_samples, ny, nx), values in [0, 1].
     """
     dev  = device or DEVICE
-    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]))
+    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]),
+                      np.array([theta]))
     cond = torch.from_numpy(c_np).to(dev).expand(n_samples, -1)
 
     x = torch.randn(n_samples, 1, model.ny, model.nx, device=dev)
@@ -473,10 +482,11 @@ def train_flow_matching(
     Same FieldDenoiser as DDPM — only the training objective changes.
     No schedule object is needed; inference uses plain Euler integration.
     """
-    dev   = device or DEVICE
-    model = FieldDenoiser(ny=dataset.ny, nx=dataset.nx).to(dev)
-    n_p   = sum(p.numel() for p in model.parameters())
-    print(f"FieldDenoiser (Flow Matching): {n_p:,} params  device={dev}")
+    dev      = device or DEVICE
+    cond_dim = dataset.cond.shape[1]
+    model    = FieldDenoiser(ny=dataset.ny, nx=dataset.nx, cond_dim=cond_dim).to(dev)
+    n_p      = sum(p.numel() for p in model.parameters())
+    print(f"FieldDenoiser (Flow Matching): {n_p:,} params  cond_dim={cond_dim}  device={dev}")
 
     fields = torch.from_numpy(dataset.fields).to(dev)
     cond   = torch.from_numpy(dataset.cond).to(dev)
@@ -521,6 +531,7 @@ def sample_fields_fm(
     Gc:             float,
     ell:            float,
     beta:           float,
+    theta:          float = 0.0,
     n_samples:      int   = 8,
     n_steps:        int   = 20,
     guidance_scale: float = 3.0,
@@ -535,7 +546,8 @@ def sample_fields_fm(
     Returns np.ndarray shape (n_samples, ny, nx), values in [0, 1].
     """
     dev  = device or DEVICE
-    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]))
+    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]),
+                      np.array([theta]))
     cond = torch.from_numpy(c_np).to(dev).expand(n_samples, -1)
 
     x  = torch.randn(n_samples, 1, model.ny, model.nx, device=dev)
@@ -570,10 +582,11 @@ def train_mse_surrogate(
     condition embedding drives the prediction.  One forward pass at inference.
     Contrast with FM/DDPM: identical output for every sample (std[d] ≈ 0).
     """
-    dev   = device or DEVICE
-    model = FieldDenoiser(ny=dataset.ny, nx=dataset.nx).to(dev)
-    n_p   = sum(p.numel() for p in model.parameters())
-    print(f"FieldDenoiser (MSE surrogate): {n_p:,} params  device={dev}")
+    dev      = device or DEVICE
+    cond_dim = dataset.cond.shape[1]
+    model    = FieldDenoiser(ny=dataset.ny, nx=dataset.nx, cond_dim=cond_dim).to(dev)
+    n_p      = sum(p.numel() for p in model.parameters())
+    print(f"FieldDenoiser (MSE surrogate): {n_p:,} params  cond_dim={cond_dim}  device={dev}")
 
     fields = torch.from_numpy(dataset.fields).to(dev)
     cond   = torch.from_numpy(dataset.cond).to(dev)
@@ -613,6 +626,7 @@ def predict_fields_mse(
     Gc:        float,
     ell:       float,
     beta:      float,
+    theta:     float = 0.0,
     n_samples: int = 8,
     device:    torch.device | None = None,
 ) -> np.ndarray:
@@ -626,7 +640,8 @@ def predict_fields_mse(
     Returns np.ndarray shape (n_samples, ny, nx), values in [0, 1].
     """
     dev  = device or DEVICE
-    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]))
+    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]),
+                      np.array([theta]))
     cond = torch.from_numpy(c_np).to(dev).expand(n_samples, -1)
 
     x_in = torch.zeros(n_samples, 1, model.ny, model.nx, device=dev)

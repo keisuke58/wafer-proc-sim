@@ -48,7 +48,8 @@ def main() -> None:
     print(f"Dataset: fields={ds.fields.shape}  cond={ds.cond.shape}  "
           f"grid={ds.ny}x{ds.nx}")
 
-    ckpt = {"ny": ds.ny, "nx": ds.nx, "method": args.method}
+    ckpt = {"ny": ds.ny, "nx": ds.nx, "method": args.method,
+            "cond_dim": int(ds.cond.shape[1])}
 
     if args.method == "fm":
         model = train_flow_matching(ds, epochs=args.epochs,
