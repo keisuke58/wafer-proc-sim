@@ -1,0 +1,47 @@
+#!/bin/bash
+#PBS -N at2_4d_pipeline
+#PBS -q default
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=05:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/pipeline_4d.pbs.log
+
+# Full 4D-conditioned pipeline: (Gc, ell, beta, theta_cut).
+#   1. regenerate 1500-sample dataset (4D LHS) — theta_cut now varied so the
+#      model can learn beta-dependent crack deflection (sin(2theta) effect)
+#   2. train FM + DDPM + MSE surrogate
+#   3. render crack-uncertainty figures (theta sweep at fixed beta=-0.40)
+
+set -e
+cd /home/nishioka/git/wafer-proc-sim
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+DATA=research/phasefield/at2_fields_1k.npz
+RES=research/phasefield/results
+mkdir -p $RES
+
+echo "[$(date)] host=$(hostname)  === STEP 1: regenerate 4D dataset ==="
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+$PY -c "
+import sys; sys.path.insert(0,'.')
+from research.phasefield.diffusion_field_ddpm import generate_field_dataset, FULL_CFG
+ds = generate_field_dataset(1500, cfg=FULL_CFG,
+        save_path='$DATA', n_workers=22, seed=0, verbose=True)
+print('dataset', ds.fields.shape, 'cond', ds.cond.shape, flush=True)
+"
+
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+
+for M in fm ddpm mse; do
+    echo "[$(date)] === STEP 2: train $M ==="
+    EXTRA=""; [ "$M" = ddpm ] && EXTRA="--T 300"
+    $PY research/phasefield/train_field_model.py \
+        --data $DATA --method $M --epochs 500 --batch-size 32 --threads 24 $EXTRA \
+        --out $RES/field_${M}.pt
+
+    echo "[$(date)] === STEP 3: render $M ==="
+    $PY research/phasefield/visualize_crack_bands.py \
+        --ckpt $RES/field_${M}.pt --method $M --n-samples 64 --guidance 3.0 --cpu \
+        --out $RES/crack_bands_${M}.png
+done
+
+echo "[$(date)] finished — figures in $RES/"
