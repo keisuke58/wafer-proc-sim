@@ -151,6 +151,15 @@ build_sic_chipping() {
 build_r2r() {
     build_kernel "pipeline/r2r_controller.cpp"      "_r2r_controller_kernel" "${HERE}/pipeline"
 }
+build_wafer_warp() {
+    build_kernel "fem/wafer_warp_kernel.cpp"         "_wafer_warp_kernel"     "${HERE}/fem"
+}
+build_in_situ() {
+    build_kernel "sensors/in_situ_monitor_kernel.cpp" "_in_situ_monitor_kernel" "${HERE}/sensors"
+}
+build_recipe_opt() {
+    build_kernel "pipeline/recipe_optimizer_kernel.cpp" "_recipe_optimizer_kernel" "${HERE}/pipeline"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -188,6 +197,9 @@ case "${TARGET}" in
         build_blade_wear
         build_sic_chipping
         build_r2r
+        build_wafer_warp
+        build_in_situ
+        build_recipe_opt
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -219,6 +231,9 @@ case "${TARGET}" in
     blade_wear)       build_blade_wear       ;;
     sic_chipping)     build_sic_chipping     ;;
     r2r)              build_r2r              ;;
+    wafer_warp)       build_wafer_warp       ;;
+    in_situ)          build_in_situ          ;;
+    recipe_opt)       build_recipe_opt       ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
