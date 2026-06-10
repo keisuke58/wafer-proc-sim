@@ -149,8 +149,68 @@ Si_damaged["name"]          = "Silicon_damaged"
 Si_damaged["E"]             = Si["E"] * 0.5
 Si_damaged["C_t_grinding"]  = Si["C_t_grinding"]  # unchanged
 
+# ── Diamond (semiconductor grade, CVD) ────────────────────────────────────────
+# Refs: Isberg et al. (2002) Science 297:1670 (carrier mobility)
+#       Field et al. (1992) The Properties of Natural and Synthetic Diamond
+#       Gaukroger et al. (2008) Diamond Relat. Mater. 17:262 (K_Ic)
+Diamond = {
+    "name":              "Diamond",
+    "C_t_grinding":      8000.0,    # N/m — estimated (>>SiC, blade machining almost impossible)
+    "density":           3515.0,    # kg/m³
+    "E":                 1050e9,    # Pa — highest known solid
+    "nu":                0.07,
+    "K_Ic":              3.4e6,     # Pa·m^0.5 — Gaukroger 2008
+    "H_v":               100.0e9,  # Pa — ~100 GPa, hardest known material
+    "sigma_tensile":     2800e6,   # Pa — theoretical; practical ~1–3 GPa
+    "sigma_compress":    110e9,    # Pa — compressive
+    "sigma_flex":        1000e6,   # Pa
+    "dp_friction_angle": 75.0,     # degrees β (higher than SiC)
+    "dp_cohesion_Pa":    3000e6,   # Pa
+    "dp_dilation_angle": 0.0,
+    "K_dp":              1.0,
+    "eps_fracture":      1e-4,     # very brittle
+    # Thermal — exceptional
+    "k_thermal":         2200.0,   # W/(m·K) — ~5× SiC, highest of all solids
+    "alpha_thermal":     1.0e-6,   # 1/K — very low CTE
+    "Cp":                502.0,    # J/(kg·K)
+    # Optical — transparent to IR, UV-absorbing below 225nm
+    "bandgap_eV":        5.47,     # indirect bandgap → transparent at 1064nm (IR)
+    "laser_wavelength_nm_min": 193, # ArF excimer → first usable ablation wavelength
+}
+Diamond["G_c"] = Diamond["K_Ic"]**2 / Diamond["E"]
+Diamond["fracture_table"] = _sic_fracture_table(Diamond["eps_fracture"])
+
+
+# ── Gallium Oxide (β-Ga₂O₃) — next-gen ultra-wide bandgap ──────────────────
+# Refs: Pearton et al. (2018) Appl. Phys. Rev. 5:011301
+Ga2O3 = {
+    "name":              "beta-Ga2O3",
+    "C_t_grinding":      3500.0,
+    "density":           5950.0,    # kg/m³
+    "E":                 261e9,     # Pa
+    "nu":                0.25,
+    "K_Ic":              0.5e6,     # Pa·m^0.5 — very brittle
+    "H_v":               12.0e9,
+    "sigma_tensile":     100e6,
+    "sigma_compress":    1500e6,
+    "sigma_flex":        150e6,
+    "dp_friction_angle": 60.0,
+    "dp_cohesion_Pa":    800e6,
+    "dp_dilation_angle": 0.0,
+    "K_dp":              1.0,
+    "eps_fracture":      2e-4,
+    "k_thermal":         10.0,     # W/(m·K) — low (cleavage problem)
+    "alpha_thermal":     5.0e-6,
+    "Cp":                490.0,
+    "bandgap_eV":        4.8,
+}
+Ga2O3["G_c"] = Ga2O3["K_Ic"]**2 / Ga2O3["E"]
+Ga2O3["fracture_table"] = _sic_fracture_table(Ga2O3["eps_fracture"])
+
+
 ALL_MATERIALS = {
     "Si": Si, "SiC": SiC, "GaN": GaN,
+    "Diamond": Diamond, "Ga2O3": Ga2O3,
     "Si_damaged": Si_damaged,
     "BladeResin": BladeResin,
 }
