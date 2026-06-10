@@ -6,7 +6,7 @@
 %   pdflatex -interaction=nonstopmode slides_disco_interview.tex
 %   pdflatex -interaction=nonstopmode slides_disco_interview.tex
 
-\documentclass[aspectratio=169,10pt]{beamer}
+\documentclass[aspectratio=169,11pt]{beamer}
 
 % ── Theme ────────────────────────────────────────────────────────────────────
 \usetheme{Madrid}
@@ -63,14 +63,6 @@
 \setbeamercolor{title in head/foot}{bg=discoblue!80,fg=white}
 \setbeamercolor{date in head/foot}{bg=discoblue,fg=white}
 
-% ── DISCO logo in every frame header (right side) ────────────────────────────
-\addtobeamertemplate{frametitle}{}{%
-  \begin{tikzpicture}[remember picture,overlay]
-    \node[anchor=north east, inner sep=4pt] at (current page.north east)
-      {\includegraphics[height=7mm]{assets/disco_sphere.png}};
-  \end{tikzpicture}%
-}
-
 % ── Navigation symbols off ───────────────────────────────────────────────────
 \setbeamertemplate{navigation symbols}{}
 
@@ -116,7 +108,7 @@
       ([yshift=-0.42\paperheight]current page.north east);
     % Large DISCO logo bottom-right
     \node[anchor=south east, inner sep=18pt] at (current page.south east)
-      {\includegraphics[height=24mm]{assets/disco_sphere.png}};
+      {\includegraphics[height=24mm, trim={8mm 0 0 0}, clip]{assets/disco_sphere.png}};
   \end{tikzpicture}
 
   \vspace{0.7cm}
@@ -138,7 +130,7 @@
 }
 
 % ── 2. DISCO BUSINESS UNDERSTANDING ──────────────────────────────────────────
-\begin{frame}[shrink=5]{DISCO Business Understanding}
+\begin{frame}[shrink=10]{DISCO Business Understanding}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
       \textbf{4H-SiC Dicing --- Key Engineering Facts}
@@ -195,7 +187,7 @@
 \end{frame}
 
 % ── NEW FRAME A: SiC MARKET & GROWTH OPPORTUNITY ─────────────────────────────
-\begin{frame}[shrink=5]{SiC Market --- \$2.3B $\to$ \$9.4B by 2028}
+\begin{frame}[shrink=10]{SiC Market --- \$2.3B $\to$ \$9.4B by 2028}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Market Drivers (Yole D\'{e}veloppement)}
@@ -253,7 +245,7 @@
 \end{frame}
 
 % ── NEW FRAME B: DISCO COMPETITIVE POSITION ───────────────────────────────────
-\begin{frame}[shrink=5]{DISCO --- Market Leader in Precision Dicing}
+\begin{frame}[shrink=10]{DISCO --- Market Leader in Precision Dicing}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
       \textbf{DISCO's Competitive Differentiators (Gartner / SEMI 2024)}
@@ -342,6 +334,25 @@
             fit=(fem)(dop), inner sep=8pt,
             label={[font=\tiny,text=discoorange]above:End-to-end pipeline}] {};
     \end{pgfonlayer}
+
+    % ── Stealth Dicing sub-pipeline (second row) ──────────────────────────────
+    \node[box, below=0.55cm of fem, fill=red!8, draw=red!60]
+      (haz)   {HAZ FDM\\(JAX)};
+    \node[box, right=of haz,        fill=red!8, draw=red!60]
+      (lgp)   {GP Surrogate};
+    \node[box, right=of lgp,        fill=red!8, draw=red!60]
+      (eibo)  {Constrained\\EI BO};
+
+    \draw[-{Stealth[length=5pt]}, red!60, thick] (haz)  -- (lgp);
+    \draw[-{Stealth[length=5pt]}, red!60, thick] (lgp)  -- (eibo);
+
+    \node[font=\tiny, text=red!70, anchor=east] at ([xshift=-0.15cm]haz.west)
+      {Stealth Dicing / KABRA};
+
+    \begin{pgfonlayer}{background}
+      \node[draw=red!50, dashed, thick, rounded corners=6pt,
+            fit=(haz)(eibo), inner sep=6pt] {};
+    \end{pgfonlayer}
   \end{tikzpicture}
 
   \vspace{0.6em}
@@ -365,7 +376,7 @@
 \end{frame}
 
 % ── 4. GP SURROGATE ──────────────────────────────────────────────────────────
-\begin{frame}[shrink=5]{Process --- GP Surrogate for Chipping Prediction}
+\begin{frame}[shrink=10]{Process --- GP Surrogate for Chipping Prediction}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Heteroscedastic Gaussian Process \cite{williams2006gp}}
@@ -410,6 +421,162 @@
   \end{columns}
 \end{frame}
 
+% ── NEW FRAME SD-1: STEALTH DICING HAZ THERMAL SIMULATION ────────────────────
+\begin{frame}[shrink=10]{Stealth Dicing --- HAZ Thermal Simulation (JAX FDM)}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{HAZ Model Physics}
+      \begin{itemize}
+        \item PLSD params (Zhai 2022 PMC9315561): 45~$\mu$J, 5~ps, 1028~nm,
+              NA=0.7 $\to$ beam waist 1.13~$\mu$m
+        \item Peak fluence $\approx$2200~J/cm$^2$ $\gg$ MPA threshold
+              $\to$ plasma state; thermal FEM not valid inside MZ
+        \item HAZ model: modified zone (MZ) cylinder initialised at
+              $T_{\rm crit} = 2800\,\mathrm{K}$;
+              simulate heat diffusion into intact SiC
+        \item Explicit Euler FDM on $(r,z)$ grid, JAX JIT;
+              CFL at room-$T$ (maximum $\alpha$)
+        \item Output: HAZ radius growth, thermal eigenstress
+              $\sigma_{\rm th}$, Griffith $a_c$
+      \end{itemize}
+
+      \vspace{0.4em}
+      \begin{block}{Key Result}
+        \small
+        HAZ radius at $t=500\,\mathrm{ns}$: \textbf{4.3~$\mu$m}
+        ($r_{\rm mz}=4\,\mu$m input);
+        $|\sigma_{\rm th}|$ at MZ boundary: \textbf{2.6~GPa};
+        $a_c$ (m-plane) = \textbf{0.12~$\mu$m}
+      \end{block}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \begin{tikzpicture}[font=\small, scale=0.88,
+          lbl/.style={font=\tiny}]
+        % SiC bulk background
+        \fill[gray!20] (0,0) rectangle (3.6,4.6);
+        \draw[draw=discoblue, thick] (0,0) rectangle (3.6,4.6);
+        \node[lbl, text=discoblue] at (1.8,0.35) {SiC bulk};
+        \node[lbl, text=discoblue] at (1.8,0.05) {$T=300\,\mathrm{K}$};
+
+        % Focal depth label
+        \draw[dashed, thin, discogray] (0,2.8) -- (3.6,2.8);
+        \node[lbl, text=discogray, anchor=west] at (3.65,2.8)
+          {focal depth 80~$\mu$m};
+
+        % MZ cylinder (red fill)
+        \fill[red!60] (1.35,2.3) rectangle (2.25,3.3);
+        \draw[red, thick] (1.35,2.3) rectangle (2.25,3.3);
+        \node[lbl, text=red, align=center] at (1.8,2.8)
+          {MZ\\$T_{\rm crit}$\\2800~K};
+
+        % HAZ boundary ellipses (dashed, growing outward)
+        \draw[dashed, blue!70, thin]
+          (1.8,2.8) ellipse (0.65cm and 0.65cm);
+        \draw[dashed, blue!50, thin]
+          (1.8,2.8) ellipse (0.95cm and 0.85cm);
+        \draw[dashed, blue!30, thin]
+          (1.8,2.8) ellipse (1.25cm and 1.05cm);
+        \node[font=\tiny, text=blue!60, align=center] at (3.3,2.0)
+          {HAZ at\\$t$=0,\\100~ns,\\500~ns};
+
+        % Laser arrow from top
+        \draw[-{Stealth[length=5pt]}, red!80, very thick]
+          (1.8,4.6) -- (1.8,3.3);
+        \node[font=\tiny, text=red!80, align=center, anchor=west]
+          at (1.85,4.0) {1028~nm\\5~ps};
+
+        % Axis labels
+        \node[lbl, rotate=90] at (-0.35,2.3) {$z$ (axial)};
+        \draw[-{Stealth[length=4pt]}, thin] (0,0) -- (0,4.6);
+        \node[lbl] at (3.6,-0.35) {$r$ (radial)};
+        \draw[-{Stealth[length=4pt]}, thin] (0,0) -- (3.6,0);
+        \node[lbl] at (0,-0.3) {$r=0$};
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── NEW FRAME SD-2: STEALTH DICING GP SURROGATE + BO ─────────────────────────
+\begin{frame}[shrink=10]{Stealth Dicing --- GP Surrogate \& Bayesian Optimisation}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \textbf{LaserHAZSurrogate (sklearn GP)}
+      \begin{itemize}
+        \item Inputs: $r_{\rm mz}$~[$\mu$m], $l_{\rm mz}$~[$\mu$m]
+              (modified zone geometry)
+        \item Outputs: HAZ radius at 500~ns, $|\sigma_{\rm th}|$~[GPa],
+              Griffith $a_c$~[$\mu$m], SDL axial extent~[$\mu$m]
+        \item Training: 64-point Latin hypercube sweep
+              (\texttt{run\_laser\_sweep.py})
+        \item $a_{\rm crit}$ log-transformed for GP stability
+              (varies 0.01--1.6~$\mu$m)
+        \item EI acquisition: constrained (feasibility:
+              $\sigma > 1\,\mathrm{GPa}$, SDL $> 4\,\mu$m)
+      \end{itemize}
+
+      \vspace{0.3em}
+      \begin{alertblock}{Stealth Dicing Objective}
+        \small
+        Minimise HAZ footprint (thermal damage to adjacent dice)
+        subject to sufficient stress for reliable tape-break splitting.
+      \end{alertblock}
+
+      \vspace{0.3em}
+      \small
+      \begin{tabular}{llll}
+        \toprule
+        \textbf{Metric} & \textbf{At optimum} & \textbf{Unit} & \textbf{Note} \\
+        \midrule
+        HAZ radius (500~ns) & minimised & $\mu$m & process target \\
+        $|\sigma_{\rm th}|$ & $>1.0$    & GPa   & feasibility constraint \\
+        SDL axial           & $>4$      & $\mu$m& cleave plane constraint \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      % BO loop diagram
+      \begin{tikzpicture}[font=\small, scale=0.85,
+          box/.style={draw=discoblue, fill=discolight, rounded corners=4pt,
+                      minimum width=2.6cm, minimum height=0.75cm,
+                      align=center, font=\small},
+          arr/.style={-{Stealth[length=5pt]}, discoblue, thick},
+          lbl/.style={font=\tiny, text=discogray}]
+
+        \node[box] (sweep) at (0,3.5)
+          {LHS Sweep\\(\texttt{run\_laser\_sweep.py})};
+        \node[box] (gp)    at (0,2.0)
+          {GP Surrogate\\(LaserHAZSurrogate)};
+        \node[box] (ei)    at (0,0.5)
+          {EI Acquisition\\(suggest next $r_{\rm mz}, l_{\rm mz}$)};
+
+        \draw[arr] (sweep) -- node[lbl, right]{sweep.csv} (gp);
+        \draw[arr] (gp)    -- node[lbl, right]{$\mu \pm \sigma$} (ei);
+        \draw[arr] (ei.west) to[out=180, in=180]
+          node[lbl, left]{$x_{\rm next}$} (sweep.west);
+
+        % HAZ heatmap schematic below
+        \begin{scope}[yshift=-1.4cm]
+          % Contour fills (approximate)
+          \fill[blue!10] (0.2,-1.8) rectangle (2.2,0.2);
+          \fill[blue!25] (0.6,-1.4) rectangle (1.8,-0.2);
+          \fill[blue!45] (0.9,-1.1) rectangle (1.5,-0.5);
+          \draw[discoblue, thick] (0.2,-1.8) rectangle (2.2,0.2);
+          % Star at minimum
+          \node[text=discoorange, font=\large] at (1.2,-0.8) {$\star$};
+          % Axis labels
+          \node[lbl] at (1.2,-2.1) {$r_{\rm mz}$};
+          \node[lbl, rotate=90] at (-0.05,-0.8) {$l_{\rm mz}$};
+          \node[lbl, text=discoorange] at (1.7,-0.7) {min};
+          \node[lbl, align=center] at (1.2,0.55)
+            {\tiny HAZ radius contour};
+        \end{scope}
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ── NEW FRAME C: FULL PIPELINE RESULTS OVERVIEW ───────────────────────────────
 \begin{frame}{End-to-End Pipeline --- Integrated Results}
   \centering
@@ -424,7 +591,7 @@
 \end{frame}
 
 % ── NEW FRAME D: ACTIVE LEARNING ─────────────────────────────────────────────
-\begin{frame}[shrink=5]{Process --- Active Learning for Next-Experiment Selection}
+\begin{frame}[shrink=10]{Process --- Active Learning for Next-Experiment Selection}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Expected Improvement (EI) Acquisition}
@@ -463,7 +630,7 @@
 \end{frame}
 
 % ── 5. PHYSICS-AWARE TRANSFORMER ─────────────────────────────────────────────
-\begin{frame}[shrink=5]{R\&D --- Physics-Aware Transformer (PAT)}
+\begin{frame}[shrink=10]{R\&D --- Physics-Aware Transformer (PAT)}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Transfer Learning on Scarce Data}
@@ -504,7 +671,7 @@
 \end{frame}
 
 % ── NEW FRAME E: BAYESIAN OPTIMISATION vs TMCMC ───────────────────────────────
-\begin{frame}[shrink=5]{R\&D --- Bayesian Optimisation vs.\ TMCMC Calibration}
+\begin{frame}[shrink=10]{R\&D --- Bayesian Optimisation vs.\ TMCMC Calibration}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Two Complementary Strategies}
@@ -541,7 +708,7 @@
 \end{frame}
 
 % ── NEW FRAME F: MULTI-OBJECTIVE OPTIMISATION ────────────────────────────────
-\begin{frame}[shrink=5]{R\&D --- Multi-Objective Recipe Optimisation}
+\begin{frame}[shrink=10]{R\&D --- Multi-Objective Recipe Optimisation}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{NSGA-II + Co-evolutionary Optimisation}
@@ -580,7 +747,7 @@
 \end{frame}
 
 % ── 6. CONDITIONAL DDPM ──────────────────────────────────────────────────────
-\begin{frame}[shrink=5]{R\&D --- Conditional Diffusion Model (DDPM) for Recipe Generation}
+\begin{frame}[shrink=10]{R\&D --- Conditional Diffusion Model (DDPM) for Recipe Generation}
   \begin{columns}[T]
     \begin{column}{0.53\textwidth}
       \textbf{Generative Model: $p(\text{recipe} \mid \text{target chipping})$
@@ -643,7 +810,7 @@
 \end{frame}
 
 % ── 7. DeepONet ──────────────────────────────────────────────────────────────
-\begin{frame}[shrink=5]{R\&D --- Physics-Informed DeepONet for Stress Field}
+\begin{frame}[shrink=10]{R\&D --- Physics-Informed DeepONet for Stress Field}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Operator Learning: sensors $\to$ $\sigma(x,y)$
@@ -690,7 +857,7 @@
 \end{frame}
 
 % ── 8. MECHANICAL SPINDLE DESIGN ─────────────────────────────────────────────
-\begin{frame}[shrink=5]{Mechanical --- Spindle System Design}
+\begin{frame}[shrink=10]{Mechanical --- Spindle System Design}
   \begin{columns}[T]
     \begin{column}{0.53\textwidth}
       \textbf{Bearing Selection: Angular Contact \#7004}
@@ -763,7 +930,7 @@
 \end{frame}
 
 % ── NEW FRAME G: BLADE WEAR & WEIBULL RELIABILITY ────────────────────────────
-\begin{frame}[shrink=5]{Mechanical --- Blade Wear Modelling \& Die Reliability}
+\begin{frame}[shrink=10]{Mechanical --- Blade Wear Modelling \& Die Reliability}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Physics-Based Blade Wear Model}
@@ -813,7 +980,7 @@
 \end{frame}
 
 % ── 9. ELECTRICAL SYSTEM ─────────────────────────────────────────────────────
-\begin{frame}[shrink=8]{Electrical --- Control \& Safety System Design}
+\begin{frame}[shrink=12]{Electrical --- Control \& Safety System Design}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{Safety PLC (SIL-3)}
@@ -877,7 +1044,7 @@
 \end{frame}
 
 % ── 10. SOFTWARE STACK ───────────────────────────────────────────────────────
-\begin{frame}[shrink=5]{Software --- Control Software Architecture}
+\begin{frame}[shrink=10]{Software --- Control Software Architecture}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \textbf{IEC 61131-3 State Machine}
@@ -944,7 +1111,7 @@
 \end{frame}
 
 % ── 11. RESULTS SUMMARY TABLE ────────────────────────────────────────────────
-\begin{frame}[shrink=5]{Results Summary --- Five Modules / Five Roles}
+\begin{frame}[shrink=10]{Results Summary --- Five Modules / Five Roles}
   \centering
   \renewcommand{\arraystretch}{1.3}
   \small
@@ -957,6 +1124,12 @@
                         & \texttt{gp\_experimental.pkl} \\
       & Active Learning& EI acquisition, next-exp.\ rank
                         & \texttt{active\_learning\_ei.png} \\
+    \cmidrule(l){1-4}
+    \multirow{2}{*}{Stealth Dicing}
+      & HAZ FDM (JAX)  & HAZ radius 4.3~$\mu$m, $\sigma=2.6$~GPa
+                        & \texttt{sic/heat.py} \\
+      & HAZ GP + BO    & 64-pt LHS sweep, constrained EI
+                        & \texttt{sic/surrogate.py} \\
     \midrule
     \multirow{2}{*}{R\&D}
       & PAT (Transformer) & LOO RMSE = 2.00~$\mu$m
@@ -988,7 +1161,7 @@
 \end{frame}
 
 % ── NEW FRAME H: FUTURE ROADMAP ──────────────────────────────────────────────
-\begin{frame}[shrink=5]{Future Roadmap --- DISCO Digital Twin for SiC}
+\begin{frame}[shrink=10]{Future Roadmap --- DISCO Digital Twin for SiC}
   \begin{columns}[T]
     \begin{column}{0.50\textwidth}
       \centering
@@ -1042,7 +1215,7 @@
 \end{frame}
 
 % ── 12. SUMMARY & MOTIVATION ─────────────────────────────────────────────────
-\begin{frame}[shrink=5]{Summary \& Motivation}
+\begin{frame}[shrink=10]{Summary \& Motivation}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
       \textbf{What I Bring to DISCO}
@@ -1110,7 +1283,7 @@
 \appendix
 
 % ── APPENDIX A: DISCO事業における立ち位置 ────────────────────────────────────
-\begin{frame}[shrink=5]{Appendix: Research Positioning within DISCO}
+\begin{frame}[shrink=10]{Appendix: Research Positioning within DISCO}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \begin{tikzpicture}[font=\small,
@@ -1176,7 +1349,7 @@
 \end{frame}
 
 % ── APPENDIX B: SKILLS MATRIX ────────────────────────────────────────────────
-\begin{frame}[shrink=5]{Appendix: Skills \& Profile}
+\begin{frame}[shrink=10]{Appendix: Skills \& Profile}
   \begin{columns}[T]
     \begin{column}{0.54\textwidth}
       \small
@@ -1186,6 +1359,7 @@
         \midrule
         Python / NumPy / PyTorch & \ratingV   & This project \\
         FEM (COMSOL / custom)    & \ratingIV  & Stress + thermal \\
+        JAX / FDM simulation     & \ratingIV  & HAZ laser model \\
         Gaussian Process / BO    & \ratingV   & LOO RMSE 1.62~$\mu$m \\
         Diffusion Models (DDPM)  & \ratingIV  & 94.5\% feasibility \\
         IEC 61131-3 PLC          & \ratingIII & SW stack design \\
