@@ -169,6 +169,15 @@ build_ga2o3() {
 build_inp() {
     build_kernel "materials/inp_dicing_kernel.cpp"  "_inp_dicing_kernel"  "${HERE}/materials"
 }
+build_diamond() {
+    build_kernel "materials/diamond_kernel.cpp"       "_diamond_kernel"       "${HERE}/materials"
+}
+build_aln() {
+    build_kernel "materials/aln_rf_kernel.cpp"        "_aln_rf_kernel"        "${HERE}/materials"
+}
+build_twod() {
+    build_kernel "materials/twod_substrate_kernel.cpp" "_twod_substrate_kernel" "${HERE}/materials"
+}
 
 # ── CUDA kernels ──────────────────────────────────────────────────────────────
 build_heat_diffusion() {
@@ -212,6 +221,9 @@ case "${TARGET}" in
         build_gan
         build_ga2o3
         build_inp
+        build_diamond
+        build_aln
+        build_twod
         build_heat_diffusion   # CUDA — skipped silently if nvcc absent
         ;;
     stealth)          build_stealth          ;;
@@ -249,6 +261,9 @@ case "${TARGET}" in
     gan)              build_gan              ;;
     ga2o3)            build_ga2o3            ;;
     inp)              build_inp              ;;
+    diamond)          build_diamond          ;;
+    aln)              build_aln              ;;
+    twod)             build_twod             ;;
     heat_diffusion)   build_heat_diffusion   ;;
     *)
         echo "Unknown target '${TARGET}'."
