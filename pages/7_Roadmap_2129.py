@@ -17,7 +17,7 @@ st.set_page_config(page_title="2129 Roadmap", layout="wide")
 st.title("🌌 2026 → 2129  テクノロジー × 半導体 完全ロードマップ")
 st.caption("論理の飛躍なし。既知の物理と現在の研究動向のみ。あなたが見届ける100年。")
 
-from fem.roadmap_2129 import (
+from market_analysis.roadmap_2129 import (
     TECH_WAVES, LONGEVITY_STEPS, LOGIC_CHAIN,
     semiconductor_market_forecast_2129,
 )

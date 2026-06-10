@@ -15,9 +15,9 @@ import numpy.testing as npt
 import pytest
 
 # ─────────────────────────────────────────────────────────────────────────────
-# fem.keyence_metrology_model
+# market_analysis.keyence_metrology_model
 # ─────────────────────────────────────────────────────────────────────────────
-from fem.keyence_metrology_model import (
+from market_analysis.keyence_metrology_model import (
     sic_reflectance,
     simulate_chip_measurement,
     batch_measurement,
@@ -57,9 +57,9 @@ def test_batch_measurement_count():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# fem.keyence_lj_profiler  (skip entire group if module absent)
+# market_analysis.keyence_lj_profiler  (skip entire group if module absent)
 # ─────────────────────────────────────────────────────────────────────────────
-lj = pytest.importorskip('fem.keyence_lj_profiler')
+lj = pytest.importorskip('market_analysis.keyence_lj_profiler')
 
 
 def test_kerf_profile_created():
@@ -75,9 +75,9 @@ def test_wafer_warp_shape():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# fem.keyence_iv3_vision  (skip entire group if module absent)
+# market_analysis.keyence_iv3_vision  (skip entire group if module absent)
 # ─────────────────────────────────────────────────────────────────────────────
-iv3 = pytest.importorskip('fem.keyence_iv3_vision')
+iv3 = pytest.importorskip('market_analysis.keyence_iv3_vision')
 
 
 def test_inspection_results_length():

@@ -219,7 +219,7 @@ def cleaning_to_device(dicing_process: str,
     洗浄品質 → Dit 低減 → チャンネル移動度向上 の定量評価。
     fel_process_model の dit_from_oxidation と組み合わせる。
     """
-    from fem.tel_process_model import dit_from_oxidation, channel_mobility, ald_film
+    from market_analysis.tel_process_model import dit_from_oxidation, channel_mobility, ald_film
 
     # 洗浄なし
     state_dirty = SurfaceState(dicing_process)

@@ -22,7 +22,7 @@ tab1, tab2, tab3 = st.tabs(["📡 Starlink チップ", "🖥️ 宇宙データ�
 # TAB 1 — Starlink チップ
 # ══════════════════════════════════════════════════════════════════════════
 with tab1:
-    from fem.space_compute_model import (
+    from market_analysis.space_compute_model import (
         starlink_chip_demand, starshield_military_value,
         STARLINK_CHIP_SPECS, STARLINK_CONSTELLATION,
     )
@@ -96,7 +96,7 @@ with tab1:
 # TAB 2 — 宇宙データセンター
 # ══════════════════════════════════════════════════════════════════════════
 with tab2:
-    from fem.space_compute_model import (
+    from market_analysis.space_compute_model import (
         space_dc_physics, space_dc_vs_ground,
         SPACE_DC_CONCEPTS,
     )
@@ -170,7 +170,7 @@ with tab2:
 # TAB 3 — 宇宙太陽光発電 SBSP
 # ══════════════════════════════════════════════════════════════════════════
 with tab3:
-    from fem.space_compute_model import (
+    from market_analysis.space_compute_model import (
         sbsp_power_chain, sbsp_semiconductor_role,
         sbsp_market_forecast, SBSP_PROJECTS,
     )

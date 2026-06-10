@@ -263,11 +263,11 @@ def full_pipeline_with_test(dicing_processes: list) -> list:
     各ダイシングプロセスについて end-to-end コスト・歩留まりを計算。
     """
     try:
-        from fem.tel_process_model import (full_pipeline as tel_pipeline,
+        from market_analysis.tel_process_model import (full_pipeline as tel_pipeline,
                                             dit_from_oxidation)
     except ImportError:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-        from fem.tel_process_model import (full_pipeline as tel_pipeline,
+        from market_analysis.tel_process_model import (full_pipeline as tel_pipeline,
                                             dit_from_oxidation)
 
     results = []

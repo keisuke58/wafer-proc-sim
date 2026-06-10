@@ -52,7 +52,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, "/home/nishioka/git/wafer-proc-sim")
 
-from fem.tel_feol_recipe import simulate_recipe, default_recipe
+from market_analysis.tel_feol_recipe import simulate_recipe, default_recipe
 
 OUT_DIR = "/home/nishioka/git/wafer-proc-sim/results"
 FIG_PATH = os.path.join(OUT_DIR, "tel_apc_control.png")

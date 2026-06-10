@@ -24,7 +24,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1 — Ga₂O₃
 # ══════════════════════════════════════════════════════════════════════════
 with tab1:
-    from fem.ga2o3_model import (
+    from market_analysis.ga2o3_model import (
         baliga_figure_of_merit, ron_vbr_tradeoff,
         thermal_model_ga2o3, COMPARE_MATERIALS,
         THERMAL_SOLUTIONS, GA2O3_ROADMAP,
@@ -103,7 +103,7 @@ with tab1:
 # TAB 2 — Neuralink × 長寿命
 # ══════════════════════════════════════════════════════════════════════════
 with tab2:
-    from fem.neuralink_model import (
+    from market_analysis.neuralink_model import (
         electrode_physics, disco_neuralink_connection,
         sic_biostability, NEURALINK_CHIPS, BCI_LONGEVITY_APPS,
     )
@@ -185,7 +185,7 @@ with tab2:
 # TAB 3 — 株価 × 物理モデル
 # ══════════════════════════════════════════════════════════════════════════
 with tab3:
-    from fem.market_data_model import (
+    from market_analysis.market_data_model import (
         sic_exposure_score, disco_dcf_model, SEMICON_STOCKS,
     )
 
@@ -248,7 +248,7 @@ with tab3:
 # TAB 4 — AGI × 半導体
 # ══════════════════════════════════════════════════════════════════════════
 with tab4:
-    from fem.agi_semiconductor_model import (
+    from market_analysis.agi_semiconductor_model import (
         scaling_law_flops, agi_wafer_demand,
         compute_forecast, KNOWN_MODELS, AGI_THRESHOLD_IQ,
     )

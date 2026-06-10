@@ -48,7 +48,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from fem.keyence_metrology_model import TOOL_SIGMA
+from market_analysis.keyence_metrology_model import TOOL_SIGMA
 
 # C++ EnKF kernel — build with: bash build_all_kernels.sh
 try:

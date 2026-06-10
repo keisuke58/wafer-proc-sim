@@ -17,7 +17,7 @@ st.set_page_config(page_title="Disco Moat", layout="wide")
 st.title("🔪 Disco — 全産業を貫く最強ポジション")
 st.caption("EV · AI · ロボット · ドローン · 衛星 · BESS · 核融合 · SBSP — 全部 Disco を通る")
 
-from fem.disco_moat_model import (
+from market_analysis.disco_moat_model import (
     disco_total_tam, disco_revenue_from_application,
     moat_score, DISCO_BLADE_ECONOMICS, APPLICATION_TO_DISCO,
     DISCO_MOAT,

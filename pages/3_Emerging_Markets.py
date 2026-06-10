@@ -22,7 +22,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["🤖 ロボット & ドローン", "🛰️ �
 # TAB 1 — ロボット & ドローン
 # ══════════════════════════════════════════════════════════════════════════
 with tab1:
-    from fem.robot_drone_model import (
+    from market_analysis.robot_drone_model import (
         joint_power_model, humanoid_market_forecast,
         drone_power_model, evtol_sic_demand,
         HUMANOID_SPECS, DRONE_SPECS, EVTOL_SPECS,
@@ -129,11 +129,11 @@ with tab1:
 # TAB 2 — 衛星 & 宇宙
 # ══════════════════════════════════════════════════════════════════════════
 with tab2:
-    from fem.space_grid_model import (
+    from market_analysis.space_grid_model import (
         satellite_power_budget, leo_constellation_sic_demand,
         SATELLITE_SPECS, SIC_TID_MODEL,
     )
-    from fem.terafab_model import rad_hard_tid_model
+    from market_analysis.terafab_model import rad_hard_tid_model
 
     st.subheader("LEO / GEO 衛星 × SiC 電力系モデル")
 
@@ -197,7 +197,7 @@ with tab2:
 # TAB 3 — BESS & グリッド
 # ══════════════════════════════════════════════════════════════════════════
 with tab3:
-    from fem.space_grid_model import (
+    from market_analysis.space_grid_model import (
         bess_roundtrip_efficiency, bess_inverter_efficiency,
         bess_market_forecast, BESS_CONFIGS,
     )
@@ -272,7 +272,7 @@ with tab3:
 # TAB 4 — 核融合
 # ══════════════════════════════════════════════════════════════════════════
 with tab4:
-    from fem.fusion_model import (
+    from market_analysis.fusion_model import (
         magnet_power_supply, gyrotron_power_supply,
         radiation_hard_electronics, fusion_semiconductor_summary,
         FUSION_REACTORS, FUSION_MATERIAL_SUITABILITY, FUSION_MARKET_FORECAST,

@@ -8,7 +8,7 @@ SiC MOSFET 反転層移動度モデル
 の物理パラメータ (µ_phonon, B_coul, µ_sr) を、文献アンカー点に対して
 TMCMC (Transitional MCMC; Ching & Chen 2007) でベイズ較正する。
 
-これは fem.tel_process_model.channel_mobility_inv と等価な順モデルである
+これは market_analysis.tel_process_model.channel_mobility_inv と等価な順モデルである
 (同関数では mu_coulomb = B_coul/Dit, すなわち 1/mu_coulomb = Dit/B_coul)。
 順モデル本体は改変せず、尤度評価のためにこの移動度関係式のみをローカル再実装する。
 
@@ -67,7 +67,7 @@ ANCHOR_MU  = np.array([5.0,    36.0,   85.0])         # cm²/Vs
 ANCHOR_SIGMA = np.array([1.0,  3.0,    6.0])          # cm²/Vs
 
 # ── 較正パラメータ: name -> (lo, hi) broad uniform prior ─────────────────────
-# fem.tel_process_model の公称値 _MU_SP=155, _B_COUL=5.5e13, _MU_SR=320 を内包。
+# market_analysis.tel_process_model の公称値 _MU_SP=155, _B_COUL=5.5e13, _MU_SR=320 を内包。
 PARAM_NAMES = ["mu_phonon", "B_coul", "mu_sr"]
 PARAM_BOUNDS = np.array([
     [80.0,   400.0],     # µ_phonon [cm²/Vs]  表面フォノン散乱限界

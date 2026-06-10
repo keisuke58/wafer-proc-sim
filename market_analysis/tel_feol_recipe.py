@@ -34,7 +34,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from fem.tel_process_model import (
+from market_analysis.tel_process_model import (
     ald_film,
     deal_grove,
     dit_from_oxidation,
@@ -42,7 +42,7 @@ from fem.tel_process_model import (
     channel_mobility_inv,
     mosfet_performance,
 )
-from fem.tel_cleaning_model import run_sequence, SurfaceState
+from market_analysis.tel_cleaning_model import run_sequence, SurfaceState
 
 eps0 = 8.854e-12  # F/m
 eV = 1.602e-19    # C

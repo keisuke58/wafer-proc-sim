@@ -40,7 +40,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 
 sys.path.insert(0, "/home/nishioka/git/wafer-proc-sim")
 
-from fem.tel_feol_recipe import (
+from market_analysis.tel_feol_recipe import (
     simulate_recipe,
     sample_recipes,
     recipe_to_vector,

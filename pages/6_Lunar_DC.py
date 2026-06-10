@@ -16,7 +16,7 @@ st.set_page_config(page_title="Lunar DC", layout="wide")
 st.title("🌑 月面・永久陰クレーター データセンター")
 st.caption("「日の当たらない月に置けば冷却できるのでは？」— 正解。でも本当の価値は量子コンピュータにある。")
 
-from fem.lunar_dc_model import (
+from market_analysis.lunar_dc_model import (
     compare_environments, quantum_cooling_advantage,
     lunar_quantum_dc_design, integrated_lunar_system,
     ENVIRONMENTS, QUANTUM_COOLING, LUNAR_DC_CHALLENGES,

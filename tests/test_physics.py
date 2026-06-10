@@ -19,32 +19,32 @@ class TestChannelMobility:
     Matthiessen's rule µ_inv model calibrated to:
     Chung et al. (2001) IEEE Electron Device Lett. — NO anneal 1175°C
     """
-    from fem.tel_process_model import channel_mobility_inv, ald_film
+    from market_analysis.tel_process_model import channel_mobility_inv, ald_film
 
     def test_standard_dit_matches_literature(self):
         """Dit = 1e12 cm⁻²eV⁻¹ → µ_inv ≈ 35 cm²/Vs (Kimoto & Cooper 2014)."""
-        from fem.tel_process_model import channel_mobility_inv, ald_film
+        from market_analysis.tel_process_model import channel_mobility_inv, ald_film
         ald = ald_film(50, 250, "HfO2")
         mu = channel_mobility_inv(1e12, ald["Cox_fF_um2"])
         assert 28 <= mu <= 42, f"Expected 28–42 cm²/Vs, got {mu:.1f}"
 
     def test_no_anneal_high_dit(self):
         """Dit = 1e13 → µ_inv < 10 cm²/Vs (untreated SiC/SiO₂)."""
-        from fem.tel_process_model import channel_mobility_inv, ald_film
+        from market_analysis.tel_process_model import channel_mobility_inv, ald_film
         ald = ald_film(50, 250, "HfO2")
         mu = channel_mobility_inv(1e13, ald["Cox_fF_um2"])
         assert mu < 10, f"High-Dit mobility should be < 10 cm²/Vs, got {mu:.1f}"
 
     def test_no_anneal_low_dit(self):
         """Dit = 1e11 → µ_inv > 55 cm²/Vs (NO anneal treatment)."""
-        from fem.tel_process_model import channel_mobility_inv, ald_film
+        from market_analysis.tel_process_model import channel_mobility_inv, ald_film
         ald = ald_film(50, 250, "HfO2")
         mu = channel_mobility_inv(1e11, ald["Cox_fF_um2"])
         assert mu > 55, f"Low-Dit mobility should be > 55 cm²/Vs, got {mu:.1f}"
 
     def test_mobility_monotone_decreasing_with_dit(self):
         """µ_inv must decrease monotonically as Dit increases."""
-        from fem.tel_process_model import channel_mobility_inv, ald_film
+        from market_analysis.tel_process_model import channel_mobility_inv, ald_film
         ald = ald_film(50, 250, "HfO2")
         dits = [1e10, 1e11, 1e12, 1e13]
         mus = [channel_mobility_inv(d, ald["Cox_fF_um2"]) for d in dits]
@@ -53,7 +53,7 @@ class TestChannelMobility:
 
     def test_backward_compat_wrapper(self):
         """channel_mobility() wrapper returns same result as channel_mobility_inv()."""
-        from fem.tel_process_model import channel_mobility, channel_mobility_inv, ald_film
+        from market_analysis.tel_process_model import channel_mobility, channel_mobility_inv, ald_film
         ald = ald_film(50, 250, "HfO2")
         assert abs(channel_mobility(1e12, ald["Cox_fF_um2"]) -
                    channel_mobility_inv(1e12, ald["Cox_fF_um2"])) < 0.01
@@ -71,20 +71,20 @@ class TestIMCGrowth:
 
     def test_au_125c_1000h_matches_breach(self):
         """Au-Al IMC @ 125°C / 1000h → d ≈ 0.29 µm (Breach 2004, ±15%)."""
-        from fem.backend_model import imc_thickness
+        from market_analysis.backend_model import imc_thickness
         d = imc_thickness("Au", T_C=125, t_h=1000)
         assert 0.24 <= d <= 0.34, f"Expected 0.24–0.34 µm, got {d:.3f}"
 
     def test_higher_temperature_grows_faster(self):
         """IMC grows faster at 175°C than 125°C (Arrhenius)."""
-        from fem.backend_model import imc_thickness
+        from market_analysis.backend_model import imc_thickness
         d_125 = imc_thickness("Au", T_C=125, t_h=1000)
         d_175 = imc_thickness("Au", T_C=175, t_h=1000)
         assert d_175 > d_125, "Higher temperature should give thicker IMC"
 
     def test_imc_square_root_time(self):
         """IMC thickness ∝ √t (diffusion-limited growth)."""
-        from fem.backend_model import imc_thickness
+        from market_analysis.backend_model import imc_thickness
         d_1000 = imc_thickness("Au", T_C=125, t_h=1000)
         d_4000 = imc_thickness("Au", T_C=125, t_h=4000)
         ratio = d_4000 / d_1000
@@ -96,20 +96,20 @@ class TestHeelCrackFatigue:
 
     def test_au_100k_fatigue_life(self):
         """Au wire @ ΔT=100K should give 30k–100k cycles."""
-        from fem.backend_model import heel_crack_life
+        from market_analysis.backend_model import heel_crack_life
         N = heel_crack_life("Au", delta_T=100)
         assert 30000 <= N <= 100000, f"Expected 30k–100k, got {N:.0f}"
 
     def test_cu_stronger_than_au(self):
         """Cu wire should have higher fatigue life than Au at same ΔT."""
-        from fem.backend_model import heel_crack_life
+        from market_analysis.backend_model import heel_crack_life
         N_au = heel_crack_life("Au", delta_T=100)
         N_cu = heel_crack_life("Cu", delta_T=100)
         assert N_cu > N_au, "Cu should outlast Au in fatigue"
 
     def test_higher_dt_reduces_life(self):
         """Higher ΔT should reduce fatigue life."""
-        from fem.backend_model import heel_crack_life
+        from market_analysis.backend_model import heel_crack_life
         N_50  = heel_crack_life("Au", delta_T=50)
         N_150 = heel_crack_life("Au", delta_T=150)
         assert N_50 > N_150, "Higher ΔT should reduce fatigue life"
@@ -120,13 +120,13 @@ class TestTimoshenkoWarpage:
 
     def test_zero_dt_zero_warpage(self):
         """ΔT=0 → warpage = 0."""
-        from fem.backend_model import timoshenko_warpage
+        from market_analysis.backend_model import timoshenko_warpage
         result = timoshenko_warpage("4H-SiC", "AlN_sub", delta_T=0)
         assert result["warpage_um"] == pytest.approx(0, abs=0.1)
 
     def test_warpage_linear_with_dt(self):
         """Warpage should scale approximately linearly with ΔT."""
-        from fem.backend_model import timoshenko_warpage
+        from market_analysis.backend_model import timoshenko_warpage
         w50  = timoshenko_warpage("4H-SiC", "Cu_DBC", delta_T=50)["warpage_um"]
         w100 = timoshenko_warpage("4H-SiC", "Cu_DBC", delta_T=100)["warpage_um"]
         ratio = w100 / w50
@@ -134,7 +134,7 @@ class TestTimoshenkoWarpage:
 
     def test_high_cte_mismatch_more_warpage(self):
         """Cu DBC (Δα=13ppm/K) should warp more than AlN (Δα=0.5ppm/K)."""
-        from fem.backend_model import timoshenko_warpage
+        from market_analysis.backend_model import timoshenko_warpage
         w_aln = timoshenko_warpage("4H-SiC", "AlN_sub", delta_T=100)["warpage_um"]
         w_cu  = timoshenko_warpage("4H-SiC", "Cu_DBC",  delta_T=100)["warpage_um"]
         assert w_cu > w_aln, "Cu DBC (large CTE mismatch) should warp more"
@@ -190,14 +190,14 @@ class TestCleaningModel:
 
     def test_pregate_sic_carbon_removal(self):
         """Pre-Gate SiC sequence (Piranha+HF+SC2+O₃+HF) should remove >99% carbon."""
-        from fem.tel_cleaning_model import run_sequence
+        from market_analysis.tel_cleaning_model import run_sequence
         r = run_sequence("pregate_sic", "blade")
         assert r["reduction"]["carbon"] > 99.0, \
             f"SiC Pre-Gate should remove >99% carbon, got {r['reduction']['carbon']:.1f}%"
 
     def test_metal_removal_high(self):
         """All sequences should achieve >99% metal removal."""
-        from fem.tel_cleaning_model import run_sequence
+        from market_analysis.tel_cleaning_model import run_sequence
         for seq in ["post_cmp", "pregate_sic"]:
             r = run_sequence(seq, "blade")
             assert r["reduction"]["metal"] > 99.0, \
@@ -205,10 +205,10 @@ class TestCleaningModel:
 
     def test_sic_pregate_better_than_si_rca(self):
         """SiC-optimised sequence should reduce Dit more than Si RCA."""
-        from fem.tel_cleaning_model import run_sequence, SurfaceState
+        from market_analysis.tel_cleaning_model import run_sequence, SurfaceState
         def get_dit(seq):
             state = SurfaceState("blade")
-            for step in __import__("fem.tel_cleaning_model",
+            for step in __import__("market_analysis.tel_cleaning_model",
                                    fromlist=["SEQUENCES"]).SEQUENCES[seq]["steps"]:
                 state.apply_step(step)
             return state.dit_contribution()
@@ -226,12 +226,12 @@ class TestSiCZGrowth:
 
     def test_critical_vg_positive(self):
         """Critical V/G ratio must be positive."""
-        from fem.shinetsu_si_wafer_model import cz_critical_vg
+        from market_analysis.shinetsu_si_wafer_model import cz_critical_vg
         assert cz_critical_vg() > 0
 
     def test_perfect_zone_exists(self):
         """There should be a pull-rate window giving perfect crystal (V/G near critical)."""
-        from fem.shinetsu_si_wafer_model import defect_type
+        from market_analysis.shinetsu_si_wafer_model import defect_type
         # Pull rate ~0.4 mm/min should be in or near perfect zone at G=30K/cm
         result = defect_type(0.4, 30)
         # Either perfect or I-rich (but not V-rich with high COP)
@@ -239,14 +239,14 @@ class TestSiCZGrowth:
 
     def test_high_pull_rate_gives_cop(self):
         """High pull rate → V-rich → COP dominant."""
-        from fem.shinetsu_si_wafer_model import defect_type
+        from market_analysis.shinetsu_si_wafer_model import defect_type
         result = defect_type(2.5, 30)
         assert "V-rich" in result["defect_type"], \
             f"High pull rate should be V-rich, got: {result['defect_type']}"
 
     def test_cmp_roughness_device_grade(self):
         """CMP with fine slurry and moderate MRR should give device-grade Ra."""
-        from fem.shinetsu_si_wafer_model import si_cmp_roughness
+        from market_analysis.shinetsu_si_wafer_model import si_cmp_roughness
         result = si_cmp_roughness(MRR_nm_min=30, pressure_kPa=20, slurry_size_nm=30)
         assert result["Ra_nm"] < 0.1, \
             f"Device grade requires Ra < 0.1nm, got {result['Ra_nm']:.4f}"

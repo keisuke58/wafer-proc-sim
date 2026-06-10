@@ -29,7 +29,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # TAB 1 — TERAFAB
 # ══════════════════════════════════════════════════════════════════════════════
 with tab1:
-    from fem.terafab_model import (
+    from market_analysis.terafab_model import (
         production_target, yield_chain, capex_analysis,
         japan_impact_analysis, rad_hard_tid_model, TERAFAB,
     )
@@ -142,7 +142,7 @@ with tab1:
 # TAB 2 — QUANTUM COMPUTING
 # ══════════════════════════════════════════════════════════════════════════════
 with tab2:
-    from fem.quantum_computing_model import (
+    from market_analysis.quantum_computing_model import (
         si_spin_qubit_coherence, si_qubit_sweep_rms,
         transmon_qubit, transmon_sweep_ratio,
         surface_code_overhead, si_qubit_wafer_integration,
@@ -230,7 +230,7 @@ with tab2:
 # TAB 3 — HYPERSCALER + TESLA
 # ══════════════════════════════════════════════════════════════════════════════
 with tab3:
-    from fem.hyperscaler_model import (
+    from market_analysis.hyperscaler_model import (
         ASIC_SPECS, HYPERSCALER_CAPEX, NVIDIA_SHARE, TESLA_CHIPS,
         wafer_demand, tco_analysis, tesla_fsd_inference_demand,
     )
@@ -332,7 +332,7 @@ with tab3:
 # TAB 4 — AI DC × SiC
 # ══════════════════════════════════════════════════════════════════════════════
 with tab4:
-    from fem.ai_datacenter_model import (
+    from market_analysis.ai_datacenter_model import (
         server_power, cluster_power, sic_wafer_demand_from_ai,
         sic_vs_si_tco, ai_chip_yield_and_wafer_demand,
         ai_power_and_sic_market_forecast,
@@ -410,7 +410,7 @@ with tab4:
 # TAB 5 — EV × SiC
 # ══════════════════════════════════════════════════════════════════════════════
 with tab5:
-    from fem.ev_sic_model import (
+    from market_analysis.ev_sic_model import (
         switching_loss, thermal_model, ev_sic_demand,
         EV_SYSTEMS, SWITCH_PARAMS, EV_MAKER_VOLUME,
     )
@@ -474,7 +474,7 @@ with tab5:
 # TAB 6 — 応用領域 × 材料 全景決定
 # ══════════════════════════════════════════════════════════════════════════════
 with tab6:
-    from fem.application_landscape_model import (
+    from market_analysis.application_landscape_model import (
         score_applications, material_battle, top_picks,
         APPLICATIONS, MATERIALS,
     )

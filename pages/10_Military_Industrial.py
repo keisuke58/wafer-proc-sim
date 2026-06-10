@@ -17,7 +17,7 @@ st.set_page_config(page_title="Military × Medical Complex", layout="wide")
 st.title("⚔️ 軍産複合体 × 医療産業複合体 × 半導体")
 st.caption("SiC→EV→AI→ロボット→宇宙→核融合→月→長寿命 ＋ 戦争・軍産・医療の全連鎖")
 
-from fem.military_industrial_model import (
+from market_analysis.military_industrial_model import (
     MILITARY_APPLICATIONS, DEFENSE_CONTRACTORS,
     DUAL_USE_HISTORY, FUTURE_MILITARY_TECH,
     MEDICAL_INDUSTRIAL,

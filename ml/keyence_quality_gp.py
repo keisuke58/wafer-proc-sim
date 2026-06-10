@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from fem.keyence_metrology_model import GRADE_TO_SIGMA, TOOL_SIGMA
+from market_analysis.keyence_metrology_model import GRADE_TO_SIGMA, TOOL_SIGMA
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 

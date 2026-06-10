@@ -108,7 +108,7 @@ def validate_mosfet_mobility() -> dict:
     """SiC MOSFET µ_inv vs Dit: Matthiessen's rule モデル検証。
     Calibrated to Chung et al. (2001) IEEE EDL — NO anneal at 1175°C.
     """
-    from fem.tel_process_model import channel_mobility_inv, ald_film
+    from market_analysis.tel_process_model import channel_mobility_inv, ald_film
     exp = MOSFET_EXP
     ald = ald_film(50, 250, "HfO2")
 
@@ -127,7 +127,7 @@ def validate_mosfet_mobility() -> dict:
 
 def validate_wire_weibull() -> dict:
     """Au ワイヤーボンド プル強度 Weibull フィット検証。"""
-    from fem.backend_model import WIRE_MATERIALS
+    from market_analysis.backend_model import WIRE_MATERIALS
     exp_data = WIRE_EXP["pull_g"]
 
     # 実験データに Weibull フィット
@@ -156,7 +156,7 @@ def validate_wire_weibull() -> dict:
 
 def validate_imc_growth() -> dict:
     """IMC 成長 (Au-Al @ 125°C): Arrhenius vs Breach (2004)。"""
-    from fem.backend_model import imc_thickness
+    from market_analysis.backend_model import imc_thickness
     exp = IMC_EXP
     sim = np.array([imc_thickness("Au", T_C=125, t_h=t) for t in exp["time_h"]])
     m = _metrics(sim, exp["imc_um"])
@@ -168,7 +168,7 @@ def validate_imc_growth() -> dict:
 
 def validate_warpage() -> dict:
     """パッケージ反り: Timoshenko vs JEDEC 実測 (Cu DBC / SiC)。"""
-    from fem.backend_model import timoshenko_warpage
+    from market_analysis.backend_model import timoshenko_warpage
     exp = WARPAGE_EXP
     sub = exp.get("substrate", "Cu_DBC")
     sim = np.array([timoshenko_warpage("4H-SiC", sub, dT, L_mm=10.0)["warpage_um"]

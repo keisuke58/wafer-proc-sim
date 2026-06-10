@@ -63,7 +63,7 @@ from scipy.stats import norm
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern, ConstantKernel, WhiteKernel
 
-from fem.tel_feol_recipe import (
+from market_analysis.tel_feol_recipe import (
     simulate_recipe,
     objective_vector,
     sample_recipes,

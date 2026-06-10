@@ -68,7 +68,7 @@ def pipeline_objectives(x: np.ndarray) -> np.ndarray:
     tau   = shockley_read_hall_lifetime(traps["V_C (Z1/2)"])
 
     # ── Step 2: TEL ALD + 熱酸化 ───────────────────────────────────────
-    from fem.tel_process_model import (ald_film, deal_grove, dit_from_oxidation,
+    from market_analysis.tel_process_model import (ald_film, deal_grove, dit_from_oxidation,
                                         channel_mobility, mosfet_performance)
     ald = ald_film(ald_cycles, 250.0, "HfO2")
     ox  = deal_grove(2.0, ox_T_C, "4H-SiC")
@@ -86,7 +86,7 @@ def pipeline_objectives(x: np.ndarray) -> np.ndarray:
     perf  = mosfet_performance(mu_ch, ald["Cox_fF_um2"], V_th)
 
     # ── Step 3: CMP コスト ─────────────────────────────────────────────
-    from fem.tel_cmp_lasertec import cmp_time
+    from market_analysis.tel_cmp_lasertec import cmp_time
     cmp = cmp_time(50, pressure, 0.5, "4H-SiC")
 
     # ── Step 4: Lasertec 後検査 → チッピング ────────────────────────────
@@ -94,7 +94,7 @@ def pipeline_objectives(x: np.ndarray) -> np.ndarray:
     chip = chipping_measurement(proc, n_sites=50, seed=42)
 
     # ── Step 5: Advantest ATE ──────────────────────────────────────────
-    from fem.advantest_model import wafer_map, test_economics
+    from market_analysis.advantest_model import wafer_map, test_economics
     wm   = wafer_map(mu_ch, Dit_ald, seed=0)
     econ = test_economics(wm["yield_pct"], wm["n_die"])
 

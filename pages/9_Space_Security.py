@@ -18,7 +18,7 @@ st.caption(
     "ASAT攻撃 · ケスラー症候群 · 軍事衛星チップ · Disco の地政学的リスク · 日本の戦略的ポジション"
 )
 
-from fem.space_security_model import (
+from market_analysis.space_security_model import (
     kessler_cascade_model, military_chip_demand,
     disco_strategic_shutdown_impact,
     ORBITAL_ENVIRONMENT, MILITARY_SATELLITE_PROGRAMS,

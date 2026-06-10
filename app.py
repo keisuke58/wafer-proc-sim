@@ -686,8 +686,8 @@ mobility is limited to 20–80 cm²/Vs by interface scattering.*
         T_ox = st.slider("Thermal Oxide Temperature [°C]", 1050, 1200, 1150, 10)
         t_ox = st.slider("Thermal Oxide Time [h]", 0.5, 5.0, 2.0, 0.5)
 
-    from fem.tel_cleaning_model import run_sequence
-    from fem.tel_process_model import dit_from_oxidation, channel_mobility_inv, ald_film
+    from market_analysis.tel_cleaning_model import run_sequence
+    from market_analysis.tel_process_model import dit_from_oxidation, channel_mobility_inv, ald_film
 
     r_clean  = run_sequence(seq_name, dice_proc)
     Dit_clean = r_clean["after"]["dit_contrib"]
@@ -872,7 +872,7 @@ Calibration: d = 0.29 µm at 125 °C / 1000 h ✓
              "Breach et al., Microelectron. Reliab. 44:973 (2004)  |  "
              "MIL-STD-883J Method 2023 (2019)")
 
-    from fem.backend_model import (pull_strength_samples, imc_thickness,
+    from market_analysis.backend_model import (pull_strength_samples, imc_thickness,
                                     heel_crack_life, wire_inductance, WIRE_MATERIALS)
     from scipy.stats import weibull_min
 
@@ -1488,7 +1488,7 @@ Step 12 Samsung / SK Hynix → HBM3E TSV yield · bandwidth  (KRX-listed, stock 
 
     # ── Tab 5: Hyperscalers ──────────────────────────────────────────────────
     with tab_hyper:
-        from fem.hyperscaler_model import (
+        from market_analysis.hyperscaler_model import (
             ASIC_SPECS, HYPERSCALER_CAPEX, NVIDIA_SHARE,
             tco_analysis, wafer_demand, tesla_fsd_inference_demand,
         )

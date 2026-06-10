@@ -22,14 +22,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # ════════════════════════════════════════════════════════════════════════════
 class TestForwardModel:
     def test_default_recipe_fom_sane(self):
-        from fem.tel_feol_recipe import default_recipe, simulate_recipe
+        from market_analysis.tel_feol_recipe import default_recipe, simulate_recipe
         f = simulate_recipe(default_recipe())
         assert 5.0 <= f["mu_ch"] <= 95.0
         assert 2.0 <= f["V_th"] <= 4.0
         assert f["R_on_sp"] > 0 and f["Dit"] > 0 and f["EOT_nm"] > 0
 
     def test_vector_round_trip(self):
-        from fem.tel_feol_recipe import (
+        from market_analysis.tel_feol_recipe import (
             default_recipe, recipe_to_vector, vector_to_recipe)
         r = default_recipe()
         r2 = vector_to_recipe(recipe_to_vector(r))
@@ -37,7 +37,7 @@ class TestForwardModel:
         assert abs(r2["ox_T_C"] - r["ox_T_C"]) < 1e-6
 
     def test_objective_vector_and_scalar(self):
-        from fem.tel_feol_recipe import (
+        from market_analysis.tel_feol_recipe import (
             default_recipe, objective_vector, scalar_fom, OBJECTIVES)
         ov = objective_vector(default_recipe())
         assert ov.shape == (len(OBJECTIVES),) == (3,)
@@ -45,7 +45,7 @@ class TestForwardModel:
         assert scalar_fom(default_recipe()) > 0
 
     def test_tool_state_drift_changes_output(self):
-        from fem.tel_feol_recipe import default_recipe, simulate_recipe
+        from market_analysis.tel_feol_recipe import default_recipe, simulate_recipe
         base = simulate_recipe(default_recipe())
         drift = simulate_recipe(default_recipe(),
                                 tool_state={"ox_T_offset_C": 40.0,
@@ -59,7 +59,7 @@ class TestForwardModel:
 class TestSurrogate:
     def test_fit_predict_tracks_truth(self):
         from ml.tel_feol_surrogate import build_dataset, FeolSurrogate
-        from fem.tel_feol_recipe import default_recipe, simulate_recipe
+        from market_analysis.tel_feol_recipe import default_recipe, simulate_recipe
         X, Y, recipes = build_dataset(40, seed=0)
         surr = FeolSurrogate().fit_xy(X, Y)
         mu_hat, ron_hat = surr.predict(default_recipe())
@@ -121,7 +121,7 @@ class TestTMCMC:
 # ════════════════════════════════════════════════════════════════════════════
 class TestEquipmentCompetitiveness:
     def test_clean_axis_favors_tel(self):
-        from fem.tel_equipment_competitiveness import run_competitiveness
+        from market_analysis.tel_equipment_competitiveness import run_competitiveness
         axes, meta = run_competitiveness(n_wafers=60, seed=0)
         assert set(axes) == {"ALD_uniformity", "clean_effectiveness", "low_damage_etch"}
         clean = axes["clean_effectiveness"]

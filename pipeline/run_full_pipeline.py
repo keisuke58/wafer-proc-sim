@@ -46,7 +46,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(1, "ASML EUV リソグラフィー (2nm ノード)")
     # ════════════════════════════════════════════════════════════════════
-    from fem.asml_model import aerial_image, process_window, cd_to_vth_sigma
+    from market_analysis.asml_model import aerial_image, process_window, cd_to_vth_sigma
 
     node_nm   = 2.0
     system    = "EXE:5000 (High-NA)"
@@ -64,7 +64,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(2, "Lasertec ACTIS — EUV マスク検査")
     # ════════════════════════════════════════════════════════════════════
-    from fem.tel_cmp_lasertec import euv_mask_defect_density, euv_inspection_roi
+    from market_analysis.tel_cmp_lasertec import euv_mask_defect_density, euv_inspection_roi
 
     euv = euv_mask_defect_density(node_nm, fab="TSMC")
     roi = euv_inspection_roi(node_nm)
@@ -78,7 +78,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(3, "TEL CMP — SiC 表面平坦化")
     # ════════════════════════════════════════════════════════════════════
-    from fem.tel_cmp_lasertec import cmp_time, preston_mrr
+    from market_analysis.tel_cmp_lasertec import cmp_time, preston_mrr
 
     cmp = cmp_time(target_depth_nm=50, pressure_kPa=40,
                    velocity_m_s=0.5, material="4H-SiC")
@@ -113,7 +113,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(5, "Lasertec SiC 後検査")
     # ════════════════════════════════════════════════════════════════════
-    from fem.tel_cmp_lasertec import sic_postdice_inspection
+    from market_analysis.tel_cmp_lasertec import sic_postdice_inspection
 
     sic_insp = sic_postdice_inspection(dicing_process)
     grade_ok = sic_insp["grade"] in ["A", "B"]
@@ -130,7 +130,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(6, "TEL ALD + 熱酸化 → SiC MOSFET 製造")
     # ════════════════════════════════════════════════════════════════════
-    from fem.tel_process_model import full_pipeline as tel_full
+    from market_analysis.tel_process_model import full_pipeline as tel_full
 
     tel = tel_full(dicing_process=dicing_process, ald_material="HfO2",
                    ald_cycles=50, ox_T_C=1150, ox_t_hr=2.0, anneal_T_C=950)
@@ -143,7 +143,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(7, "Advantest ATE テスト → 歩留まり")
     # ════════════════════════════════════════════════════════════════════
-    from fem.advantest_model import (simulate_device_params, run_ate_test,
+    from market_analysis.advantest_model import (simulate_device_params, run_ate_test,
                                       wafer_map, test_economics)
 
     wm   = wafer_map(tel["mu_ch"], tel["Dit_cm2eV"])
@@ -160,7 +160,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(8, "ソシオネクスト SoC タイミング解析")
     # ════════════════════════════════════════════════════════════════════
-    from fem.semiconductor_ecosystem import socionext_timing_yield
+    from market_analysis.semiconductor_ecosystem import socionext_timing_yield
 
     soc_yield = socionext_timing_yield("SC2300", sigma_Vth_mV=sigma_Vth)
     ok(f"SC2300 ADAS SoC  node={soc_yield['node_nm']}nm  "
@@ -173,7 +173,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(9, "NVIDIA GPU サプライチェーン影響")
     # ════════════════════════════════════════════════════════════════════
-    from fem.semiconductor_ecosystem import nvidia_gpu_bom
+    from market_analysis.semiconductor_ecosystem import nvidia_gpu_bom
 
     gpu = nvidia_gpu_bom("Blackwell B200")
     ok(f"B200 GPU装置コスト: Disco ${gpu['equipment_usd']['Disco']}/GPU  "
@@ -186,7 +186,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(10, "Lam Research プラズマエッチ — CD → プロファイル → ALD ライナー")
     # ════════════════════════════════════════════════════════════════════
-    from fem.lam_research_model import full_pipeline as lam_full
+    from market_analysis.lam_research_model import full_pipeline as lam_full
 
     lam = lam_full(feature_nm=node_nm * 7.0, aspect_ratio=12.0,
                    material="Si", precursor="TMA")
@@ -202,7 +202,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(11, "AMAT CMP + イオン注入 → 活性化")
     # ════════════════════════════════════════════════════════════════════
-    from fem.amat_model import full_pipeline as amat_full
+    from market_analysis.amat_model import full_pipeline as amat_full
 
     amat = amat_full(node_nm=node_nm, mat_stack="SiO2")
     ok(f"PECVD dep={amat['pecvd_dep_rate_nm_min']:.0f} nm/min  "
@@ -217,9 +217,9 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(12, "Samsung / SK Hynix HBM → NVIDIA GPU ルーフライン")
     # ════════════════════════════════════════════════════════════════════
-    from fem.sk_hynix_model import hbm3e_bandwidth, hbm_stack_height
-    from fem.samsung_process_model import hbm3_tsv_yield
-    from fem.nvidia_gpu_model import ai_roofline, GPU_SPECS
+    from market_analysis.sk_hynix_model import hbm3e_bandwidth, hbm_stack_height
+    from market_analysis.samsung_process_model import hbm3_tsv_yield
+    from market_analysis.nvidia_gpu_model import ai_roofline, GPU_SPECS
 
     hbm_bw  = hbm3e_bandwidth("HBM3E_12Hi", n_stacks=6)
     hbm_ht  = hbm_stack_height("HBM3E_12Hi")
@@ -241,7 +241,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(13, "Terafab — 垂直統合メガFab 生産目標 + 日本装置波及")
     # ════════════════════════════════════════════════════════════════════
-    from fem.terafab_model import production_target, yield_chain, japan_impact_analysis
+    from market_analysis.terafab_model import production_target, yield_chain, japan_impact_analysis
 
     tf_prod  = production_target()
     tf_chain = yield_chain()
@@ -264,7 +264,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(14, "量子コンピュータ — Si Qubit + Surface Code QEC")
     # ════════════════════════════════════════════════════════════════════
-    from fem.quantum_computing_model import (si_spin_qubit_coherence,
+    from market_analysis.quantum_computing_model import (si_spin_qubit_coherence,
                                               transmon_qubit,
                                               surface_code_overhead,
                                               si_qubit_wafer_integration)
@@ -294,7 +294,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
     # ════════════════════════════════════════════════════════════════════
     step(15, "Hyperscaler + Tesla — カスタムシリコン競争 & ウェーハ需要")
     # ════════════════════════════════════════════════════════════════════
-    from fem.hyperscaler_model import (ASIC_SPECS, HYPERSCALER_CAPEX,
+    from market_analysis.hyperscaler_model import (ASIC_SPECS, HYPERSCALER_CAPEX,
                                         wafer_demand, tco_analysis,
                                         tesla_fsd_inference_demand)
 
@@ -325,7 +325,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
 
     # ── Step 16: AI DC × SiC ─────────────────────────────────────────
     step(16, "AI DC × SiC パワーモデル")
-    from fem.ai_datacenter_model import (
+    from market_analysis.ai_datacenter_model import (
         server_power, sic_wafer_demand_from_ai, sic_vs_si_tco,
         ai_power_and_sic_market_forecast,
     )
@@ -349,7 +349,7 @@ def run(dicing_process: str = "stealth", make_plots: bool = False) -> dict:
 
     # ── Step 17: EV × SiC ─────────────────────────────────────────────
     step(17, "EV × SiC パワーエレクトロニクス")
-    from fem.ev_sic_model import switching_loss, thermal_model, ev_sic_demand
+    from market_analysis.ev_sic_model import switching_loss, thermal_model, ev_sic_demand
     r_sic = switching_loss("SiC_MOSFET_1200V", "BEV_800V")
     r_si  = switching_loss("Si_IGBT_1200V",    "BEV_800V")
     th    = thermal_model(r_sic["P_total_W"])
