@@ -554,6 +554,87 @@ def sample_fields_fm(
     return _x_to_field(x[:, 0].cpu().numpy())
 
 
+# ── MSE deterministic surrogate ───────────────────────────────────────────────
+
+def train_mse_surrogate(
+    dataset:    AT2FieldDataset,
+    epochs:     int   = 500,
+    batch_size: int   = 32,
+    lr:         float = 1e-4,
+    device:     torch.device | None = None,
+) -> FieldDenoiser:
+    """
+    Train a deterministic surrogate: cond → d_field via pixel-wise MSE.
+
+    Uses the same FieldDenoiser UNet but with x=zeros and t=0 — only the
+    condition embedding drives the prediction.  One forward pass at inference.
+    Contrast with FM/DDPM: identical output for every sample (std[d] ≈ 0).
+    """
+    dev   = device or DEVICE
+    model = FieldDenoiser(ny=dataset.ny, nx=dataset.nx).to(dev)
+    n_p   = sum(p.numel() for p in model.parameters())
+    print(f"FieldDenoiser (MSE surrogate): {n_p:,} params  device={dev}")
+
+    fields = torch.from_numpy(dataset.fields).to(dev)
+    cond   = torch.from_numpy(dataset.cond).to(dev)
+
+    dl = DataLoader(TensorDataset(fields, cond),
+                    batch_size=batch_size, shuffle=True, drop_last=True)
+    opt      = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    lr_sched = optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
+
+    for ep in range(epochs):
+        model.train()
+        ep_loss = 0.0
+        for x0, c in dl:
+            B    = x0.shape[0]
+            t    = torch.zeros(B, dtype=torch.long, device=dev)
+            x_in = torch.zeros_like(x0)
+            pred = model(x_in, t, c)
+            loss = nn.functional.mse_loss(pred, x0)
+
+            opt.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+            ep_loss += loss.item() * B
+
+        lr_sched.step()
+        if (ep + 1) % 50 == 0:
+            print(f"  Epoch {ep+1:>4}/{epochs}  "
+                  f"loss={ep_loss / len(dataset.fields):.5f}")
+
+    return model
+
+
+@torch.no_grad()
+def predict_fields_mse(
+    model:     FieldDenoiser,
+    Gc:        float,
+    ell:       float,
+    beta:      float,
+    n_samples: int = 8,
+    device:    torch.device | None = None,
+) -> np.ndarray:
+    """
+    Predict damage fields with the deterministic MSE surrogate.
+
+    All n_samples rows are identical (deterministic) — the std row in
+    visualize_crack_bands.py will be ≈ zero, which is the intended contrast
+    with FM/DDPM that produce diverse samples.
+
+    Returns np.ndarray shape (n_samples, ny, nx), values in [0, 1].
+    """
+    dev  = device or DEVICE
+    c_np = _norm_cond(np.array([Gc]), np.array([ell]), np.array([beta]))
+    cond = torch.from_numpy(c_np).to(dev).expand(n_samples, -1)
+
+    x_in = torch.zeros(n_samples, 1, model.ny, model.nx, device=dev)
+    t    = torch.zeros(n_samples, dtype=torch.long, device=dev)
+    pred = model(x_in, t, cond)
+    return _x_to_field(pred[:, 0].cpu().numpy())
+
+
 # ── Demo ───────────────────────────────────────────────────────────────────────
 
 def main() -> None:

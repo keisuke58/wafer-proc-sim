@@ -24,14 +24,14 @@ import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from research.phasefield.diffusion_field_ddpm import (
-    load_field_dataset, train_flow_matching, train_ddpm,
+    load_field_dataset, train_flow_matching, train_ddpm, train_mse_surrogate,
 )
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="path to dataset .npz")
-    ap.add_argument("--method", choices=["fm", "ddpm"], default="fm")
+    ap.add_argument("--method", choices=["fm", "ddpm", "mse"], default="fm")
     ap.add_argument("--epochs", type=int, default=500)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -54,11 +54,15 @@ def main() -> None:
         model = train_flow_matching(ds, epochs=args.epochs,
                                     batch_size=args.batch_size, lr=args.lr)
         ckpt["model"] = model.state_dict()
-    else:
+    elif args.method == "ddpm":
         model, sched = train_ddpm(ds, epochs=args.epochs,
                                   batch_size=args.batch_size, lr=args.lr, T=args.T)
         ckpt["model"]       = model.state_dict()
         ckpt["schedule_T"]  = sched.T
+    else:  # mse
+        model = train_mse_surrogate(ds, epochs=args.epochs,
+                                    batch_size=args.batch_size, lr=args.lr)
+        ckpt["model"] = model.state_dict()
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     torch.save(ckpt, args.out)

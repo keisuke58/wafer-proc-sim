@@ -33,6 +33,7 @@ import torch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from research.phasefield.diffusion_field_ddpm import (
     FieldDenoiser, DDPMSchedule, sample_fields, sample_fields_fm,
+    predict_fields_mse,
 )
 
 
@@ -67,11 +68,14 @@ def draw(model: FieldDenoiser, ck: dict, method: str, n_samples: int,
             fields = sample_fields_fm(model, Gc=Gc, ell=ell, beta=beta,
                                       n_samples=n_samples, n_steps=20,
                                       guidance_scale=guidance, device=device)
-        else:
+        elif method == "ddpm":
             sched  = DDPMSchedule(T=int(ck.get("schedule_T", 300)), device=device)
             fields = sample_fields(model, sched, Gc=Gc, ell=ell, beta=beta,
                                    n_samples=n_samples,
                                    guidance_scale=guidance, device=device)
+        else:  # mse
+            fields = predict_fields_mse(model, Gc=Gc, ell=ell, beta=beta,
+                                        n_samples=n_samples, device=device)
 
         mean = fields.mean(axis=0)
         std  = fields.std(axis=0)
@@ -114,7 +118,7 @@ def draw(model: FieldDenoiser, ck: dict, method: str, n_samples: int,
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True, help="path to trained .pt checkpoint")
-    ap.add_argument("--method", choices=["fm", "ddpm"], default="fm")
+    ap.add_argument("--method", choices=["fm", "ddpm", "mse"], default="fm")
     ap.add_argument("--n-samples", type=int, default=64)
     ap.add_argument("--guidance", type=float, default=3.0)
     ap.add_argument("--out", default="results/crack_bands.png")

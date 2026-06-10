@@ -45,4 +45,15 @@ $PY research/phasefield/visualize_crack_bands.py \
     --ckpt $RES/field_ddpm.pt --method ddpm --n-samples 64 --guidance 3.0 --cpu \
     --out $RES/crack_bands_ddpm.png
 
+# ── MSE deterministic surrogate (baseline) ────────────────────────────────────
+echo "[$(date)] training MSE surrogate (500 epochs) ..."
+$PY research/phasefield/train_field_model.py \
+    --data $DATA --method mse --epochs 500 --batch-size 32 --threads 24 \
+    --out $RES/field_mse.pt
+
+echo "[$(date)] rendering MSE crack bands ..."
+$PY research/phasefield/visualize_crack_bands.py \
+    --ckpt $RES/field_mse.pt --method mse --n-samples 64 --guidance 3.0 --cpu \
+    --out $RES/crack_bands_mse.png
+
 echo "[$(date)] finished — figures in $RES/"
