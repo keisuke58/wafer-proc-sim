@@ -1,0 +1,14 @@
+#!/bin/bash
+#PBS -N at2_fmps
+#PBS -l nodes=1:ppn=24
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/fmps.pbs.log
+set -e; cd /home/nishioka/git/wafer-proc-sim
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+RES=research/phasefield/results
+echo "[$(date)] train FMPS (2000 epochs)"
+$PY research/phasefield/fmps_inverse.py train --data research/phasefield/at2_fields_1k.npz --epochs 2000 --threads 24 --out $RES/fmps.pt
+echo "[$(date)] validate FMPS posterior"
+$PY research/phasefield/fmps_inverse.py validate --ckpt $RES/fmps.pt --out $RES/fmps_posterior.png --cpu
+echo "[$(date)] done"

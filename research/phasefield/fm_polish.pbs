@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -N at2_fm_polish
+#PBS -l nodes=1:ppn=24
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/fm_polish.pbs.log
+set -e; cd /home/nishioka/git/wafer-proc-sim
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+echo "[$(date)] FM guidance/steps sweep"
+$PY research/phasefield/guidance_sweep.py --ckpt research/phasefield/results/field_fm.pt --n-samples 64 --cpu
+echo "[$(date)] done"
