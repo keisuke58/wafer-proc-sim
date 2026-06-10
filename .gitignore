@@ -99,3 +99,6 @@ slides_*.pdf
 fem/_stealth_kernel*.so
 *.so
 at2_demo.png
+data/pronostia.zip
+references/
+.claude/
