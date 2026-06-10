@@ -262,6 +262,41 @@ class AT2Surrogate:
         from scipy.special import ndtr
         return float(np.clip(1.0 - ndtr(z), 1e-9, 1.0 - 1e-9))
 
+    # ── Serialization ─────────────────────────────────────────────────────────
+
+    def save(self, path: str) -> None:
+        """Save weights + normalization stats to .npz (portable across machines)."""
+        flat = {}
+        for i, layer in enumerate(self._mlp):
+            flat[f"layer_{i}_W"] = np.array(layer["W"])
+            flat[f"layer_{i}_b"] = np.array(layer["b"])
+        np.savez(path,
+                 **flat,
+                 X_mean=self._X_mean,
+                 X_std=self._X_std,
+                 y_mean=np.array([self._y_mean]),
+                 y_std=np.array([self._y_std]),
+                 hidden=np.array(self.hidden),
+                 n_layers=np.array([len(self._mlp)]))
+
+    @classmethod
+    def load(cls, path: str) -> "AT2Surrogate":
+        """Load a surrogate saved with .save() or train_surrogate_gpu.py."""
+        d = np.load(path)
+        hidden = list(d["hidden"].astype(int))
+        surr = cls(hidden=hidden)
+        n_layers = int(d["n_layers"][0])
+        surr._mlp = [
+            {"W": jnp.array(d[f"layer_{i}_W"]),
+             "b": jnp.array(d[f"layer_{i}_b"])}
+            for i in range(n_layers)
+        ]
+        surr._X_mean = d["X_mean"]
+        surr._X_std  = d["X_std"]
+        surr._y_mean = float(d["y_mean"][0])
+        surr._y_std  = float(d["y_std"][0])
+        return surr
+
     def log_likelihood(
         self,
         params:      PFParams,
