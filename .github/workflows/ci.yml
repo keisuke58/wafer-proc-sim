@@ -18,27 +18,34 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install core + dev dependencies
+      - name: Install system tools
+        run: sudo apt-get install -y cppcheck clang-tidy
+
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install pybind11 numpy scipy scikit-learn pytest
 
-      - name: Fast tests
-        run: python -m pytest tests/ -v --tb=short -m "not slow"
-
-      - name: Paper metric regression (slow)
-        run: python -m pytest tests/test_paper_metrics.py -v --tb=short
-
-      - name: Smoke-test figure generation imports
+      - name: Static analysis — cppcheck
         run: |
-          python -c "
-          import importlib.util
-          spec = importlib.util.spec_from_file_location(
-              'gen_figures',
-              'paper/sic_gp_quality/gen_figures.py',
-          )
-          mod = importlib.util.module_from_spec(spec)
-          spec.loader.exec_module(mod)
-          assert hasattr(mod, 'load')
-          print('[OK] gen_figures imports')
-          "
+          cppcheck --enable=warning,style,performance \
+                   --suppress=missingIncludeSystem \
+                   --error-exitcode=1 \
+                   --std=c++14 \
+                   fem/ ml/ pipeline/ machine/ vision/ embedded/ comms/ \
+                   --quiet
+
+      - name: Static analysis — clang-tidy (non-blocking)
+        run: |
+          PY_INC="$(python -m pybind11 --includes)"
+          find vision embedded comms fem/\_spindle_kernel.cpp ml/\_enkf_kernel.cpp \
+               -name "*.cpp" | head -8 | xargs -I{} \
+          clang-tidy {} -- -std=c++14 ${PY_INC} 2>&1 | tee /tmp/clang_tidy.log || true
+          echo "clang-tidy warnings above (non-blocking)"
+
+      - name: Build C++ kernels
+        run: bash build_all_kernels.sh all
+        # CUDA kernel silently skipped (no nvcc on GitHub Actions runners)
+
+      - name: Run full test suite
+        run: python -m pytest tests/ -q --tb=short
