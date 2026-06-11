@@ -1,5 +1,49 @@
 # External Data & Resources
 
+## General Semiconductor ML Datasets (downloaded 2026-06-12)
+
+These are the canonical open benchmarks for semiconductor wafer-defect /
+process-control ML. Not SiC-dicing-specific, but useful for pretraining,
+APC fault-detection prototyping, and as held-out generalization sets.
+
+### WM-811K — wafer map defect dataset (`WM-811K/`)
+- **Source**: MIR Lab, NTU — `http://mirlab.org/dataset/public/MIR-WM811K.zip`
+  (mirror of the original WM-811K / LSWMD). Also on Kaggle (`qingyi/wm811k-wafer-map`).
+- **Contents**: 811,457 real-fab wafer maps; ~20% expert-labeled with 9 classes
+  (Center, Donut, Edge-Loc, Edge-Ring, Loc, Random, Scratch, Near-full, none).
+- **Files**: `MIR-WM811K/Python/WM811K.pkl` (Python), `MATLAB/WM811K.mat` (MATLAB) + examples.
+- **Use**: Canonical wafer-defect classification benchmark → CNN/ViT pretraining,
+  transfer to our dicing chipping-map detection.
+- **Note**: `.pkl` is a Python pickle — load only in a trusted env (`pickle.load`
+  executes arbitrary code; source is an external mirror).
+
+### MixedWM38 — mixed-type wafer defect dataset (`MixedWM38/`)
+- **Source**: Junliangwangdhu/WaferMap (Donghua Univ.), Google Drive id `1M59pX-lPqL9APBIbp2AKQRTvngeUK8Va`.
+  Also Kaggle (`co1d7era/mixedtype-wafer-defect-datasets`).
+- **Contents**: `Wafer_Map_Datasets.npz` — `arr_0` = 38,015 × 52 × 52 wafer maps (int32),
+  `arr_1` = 38,015 × 8 one-hot defect labels (1 normal + 8 single + 29 mixed = 38 patterns).
+- **Use**: Multi-label / mixed-defect recognition; harder than WM-811K, good OOD/robustness probe.
+
+### SECOM — semiconductor process sensor data (`SECOM/`)
+- **Source**: UCI ML Repo (DOI 10.24432/C54305) — `https://archive.ics.uci.edu/static/public/179/secom.zip`. CC BY 4.0.
+- **Contents**: `secom.data` = 1567 × 590 sensor features, `secom_labels.data` = pass(-1)/fail(1)
+  + timestamp (104 fails / 1463 pass). `secom.names` = description.
+- **Use**: Directly matches our APC/fault-detection suite — high-dim noisy fab sensor
+  signals, imbalanced yield classification, feature selection / change-point detection.
+
+### How these are wired into the codebase
+
+| Dataset | Entry point | What it does |
+|---------|-------------|--------------|
+| SECOM | `python ml/anomaly_detection.py --secom` | Runs Layer-2 IsolationForest (semi-supervised, fit on pass-only) + Layer-3 Shewhart on real fab sensors; reports ROC-AUC / recall / FPR. Loader: `data/load_secom.py`. |
+| WM-811K | `python vision/pretrain_wm811k.py --trust` | Pretrains the shared CNN backbone (9-class) → `results/wm811k_backbone.pt`. `--trust` required (unpickles). |
+| (transfer) | `python vision/kerf_quality_classifier.py --pretrained results/wm811k_backbone.pt` | Warm-starts the kerf chipping-grade CNN from the WM-811K backbone (size-agnostic via global avg pool). |
+| MixedWM38 | `python vision/mixedwm38_benchmark.py [--split ood] [--init-backbone ...]` | 8-way multilabel benchmark; `--split ood` trains on pure single-defect maps, tests on mixed. |
+
+Shared backbone: `vision/wafer_backbone.py` (`WaferBackbone` / `WaferClassifier`).
+All three pipelines smoke-tested 2026-06-12 (`--quick`). WM-811K pretrain itself
+not auto-run (pickle gated behind `--trust`).
+
 ## TMCMC Implementations
 
 ### transitional-mcmc (Ramancha et al. 2022)

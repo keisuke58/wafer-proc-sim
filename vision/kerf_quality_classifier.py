@@ -246,12 +246,17 @@ def train_cnn(
     X_train: np.ndarray, y_train: np.ndarray,
     X_test: np.ndarray, y_test: np.ndarray,
     epochs: int = 12, batch_size: int = 64, seed: int = 0,
+    pretrained: Optional[str] = None,
 ) -> Tuple[np.ndarray, Dict[str, float], Optional[Dict[str, list]]]:
     """
     Train a small image classifier.
 
-    PyTorch path: 3-layer CNN (8-16-32 ch) + global average pool + linear.
+    PyTorch path: shared WaferBackbone (8-16-32 ch + global avg pool) + linear.
     Fallback    : sklearn MLPClassifier on flattened 32x32 downsampled images.
+
+    ``pretrained`` — path to a WM-811K backbone (results/wm811k_backbone.pt).
+    When given, the conv stack is warm-started from real-fab wafer features
+    instead of random init (size-agnostic thanks to global avg pool).
 
     Returns (y_pred_test, metrics, history-or-None).
     """
@@ -272,12 +277,16 @@ def train_cnn(
     torch.manual_seed(seed)
     device = torch.device("cpu")  # demo must run on CPU in <2 min
 
-    model = nn.Sequential(
-        nn.Conv2d(1, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),    # 64
-        nn.Conv2d(8, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),   # 32
-        nn.Conv2d(16, 32, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d(1),
-        nn.Flatten(), nn.Linear(32, 3),
-    ).to(device)
+    # Shared backbone so a WM-811K-pretrained conv stack can be loaded.
+    from vision.wafer_backbone import WaferClassifier
+    clf = WaferClassifier(n_classes=3).to(device)
+    if pretrained:
+        if os.path.exists(pretrained):
+            clf.backbone.load(pretrained, map_location="cpu")
+            print(f"    warm-started backbone from {pretrained}")
+        else:
+            print(f"    [warn] pretrained backbone {pretrained} missing — cold start")
+    model = clf  # forward(x) -> logits (N, 3), drop-in for the nn.Sequential
 
     # hold out 15% of train as validation for the learning curve
     rng = np.random.default_rng(seed)
@@ -397,7 +406,8 @@ def plot_results(
 # ── demo entry point ─────────────────────────────────────────────────────────
 
 def run_demo(n_per_class: int = 300, epochs: int = 12, seed: int = 0,
-             out_path: Optional[str] = None) -> Dict[str, Dict[str, float]]:
+             out_path: Optional[str] = None,
+             pretrained: Optional[str] = None) -> Dict[str, Dict[str, float]]:
     from sklearn.metrics import confusion_matrix
     from sklearn.model_selection import train_test_split
 
@@ -422,7 +432,8 @@ def run_demo(n_per_class: int = 300, epochs: int = 12, seed: int = 0,
 
     print(f"[3/4] CNN ({'PyTorch' if _torch_available() else 'sklearn MLP'}) ...")
     y_pred_cnn, m_cnn, history = train_cnn(
-        X_train, y_train, X_test, y_test, epochs=epochs, seed=seed)
+        X_train, y_train, X_test, y_test, epochs=epochs, seed=seed,
+        pretrained=pretrained)
     print_metrics(m_cnn)
 
     print("[4/4] Plotting ...")
@@ -442,11 +453,13 @@ def main() -> None:
     p.add_argument("--quick", action="store_true",
                    help="fast smoke run (60 images/class, 3 epochs)")
     p.add_argument("--out", type=str, default=None)
+    p.add_argument("--pretrained", type=str, default=None,
+                   help="WM-811K backbone (results/wm811k_backbone.pt) to warm-start")
     args = p.parse_args()
     if args.quick:
         args.n_per_class, args.epochs = 60, 3
     run_demo(n_per_class=args.n_per_class, epochs=args.epochs,
-             seed=args.seed, out_path=args.out)
+             seed=args.seed, out_path=args.out, pretrained=args.pretrained)
 
 
 if __name__ == "__main__":

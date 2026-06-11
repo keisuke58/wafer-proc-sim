@@ -18,6 +18,9 @@ Usage:
 
     # デモ: 正常→異常→ドリフトのシナリオ
     python ml/anomaly_detection.py --demo
+
+    # 実データ検証: SECOM (UCI 半導体工場センサ) で Layer2/3 を評価
+    python ml/anomaly_detection.py --secom
 """
 
 import os
@@ -334,6 +337,63 @@ def run_demo():
     print(f"  管理図異常率: {df['anomaly'].mean():.0%}")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECOM 実データ検証: Layer2(IForest) + Layer3(Shewhart) を実工場データで評価
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def run_secom(contamination: float = 0.07):
+    """
+    UCI SECOM（半導体工場センサ 590ch・pass/fail）で、合成データ用に作った
+    検出プリミティブが実データでも効くかを検証する。
+      Layer 2: 正常(pass)ロットのみで IForest を学習 → 全ロットを採点し、
+               fail を「外れ値」として検出できるか（教師なし不良検出）。
+      Layer 3: 不良率を時系列(時刻順)で Shewhart 管理図にかけ、歩留り
+               ドリフトを検知できるか。
+    多指標で評価（recall=104不良の検出率, FPR, precision, ROC-AUC）。
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from data.load_secom import load_secom
+    from sklearn.metrics import roc_auc_score, precision_score, recall_score
+
+    X, y, ts = load_secom()
+    n_fail = int(y.sum())
+    print(f"\n=== SECOM 実データ検証 ===")
+    print(f"  {X.shape[0]} ロット × {X.shape[1]} センサ, "
+          f"不良 {n_fail}/{len(y)} ({y.mean():.1%}), {ts.min()} → {ts.max()}")
+
+    # Layer 2: 正常ロットのみで学習（半教師あり外れ値検出）
+    pass_idx = np.where(y == 0)[0]
+    layer = IForestLayer(contamination=contamination, n_estimators=200)
+    layer.fit(X[pass_idx])
+    Xs = layer.scaler.transform(X)
+    pred = (layer.iforest.predict(Xs) == -1).astype(int)   # 1 = 外れ値=不良予測
+    score = -layer.iforest.score_samples(Xs)               # 高いほど異常
+
+    auc = roc_auc_score(y, score)
+    rec = recall_score(y, pred, zero_division=0)
+    fpr = float(pred[y == 0].mean())
+    prec = precision_score(y, pred, zero_division=0)
+    print(f"\n  [Layer2 IsolationForest — 教師なし不良検出]")
+    print(f"    ROC-AUC            : {auc:.3f}")
+    print(f"    検出 recall (不良)  : {rec:.3f}  ({int(pred[y==1].sum())}/{n_fail})")
+    print(f"    false-positive rate: {fpr:.3f}")
+    print(f"    precision          : {prec:.3f}")
+    print(f"    → 高次元ノイジー実データでは AUC が単純しきい値より重要"
+          f"（合成データの想定より難）")
+
+    # Layer 3: 不良率の時系列ドリフト監視（50ロット移動窓）
+    win = 50
+    rate = np.array([y[max(0, i - win):i + 1].mean()
+                     for i in range(len(y))])
+    chart = ShewhartChart(warmup=min(100, len(rate) // 3), sigma_mult=3.0)
+    drift_alerts = sum(chart.update(float(r))[0] for r in rate)
+    print(f"\n  [Layer3 Shewhart — 歩留りドリフト監視 (窓={win})]")
+    print(f"    管理図アラート: {drift_alerts} 区間"
+          f"（不良率の上昇/下降ドリフト検知）")
+    return {"auc": auc, "recall": rec, "fpr": fpr, "precision": prec,
+            "drift_alerts": drift_alerts}
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def main():
@@ -346,10 +406,16 @@ def main():
                         help="CSV全行を時系列監視（chip列を使用）")
     parser.add_argument("--demo",    action="store_true",
                         help="正常→ドリフト→異常のシナリオデモ")
+    parser.add_argument("--secom",   action="store_true",
+                        help="UCI SECOM 実工場データで Layer2/3 を検証")
     args = parser.parse_args()
 
     if args.demo:
         run_demo()
+        return
+
+    if args.secom:
+        run_secom()
         return
 
     if not args.csv:
