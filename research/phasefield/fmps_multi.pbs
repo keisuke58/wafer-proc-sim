@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -N at2_fmps_multi
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=03:00:00
+#PBS -j oe
+#PBS -o /home/nishioka/git/wafer-proc-sim/research/phasefield/fmps_multi.pbs.log
+set -e; cd /home/nishioka/git/wafer-proc-sim
+PY=/home/nishioka/IKM_Hiwi/.venv_jax/bin/python3
+RES=research/phasefield/results; mkdir -p $RES
+DATA=research/phasefield/multiobs.npz
+echo "[$(date)] STEP1 gen multi-obs dataset (800 params x 5 theta)"
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  $PY research/phasefield/fmps_multiobs.py gen --n-params 800 --workers 22 --out $DATA
+echo "[$(date)] STEP2 train (3000 epochs)"
+OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24 \
+  $PY research/phasefield/fmps_multiobs.py train --data $DATA --epochs 3000 --threads 24 --out $RES/fmps_multi.pt
+echo "[$(date)] STEP3 validate"
+OMP_NUM_THREADS=24 \
+  $PY research/phasefield/fmps_multiobs.py validate --ckpt $RES/fmps_multi.pt --out $RES/fmps_multi_posterior.png --cpu
+echo "[$(date)] done"
