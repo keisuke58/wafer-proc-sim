@@ -70,6 +70,23 @@ results/pipeline_log.jsonl
 results/*.png
 !paper/**/figures/*.png
 
+# Generated results — additional formats / run dirs
+results/*.json
+results/*.csv
+results/pulse_*/
+
+# research/phasefield generated artifacts (regenerate with the scripts/PBS there)
+research/phasefield/results/
+research/phasefield/*.npz
+research/phasefield/*.png
+research/phasefield/*.pdf
+
+# Ad-hoc visualization dumps (regenerate with visualize_*.py)
+/research_flow*.png
+/research_flow*.pdf
+notebooks/*.png
+sic/figures/*
+
 # Large external datasets (download separately)
 data/external/**/*
 !data/external/.gitkeep
