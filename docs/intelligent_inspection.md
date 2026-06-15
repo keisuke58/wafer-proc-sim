@@ -49,12 +49,45 @@ This is the "intelligent inspection" pitch for DISCO's inspection line — and
 it shows awareness of where learned vision helps and where physics metrology
 (the Lasertec/Hitachi-SEM domain) is still required.
 
+## Fusion as a two-stage triage (quantified)
+
+`vision/inspection_triage.py` turns the "complementary, not redundant" claim
+into a measured system. Every die is screened fast by the CNN; only
+low-confidence dies (softmax < τ) are routed to physics metrology, which also
+measures the **subsurface crack depth the image cannot see**.
+
+Subsurface cracks are modelled per die from the process crack mean (blade 3.0,
+laser_ns 2.0 µm exceed the 2.0 µm limit) — these are reject dies that look
+clean to the camera. A die is a true reject if chipping ≥ 5 µm **or** crack
+≥ 2 µm.
+
+Measured (900 dies, 254 true rejects of which **73 are crack-only =
+image-invisible**), operating point chosen at ≤1% escape budget:
+
+| System | fast-path (throughput) | reject-recall | subsurface-escape |
+|---|---:|---:|---:|
+| CNN only (image) | 1.00 | 0.93 | **0.07** |
+| **Fusion (τ=0.70)** | **0.76** | **1.00** | **0.00** |
+| Metrology all | 0.00 | 1.00 | 0.00 |
+
+![inspection triage](../results/inspection_triage.png)
+
+So the fusion keeps **metrology-grade safety (100% reject-recall, zero
+subsurface escapes) while handling 76% of dies at line speed** — the slow
+instrument sees only the uncertain 24%. Pure-image inspection would let 7% of
+rejects (the crack-only ones) escape.
+
+> Interview line: "A confidence-gated triage — the CNN clears 76% at line
+> speed, metrology takes the uncertain 24% and catches the subsurface cracks
+> the camera can't see. Zero reject escapes at a quarter of the metrology load."
+
 ## Reproduce
 
 ```bash
 python vision/intelligent_inspection.py                                   # cold
 python vision/intelligent_inspection.py --pretrained results/wm811k_backbone.pt
 python vision/intelligent_inspection.py --quick                           # smoke
+python vision/inspection_triage.py                                        # fusion triage
 ```
 
 Related: [neu_real_classifier.md](neu_real_classifier.md),
