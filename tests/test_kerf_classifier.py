@@ -121,3 +121,51 @@ class TestEvaluation:
         assert m["detection_recall"] == pytest.approx(1.0)
         assert m["false_positive_rate"] == pytest.approx(1.0)
         assert m["macro_f1"] < 0.5
+
+
+# ── CNN actually learns (regression guard for the no-BatchNorm collapse) ───────
+
+class TestCNNLearns:
+    """The CNN once sat at chance (val_acc≈0.2, defect-F1=0) because the
+    backbone had no BatchNorm and could not converge in the demo's epoch
+    budget. Guard against that regression: in a modest budget the CNN must
+    clearly beat 3-class chance (0.33) and detect the reject grade."""
+
+    @pytest.mark.slow
+    def test_cnn_beats_chance_and_detects_defects(self):
+        torch = pytest.importorskip("torch")
+        torch.manual_seed(0)
+        from sklearn.model_selection import train_test_split
+
+        from vision.kerf_quality_classifier import train_cnn
+
+        X, y = make_grade_dataset(n_per_class=200, H=128, W=128, seed=0)
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            X, y, test_size=0.25, stratify=y, random_state=0)
+        _, m, history = train_cnn(X_tr, y_tr, X_te, y_te, epochs=15, seed=0)
+
+        assert history is not None, "PyTorch path should produce a history"
+        assert m["accuracy"] > 0.85, f"CNN accuracy {m['accuracy']:.2f} too low"
+        assert m["macro_f1"] > 0.85, f"CNN macro-F1 {m['macro_f1']:.2f} too low"
+        # the reject class (Grade C) must actually be caught
+        assert m["detection_recall"] > 0.85, \
+            f"CNN reject-recall {m['detection_recall']:.2f} too low"
+
+
+class TestBackboneRobustLoad:
+    """Loading a stale/incompatible checkpoint must warn, not crash."""
+
+    @pytest.mark.slow
+    def test_load_incompatible_checkpoint_cold_starts(self, tmp_path, capsys):
+        pytest.importorskip("torch")
+        import torch
+        import torch.nn as nn
+
+        from vision.wafer_backbone import WaferBackbone
+
+        bad = tmp_path / "bad_backbone.pt"
+        torch.save(nn.Linear(7, 3).state_dict(), bad)  # wrong architecture
+        bb = WaferBackbone()
+        bb.load(str(bad))  # must not raise
+        out = capsys.readouterr().out
+        assert "cold start" in out

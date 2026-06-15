@@ -311,6 +311,8 @@ def train_cnn(
         losses = []
         for i in range(0, len(Xtr), batch_size):
             idx = order[i:i + batch_size]
+            if len(idx) < 2:  # BatchNorm needs >1 sample in train mode
+                continue
             opt.zero_grad()
             loss = loss_fn(model(Xtr[idx]), ytr[idx])
             loss.backward()
@@ -405,7 +407,7 @@ def plot_results(
 
 # ── demo entry point ─────────────────────────────────────────────────────────
 
-def run_demo(n_per_class: int = 300, epochs: int = 12, seed: int = 0,
+def run_demo(n_per_class: int = 300, epochs: int = 15, seed: int = 0,
              out_path: Optional[str] = None,
              pretrained: Optional[str] = None) -> Dict[str, Dict[str, float]]:
     from sklearn.metrics import confusion_matrix
@@ -448,7 +450,7 @@ def run_demo(n_per_class: int = 300, epochs: int = 12, seed: int = 0,
 def main() -> None:
     p = argparse.ArgumentParser(description="Kerf quality classifier demo")
     p.add_argument("--n-per-class", type=int, default=300)
-    p.add_argument("--epochs", type=int, default=12)
+    p.add_argument("--epochs", type=int, default=15)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--quick", action="store_true",
                    help="fast smoke run (60 images/class, 3 epochs)")
@@ -457,7 +459,7 @@ def main() -> None:
                    help="WM-811K backbone (results/wm811k_backbone.pt) to warm-start")
     args = p.parse_args()
     if args.quick:
-        args.n_per_class, args.epochs = 60, 3
+        args.n_per_class, args.epochs = 80, 8
     run_demo(n_per_class=args.n_per_class, epochs=args.epochs,
              seed=args.seed, out_path=args.out, pretrained=args.pretrained)
 
