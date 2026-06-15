@@ -1,0 +1,13 @@
+# Repo-wide matplotlib defaults.
+# Loaded automatically by matplotlib when a script is run from the repo root
+# (matplotlib reads ./matplotlibrc from the current working directory first).
+#
+# Primary purpose: render Japanese (CJK) labels instead of tofu boxes. Many
+# demo/portfolio figures use Japanese titles/labels; Noto Sans CJK JP is
+# installed system-wide and also covers Latin, so it is safe as the default.
+# List form enables matplotlib per-glyph fallback: Japanese renders with Noto,
+# while glyphs Noto lacks (sub/superscripts ₀₁⁻ etc.) fall back to DejaVu Sans.
+font.family: Noto Sans CJK JP, DejaVu Sans
+axes.unicode_minus: False
+figure.dpi: 110
+savefig.bbox: tight
