@@ -48,14 +48,24 @@ DEFAULT_BACKBONE_PATH = os.path.join(
 
 
 class WaferBackbone(nn.Module):
-    """3-layer conv feature extractor → (N, 32) embedding. Size-agnostic."""
+    """3-layer conv feature extractor → (N, 32) embedding. Size-agnostic.
+
+    Each conv is followed by BatchNorm: without it the tiny 8-16-32 stack
+    converges far too slowly to be useful in the ~12-epoch CPU budget the
+    demos run on (it sat near chance, see tests/test_kerf_classifier.py).
+    BatchNorm leaves the global-average-pool intact, so the size-agnostic
+    transfer story (WM-811K → kerf → MixedWM38) is unchanged.
+    """
 
     def __init__(self):
         super().__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(1, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(8, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(1, 8, 3, padding=1), nn.BatchNorm2d(8), nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(8, 16, 3, padding=1), nn.BatchNorm2d(16), nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
         )
 
@@ -68,8 +78,19 @@ class WaferBackbone(nn.Module):
         return path
 
     def load(self, path: str = DEFAULT_BACKBONE_PATH,
-             map_location: str = "cpu") -> "WaferBackbone":
-        self.load_state_dict(torch.load(path, map_location=map_location))
+             map_location: str = "cpu", strict: bool = True) -> "WaferBackbone":
+        """Load weights, tolerating an arch mismatch from a stale checkpoint.
+
+        A checkpoint saved by an older architecture (e.g. pre-BatchNorm) would
+        otherwise raise and crash the whole demo.  On a key/shape mismatch we
+        warn and leave the backbone cold-started rather than aborting.
+        """
+        state = torch.load(path, map_location=map_location)
+        try:
+            self.load_state_dict(state, strict=strict)
+        except RuntimeError as exc:
+            print(f"    [warn] backbone checkpoint {path} incompatible with "
+                  f"current architecture — using cold start ({exc.__class__.__name__})")
         return self
 
 
@@ -135,6 +156,8 @@ def train_classifier(
         losses = []
         for i in range(0, len(Xtr), batch_size):
             idx = order[i:i + batch_size]
+            if len(idx) < 2:  # BatchNorm needs >1 sample in train mode
+                continue
             opt.zero_grad()
             loss = loss_fn(model(Xtr[idx]), ytr[idx])
             loss.backward()
