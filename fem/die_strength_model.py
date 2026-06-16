@@ -87,6 +87,27 @@ def strength_distribution(chipping_um_arr: np.ndarray,
                      for c in chipping_um_arr])
 
 
+CHIP_COEFF = 0.95   # calibrated to 11 Grade-A points (Micro2026+Mat2022): MAE 0.87 µm
+
+
+def empirical_chipping_um(depth_um: float, feed_mm_s: float,
+                          spindle_rpm: float = 30000.0) -> float:
+    """
+    ブレードダイシングの front-side 最大チッピング [µm] — 軽量冪則プロキシ。
+
+        chipping = 0.95 · depth^0.6 · feed^0.4 / (spindle_krpm)^0.3
+
+    指数は Si/SiC ダイシングレビューの傾向（チッピングは送り↑で増・主軸回転↑で減）、
+    係数 0.95 は ml.surrogate_transformer の 11 点実験データ
+    (Micro2026 + Mat2022, depth 40–120 µm / feed 1.5–2.0 mm/s / 26–34 krpm) に
+    最小二乗フィット（MAE 0.87 µm, MAPE 18.5 %）。
+    完全な脆性破壊チッピングFEM = fem/dicing_blade_2d.py (ABAQUS/Explicit)。
+    結晶方位補正は apply_crystal_correction を別途適用。
+    """
+    spindle_krpm = max(spindle_rpm, 1.0) / 1000.0
+    return CHIP_COEFF * depth_um ** 0.6 * feed_mm_s ** 0.4 / spindle_krpm ** 0.3
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # 2. Weibull 破壊確率
 # ════════════════════════════════════════════════════════════════════════════
