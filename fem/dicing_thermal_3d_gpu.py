@@ -25,7 +25,7 @@ import argparse
 import math
 import os
 import sys
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict, field as _dcfield
 from typing import Optional
 
 import numpy as np
@@ -88,12 +88,17 @@ class Sim3DResult:
     haz_volume_frac: float
     ablated_volume_um3: float
     max_grad_C_per_um: float
+    # Phase-2 thermo-mechanical (first-order thermoelastic estimate)
+    max_thermal_stress_MPa: float
+    crack_risk_volume_um3: float
+    crack_risk_frac: float
     n_steps: int
     device: str
-    field: Optional[np.ndarray] = field(default=None, repr=False)  # (nz,ny,nx) °C
+    field: Optional[np.ndarray] = _dcfield(default=None, repr=False)  # (nz,ny,nx) °C
+    stress: Optional[np.ndarray] = _dcfield(default=None, repr=False)  # (nz,ny,nx) MPa
 
     def kpis(self) -> dict:
-        d = asdict(self); d.pop("field"); return d
+        d = asdict(self); d.pop("field"); d.pop("stress"); return d
 
 
 # ── solver ───────────────────────────────────────────────────────────────────────
@@ -213,6 +218,19 @@ class DicingThermal3D:
         self.T = T
         return self._postprocess(T, ablated, s + 1, keep_field)
 
+    def _thermoelastic(self, T):
+        """First-order thermoelastic stress field [MPa] from the temperature
+        field: constrained-expansion estimate σ = E·α·(T−T_amb)/(1−ν).
+
+        Approximation (documented): the worked region wants to expand but is
+        constrained by the cold surrounding bulk; this gives the order of the
+        process-induced stress and where it exceeds the tensile strength
+        (thermal-crack risk). A full 3-D elasticity solve is Phase-2b."""
+        m = ALL_MATERIALS.get(self.cfg.material, ALL_MATERIALS["Si"])
+        E, nu, cte = m["E"], m["nu"], m["alpha_thermal"]
+        sigma_Pa = E * cte * (T - self.cfg.t_amb_C) / (1.0 - nu)
+        return sigma_Pa / 1e6, m["sigma_tensile"] / 1e6        # MPa field, MPa limit
+
     def _postprocess(self, T, ablated, n_steps, keep_field) -> Sim3DResult:
         cfg = self.cfg
         dxu = cfg.dx_um
@@ -242,6 +260,13 @@ class DicingThermal3D:
         gz, gy, gx = torch.gradient(T)
         grad = torch.sqrt(gx ** 2 + gy ** 2 + gz ** 2) / dxu
         total_vol = self.nx * self.ny * self.nz * dxu ** 3
+
+        # Phase-2 thermo-mechanical
+        sigma, sig_lim = self._thermoelastic(T)
+        max_stress = float(sigma.abs().max())
+        crack = (sigma.abs() > sig_lim)
+        crack_vol = float(crack.sum()) * dxu ** 3
+
         return Sim3DResult(
             peak_T_C=round(peak, 2),
             groove_depth_um=round(groove_depth, 3),
@@ -252,8 +277,12 @@ class DicingThermal3D:
             haz_volume_frac=round(haz_vol / total_vol, 6),
             ablated_volume_um3=round(ablated_vol, 3),
             max_grad_C_per_um=round(float(grad.max()), 3),
+            max_thermal_stress_MPa=round(max_stress, 2),
+            crack_risk_volume_um3=round(crack_vol, 3),
+            crack_risk_frac=round(crack_vol / total_vol, 6),
             n_steps=int(n_steps), device=str(self.device),
             field=(T.detach().cpu().numpy() if keep_field else None),
+            stress=(sigma.detach().cpu().numpy() if keep_field else None),
         )
 
 
@@ -265,7 +294,9 @@ def simulate(cfg: Sim3DConfig, keep_field: bool = False,
 # ── dataset sweep ────────────────────────────────────────────────────────────────
 KPI_COLS = ["peak_T_C", "groove_depth_um", "haz_depth_um", "haz_excess_um",
             "haz_width_um", "haz_volume_um3", "haz_volume_frac",
-            "ablated_volume_um3", "max_grad_C_per_um", "n_steps"]
+            "ablated_volume_um3", "max_grad_C_per_um",
+            "max_thermal_stress_MPa", "crack_risk_volume_um3", "crack_risk_frac",
+            "n_steps"]
 
 _SWEEP = {
     "laser": {"power_W": (8.0, 40.0), "speed_mm_s": (80.0, 400.0),
@@ -285,29 +316,40 @@ def _lhs(n, d, seed):
     return pts
 
 
-def build_thermal3d_dataset(material: str = "Si", processes=("laser", "blade"),
+def build_thermal3d_dataset(materials=("Si",), processes=("laser", "blade"),
                             n_per_process: int = 40, seed: int = 0,
-                            device: Optional[torch.device] = None):
+                            device: Optional[torch.device] = None,
+                            base_overrides: Optional[dict] = None):
+    """Material × process × recipe sweep. `base_overrides` lets a caller pass a
+    lighter Sim3DConfig (e.g. fewer max_steps) for fast CPU runs."""
     import pandas as pd
+    if isinstance(materials, str):
+        materials = (materials,)
     device = device or get_device()
+    base_overrides = base_overrides or {}
     rows = []
-    for pi, proc in enumerate(processes):
-        space = _SWEEP[proc]
-        names = list(space)
-        U = _lhs(n_per_process, len(names), seed + 17 * pi)
-        for u in U:
-            over = {"material": material, "process": proc}
-            for val, name in zip(u, names):
-                lo, hi = space[name]
-                over[name] = float(lo + val * (hi - lo))
-            cfg = Sim3DConfig(**over)
-            r = simulate(cfg, device=device)
-            row = {"material": material, "process": proc,
-                   "power_W": cfg.power_W, "speed_mm_s": cfg.speed_mm_s,
-                   "beam_radius_um": cfg.beam_radius_um, "blade_W_um": cfg.blade_W_um,
-                   "cut_depth_um": cfg.cut_depth_um}
-            row.update({k: getattr(r, k) for k in KPI_COLS})
-            rows.append(row)
+    for mi, material in enumerate(materials):
+        for pi, proc in enumerate(processes):
+            space = _SWEEP[proc]
+            names = list(space)
+            U = _lhs(n_per_process, len(names), seed + 101 * mi + 17 * pi)
+            for u in U:
+                over = dict(base_overrides)
+                over.update(material=material, process=proc)
+                for val, name in zip(u, names):
+                    lo, hi = space[name]
+                    over[name] = float(lo + val * (hi - lo))
+                cfg = Sim3DConfig(**over)
+                r = simulate(cfg, device=device)
+                row = {"material": material, "process": proc,
+                       "mat_k_thermal": ALL_MATERIALS[material]["k_thermal"],
+                       "mat_E_GPa": ALL_MATERIALS[material]["E"] / 1e9,
+                       "mat_cte": ALL_MATERIALS[material]["alpha_thermal"],
+                       "power_W": cfg.power_W, "speed_mm_s": cfg.speed_mm_s,
+                       "beam_radius_um": cfg.beam_radius_um,
+                       "blade_W_um": cfg.blade_W_um, "cut_depth_um": cfg.cut_depth_um}
+                row.update({k: getattr(r, k) for k in KPI_COLS})
+                rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -364,6 +406,10 @@ def main():
     ap = argparse.ArgumentParser(description="GPU 3D dicing thermal solver")
     ap.add_argument("--process", choices=["laser", "blade"], default="laser")
     ap.add_argument("--material", default="Si")
+    ap.add_argument("--materials", default="Si,SiC,GaN",
+                    help="comma list for --dataset sweep")
+    ap.add_argument("--light", action="store_true",
+                    help="lighter config (fewer steps) for fast CPU sweeps")
     ap.add_argument("--power", type=float, default=20.0)
     ap.add_argument("--speed", type=float, default=100.0)
     ap.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
@@ -376,20 +422,25 @@ def main():
     print(f"device: {dev}  (cuda available: {torch.cuda.is_available()})")
 
     if args.dataset:
-        df = build_thermal3d_dataset(material=args.material, n_per_process=args.n,
-                                     seed=args.seed, device=dev)
+        materials = [m.strip() for m in args.materials.split(",") if m.strip()]
+        light = {"max_steps": 9000} if args.light else {}
+        df = build_thermal3d_dataset(materials=materials, n_per_process=args.n,
+                                     seed=args.seed, device=dev, base_overrides=light)
         out_dir = os.path.join(ROOT, "data", "hybrid_dicing")
         os.makedirs(out_dir, exist_ok=True)
-        csv = os.path.join(out_dir, f"thermal3d_{args.material.lower()}_dataset.csv")
+        tag = "multi" if len(materials) > 1 else materials[0].lower()
+        csv = os.path.join(out_dir, f"thermal3d_{tag}_dataset.csv")
         df.to_csv(csv, index=False)
-        g = df.groupby("process")
-        print(g[["peak_T_C", "groove_depth_um", "haz_excess_um", "haz_width_um"]].median())
+        g = df.groupby(["material", "process"])
+        print(g[["peak_T_C", "groove_depth_um", "haz_excess_um",
+                 "max_thermal_stress_MPa"]].median())
         print(f"\nwrote {csv}  ({len(df)} rows)")
-        # exemplar full 3-D field per process (the actual 3D FEM data)
+        # exemplar full 3-D fields (T + stress) for the first material
+        m0 = materials[0]
         for proc in df.process.unique():
-            cfg = Sim3DConfig(material=args.material, process=proc, power_W=25.0)
+            cfg = Sim3DConfig(material=m0, process=proc, power_W=25.0, **light)
             r = simulate(cfg, keep_field=True, device=dev)
-            npy = os.path.join(out_dir, f"thermal3d_{args.material.lower()}_{proc}_field.npy")
+            npy = os.path.join(out_dir, f"thermal3d_{m0.lower()}_{proc}_field.npy")
             np.save(npy, r.field)
             print(f"wrote {npy}  field shape {r.field.shape}")
         return
