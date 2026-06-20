@@ -21,9 +21,52 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from advpack import StackConfig, PackagingLine
+from advpack import StackConfig, PackagingLine, min_manufacturable_thickness
 
 BOLD = "\033[1m"; RESET = "\033[0m"; GREEN = "\033[92m"; RED = "\033[91m"; CYAN = "\033[96m"
+
+#: the "prescription" — each mitigation and how it changes the base recipe
+PRESCRIPTIONS = [
+    ("baseline",                  {}),
+    ("low-stress film (30→8MPa)", {"film_stress_MPa": 8.0}),
+    ("stress-balanced backside",  {"stress_balanced": True}),
+    ("carrier wafer 700µm",       {"carrier_thickness_um": 700.0}),
+    ("carrier + low-stress",      {"carrier_thickness_um": 700.0, "film_stress_MPa": 8.0}),
+]
+
+
+def prescription_table(material="Si", dice="laser"):
+    base = StackConfig(material=material, dice_method=dice)
+    rows = []
+    for name, over in PRESCRIPTIONS:
+        tmin = min_manufacturable_thickness(base.copy(**over))
+        rows.append((name, tmin))
+    return rows
+
+
+def plot_prescription(rows, material, out):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({"axes.titleweight": "bold"})
+    names = [r[0] for r in rows]
+    # un-manufacturable → show as full thickness bar with hatch
+    vals = [(r[1] if r[1] is not None else 775.0) for r in rows]
+    fail = [r[1] is None for r in rows]
+    colors = ["#b5374a" if i == 0 else "#1b7f79" for i in range(len(rows))]
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.barh(names[::-1], vals[::-1], color=colors[::-1], edgecolor="k", alpha=.9)
+    for b, v, f in zip(bars, vals[::-1], fail[::-1]):
+        lbl = "no window" if f else f"{v:.0f} µm"
+        ax.text(v + 8, b.get_y() + b.get_height() / 2, lbl, va="center", fontsize=10)
+    ax.set(xlabel="minimum manufacturable die thickness [µm]  (← thinner is better)",
+           title=f"Prescription: how each fix unlocks thinner dies  ({material})")
+    ax.invert_xaxis()   # thinner (better) to the right
+    ax.grid(axis="x", alpha=.3)
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    fig.savefig(out, dpi=150); plt.close(fig)
+    return out
 
 
 def thinning_sweep(material="Si", dice="laser", t_lo=40.0, t_hi=775.0, n=40):
@@ -88,7 +131,25 @@ def main():
     ap = argparse.ArgumentParser(description="Advanced-packaging line demo")
     ap.add_argument("--material", default="Si")
     ap.add_argument("--dice", default="laser", choices=["laser", "blade"])
+    ap.add_argument("--prescribe", action="store_true",
+                    help="show how mitigations lower the min manufacturable thickness")
     args = ap.parse_args()
+
+    if args.prescribe:
+        rows = prescription_table(args.material, args.dice)
+        print(f"{BOLD}Prescription — min manufacturable thickness ({args.material}){RESET}")
+        base = rows[0][1]
+        for name, tmin in rows:
+            if tmin is None:
+                print(f"  {name:28} {RED}no window{RESET}")
+            else:
+                gain = "" if name == "baseline" or base is None else \
+                    f"  ({GREEN}{base - tmin:+.0f}µm vs baseline{RESET})"
+                print(f"  {name:28} {GREEN}{tmin:>6.0f} µm{RESET}{gain}")
+        out = plot_prescription(rows, args.material,
+                                os.path.join(ROOT, "results", "advpack_prescription.png"))
+        print(f"\n  {CYAN}wrote {out}{RESET}")
+        return
 
     rows = thinning_sweep(args.material, args.dice)
     print(f"{BOLD}thin→warp→bond→singulate  ({args.material}, {args.dice} dice){RESET}")

@@ -29,11 +29,11 @@ if _ROOT not in sys.path:
 from advpack.line import (   # noqa: E402
     StackConfig, StackState, PackagingStage,
     ThinGrindStage, WarpageStage, BondStage, SingulateStage,
-    PackagingLine, LineResult, stoney_bow_um,
+    PackagingLine, LineResult, stoney_bow_um, min_manufacturable_thickness,
 )
 
 __all__ = [
     "StackConfig", "StackState", "PackagingStage",
     "ThinGrindStage", "WarpageStage", "BondStage", "SingulateStage",
-    "PackagingLine", "LineResult", "stoney_bow_um",
+    "PackagingLine", "LineResult", "stoney_bow_um", "min_manufacturable_thickness",
 ]

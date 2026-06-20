@@ -40,6 +40,10 @@ class StackConfig:
     film_thickness_um: float = 2.0          # effective stressed layer
     process_dT_C: float = 200.0             # thermal excursion seen by the stack
 
+    # ── mitigations (the "prescription") ──
+    carrier_thickness_um: float = 0.0       # temporary carrier wafer (0 = none)
+    stress_balanced: bool = False           # backside stress-compensation layer
+
     # hybrid bonding
     bond_temp_C: float = 250.0
     bond_pressure_MPa: float = 10.0
@@ -137,10 +141,20 @@ class WarpageStage(PackagingStage):
         thermal_stress = m["E"] * m["alpha_thermal"] * cfg.process_dT_C / 1e6  # MPa
         # warp-driving stress (film-like): drives Stoney bow.
         sigma_warp = cfg.film_stress_MPa + s.residual_stress_MPa + 0.3 * thermal_stress
+        # Mitigation 1 — stress-balanced backside layer cancels most of the net
+        # bending moment.
+        if cfg.stress_balanced:
+            sigma_warp *= 0.15
         # bulk/interface residual that persists into bonding (smaller; the thin
         # film stress is largely surface and does not threaten the bond line).
         bulk_residual = s.residual_stress_MPa + 0.2 * thermal_stress
-        bow_raw = stoney_bow_um(sigma_warp, cfg.film_thickness_um, s.thickness_um,
+        # Mitigation 2 — temporary carrier wafer: the thick carrier dominates the
+        # bending stiffness (∝ t³), so the warp during bond/handling is governed
+        # by the carrier, not the thinned die. Use the bending-equivalent thickness.
+        t_warp = s.thickness_um
+        if cfg.carrier_thickness_um > 0:
+            t_warp = (s.thickness_um ** 3 + cfg.carrier_thickness_um ** 3) ** (1.0 / 3.0)
+        bow_raw = stoney_bow_um(sigma_warp, cfg.film_thickness_um, t_warp,
                                 cfg.wafer_diameter_mm, cfg.material)
         cracks = bow_raw > self.BOW_FRACTURE_UM
         bow = min(bow_raw, self.BOW_FRACTURE_UM)
@@ -264,3 +278,19 @@ class PackagingLine:
                          f"{self.die_strength_min:.0f} MPa")
         return LineResult(cfg=cfg, states=states,
                           yielded=(len(viols) == 0), violations=viols)
+
+
+def min_manufacturable_thickness(cfg: StackConfig, line: Optional["PackagingLine"] = None,
+                                 t_lo: float = 5.0, t_hi: float = 775.0,
+                                 step: float = 5.0) -> Optional[float]:
+    """Thinnest die thickness [µm] for which the whole line still yields, or None.
+
+    Yield is monotonic in thickness (thicker = more rigid = less warp), so this
+    scans from thin upward and returns the first thickness that yields."""
+    line = line or PackagingLine()
+    t = t_lo
+    while t <= t_hi:
+        if line.run(cfg.copy(target_thickness_um=t)).yielded:
+            return round(t, 1)
+        t += step
+    return None

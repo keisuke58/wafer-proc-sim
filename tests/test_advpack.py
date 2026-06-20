@@ -7,7 +7,9 @@ import math
 
 import pytest
 
-from advpack import StackConfig, PackagingLine, stoney_bow_um
+from advpack import (
+    StackConfig, PackagingLine, stoney_bow_um, min_manufacturable_thickness,
+)
 from advpack.line import STAGES
 
 
@@ -58,3 +60,23 @@ def test_more_stack_layers_raise_residual():
 def test_config_copy():
     c = StackConfig().copy(material="SiC", target_thickness_um=40.0)
     assert c.material == "SiC" and c.target_thickness_um == 40.0
+
+
+def test_mitigations_lower_min_thickness():
+    base = StackConfig(material="Si")
+    t_base = min_manufacturable_thickness(base)
+    t_lowstress = min_manufacturable_thickness(base.copy(film_stress_MPa=8.0))
+    t_carrier = min_manufacturable_thickness(base.copy(carrier_thickness_um=700.0))
+    assert t_base is not None
+    # each fix lets you go at least as thin; carrier is the dominant lever
+    assert t_lowstress <= t_base
+    assert t_carrier < t_lowstress
+    assert t_carrier < 50.0          # carrier unlocks ultra-thin dies
+
+
+def test_carrier_suppresses_warp():
+    # on a thick carrier, a 30µm die warps far less than free-standing
+    free = PackagingLine().run(StackConfig(target_thickness_um=30.0)).states[1].bow_um
+    on_carrier = PackagingLine().run(
+        StackConfig(target_thickness_um=30.0, carrier_thickness_um=700.0)).states[1].bow_um
+    assert on_carrier < free
