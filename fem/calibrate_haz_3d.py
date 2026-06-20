@@ -53,7 +53,7 @@ def _linfit(x, y):
     return float(a), float(b), float(r2)
 
 
-def calibrate(material="SiC", n=24, seed=0, device=None):
+def calibrate(material="SiC", n=24, seed=0, device=None, dx_um=5.0):
     device = device or get_device()
     names = list(SPACE)
     U = _lhs(n, len(names), seed)
@@ -63,8 +63,8 @@ def calibrate(material="SiC", n=24, seed=0, device=None):
                for v, nm in zip(u, names)}
         a_groove, a_haz = _analytic_excess_haz(rec["power_W"], rec["speed_mm_s"],
                                                rec["beam_radius_um"])
-        r = simulate(Sim3DConfig(material=material, process="laser", **rec),
-                     device=device)
+        r = simulate(Sim3DConfig(material=material, process="laser",
+                                 dx_um=dx_um, **rec), device=device)
         rows.append(dict(**rec, analytic_groove=a_groove, analytic_haz=a_haz,
                          sim3d_groove=r.groove_depth_um, sim3d_haz=r.haz_excess_um))
     return rows
@@ -113,11 +113,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--material", default="SiC")
     ap.add_argument("--n", type=int, default=24)
+    ap.add_argument("--dx", type=float, default=5.0, help="cell size µm (2 on GPU)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--plot", action="store_true")
     args = ap.parse_args()
     dev = get_device()
-    rows = calibrate(args.material, args.n, args.seed, dev)
+    rows = calibrate(args.material, args.n, args.seed, dev, dx_um=args.dx)
     cal = summarize(rows)
     print(f"=== analytic→3D calibration ({args.material} laser, n={args.n}, dev={dev}) ===")
     for k in ("haz", "groove"):
