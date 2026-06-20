@@ -236,9 +236,42 @@ Glass["G_c"] = Glass["K_Ic"]**2 / Glass["E"]
 Glass["fracture_table"] = _sic_fracture_table(Glass["eps_fracture"])
 
 
+# ── Sapphire (c-plane Al₂O₃) — superconducting-qubit substrate ────────────────
+# Refs: Wachtman et al. (1960) J. Res. NBS (elastic); Wiederhorn (1969) J. Am.
+#       Ceram. Soc. (K_Ic, anisotropic 2–4 MPa·m^0.5 — weak-plane value used);
+#       Dobrovinskaya et al. (2009) "Sapphire" (thermal/mechanical).
+# Hard, anisotropic, brittle; IR-transparent (stealth dicing works by nonlinear
+# absorption). Together with high-resistivity Si the dominant substrate for
+# superconducting transmon qubits.
+Sapphire = {
+    "name":              "Sapphire",
+    "C_t_grinding":      3000.0,
+    "density":           3980.0,      # kg/m³
+    "E":                 400e9,       # Pa  (c-axis; anisotropic 345–400)
+    "nu":                0.27,
+    "K_Ic":              2.0e6,       # Pa·m^0.5 — weak cleavage plane
+    "H_v":               22.0e9,      # Pa
+    "sigma_tensile":     400e6,       # Pa
+    "sigma_compress":    2000e6,      # Pa
+    "sigma_flex":        450e6,       # Pa
+    "dp_friction_angle": 65.0,
+    "dp_cohesion_Pa":    900e6,
+    "dp_dilation_angle": 0.0,
+    "K_dp":              1.0,
+    "eps_fracture":      1.5e-4,
+    "k_thermal":         35.0,        # W/(m·K) at RT
+    "alpha_thermal":     5.3e-6,      # 1/K (a-axis)
+    "Cp":                760.0,
+    "bandgap_eV":        9.9,         # IR-transparent → stealth via nonlinear abs.
+}
+Sapphire["G_c"] = Sapphire["K_Ic"]**2 / Sapphire["E"]
+Sapphire["fracture_table"] = _sic_fracture_table(Sapphire["eps_fracture"])
+
+
 ALL_MATERIALS = {
     "Si": Si, "SiC": SiC, "GaN": GaN,
     "Diamond": Diamond, "Ga2O3": Ga2O3, "Glass": Glass,
+    "Sapphire": Sapphire,
     "Si_damaged": Si_damaged,
     "BladeResin": BladeResin,
 }
