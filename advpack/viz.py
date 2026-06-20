@@ -44,6 +44,86 @@ def prescription_table(material="Si", dice="laser"):
     return rows
 
 
+def _binding(result):
+    if result.yielded:
+        return "manufacturable"
+    v = result.violations[0]
+    if "overlay" in v:
+        return "warp→overlay"
+    if "void" in v:
+        return "warp→void"
+    if "delam" in v:
+        return "delamination"
+    if "die strength" in v:
+        return "die strength"
+    return "other"
+
+
+#: material → the fix that actually addresses ITS binding constraint
+_FIX_BY_BINDING = {
+    "warp→overlay": "temporary carrier wafer",
+    "warp→void":    "temporary carrier wafer",
+    "delamination": "lower bond ΔT / stronger bond",
+    "die strength": "thicker die / surface compression (chem. strengthening)",
+    "manufacturable": "—",
+}
+
+
+def material_diagnosis(materials=("Si", "SiC", "Glass")):
+    """For each material: min manufacturable thickness (baseline & with carrier)
+    and the binding constraint that remains once warp is removed."""
+    L = PackagingLine()
+    full = dict(carrier_thickness_um=700.0, film_stress_MPa=8.0, stress_balanced=True)
+    out = []
+    for m in materials:
+        base = StackConfig(material=m)
+        t_base = min_manufacturable_thickness(base)
+        t_carrier = min_manufacturable_thickness(base.copy(carrier_thickness_um=700.0))
+        t_full = min_manufacturable_thickness(base.copy(**full))
+        # thick + ALL handling fixes → whatever still fails is NOT a handling
+        # problem (it's a process/material limit: ΔT, bond, intrinsic strength).
+        r = L.run(base.copy(target_thickness_um=400.0, **full))
+        binding = _binding(r)
+        # if handling fixes solve it, the practical fix is handling; else process.
+        if t_full is not None:
+            fix = "carrier (+low-stress/balance)"
+        else:
+            fix = _FIX_BY_BINDING.get(binding, "—")
+        out.append({"material": m, "t_base": t_base, "t_carrier": t_carrier,
+                    "t_full": t_full, "binding": binding, "fix": fix})
+    return out
+
+
+def plot_diagnosis(rows, out):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({"axes.titleweight": "bold"})
+    mats = [r["material"] for r in rows]
+    base = [(r["t_base"] if r["t_base"] else 800.0) for r in rows]
+    carr = [(r["t_carrier"] if r["t_carrier"] else 800.0) for r in rows]
+    x = range(len(mats)); w = 0.38
+    fig, ax = plt.subplots(figsize=(9.5, 5.2))
+    b1 = ax.bar([i - w/2 for i in x], base, w, label="baseline", color="#b5374a", ec="k")
+    b2 = ax.bar([i + w/2 for i in x], carr, w, label="+ carrier wafer", color="#1b7f79", ec="k")
+    for bars, vals, rws, isbase in [(b1, base, rows, True), (b2, carr, rows, False)]:
+        for bar, v, r in zip(bars, vals, rws):
+            t = r["t_base"] if isbase else r["t_carrier"]
+            lbl = "no\nwindow" if t is None else f"{t:.0f}µm"
+            ax.text(bar.get_x() + bar.get_width()/2, v + 12, lbl, ha="center", fontsize=8.5)
+    ax.set_xticks(list(x)); ax.set_xticklabels(
+        [f"{r['material']}\n({r['binding']})" for r in rows])
+    ax.set(ylabel="min manufacturable thickness [µm]  (lower = better)",
+           title="Material-specific prescription — one fix does NOT fit all\n"
+                 "carrier wafer rescues warp-limited Si, but not delam-limited SiC "
+                 "or strength-limited Glass")
+    ax.legend(frameon=False); ax.grid(axis="y", alpha=.3)
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    fig.savefig(out, dpi=150); plt.close(fig)
+    return out
+
+
 def plot_prescription(rows, material, out):
     import matplotlib
     matplotlib.use("Agg")
@@ -133,7 +213,22 @@ def main():
     ap.add_argument("--dice", default="laser", choices=["laser", "blade"])
     ap.add_argument("--prescribe", action="store_true",
                     help="show how mitigations lower the min manufacturable thickness")
+    ap.add_argument("--materials", action="store_true",
+                    help="diagnose binding constraint per material (Si/SiC/Glass)")
     args = ap.parse_args()
+
+    if args.materials:
+        rows = material_diagnosis()
+        print(f"{BOLD}Material-specific diagnosis (binding constraint + the fix that helps){RESET}")
+        print(f"  {'material':7}{'base':>8}{'+carrier':>10}{'+all fix':>10}  "
+              f"{'binding@full':14} recommended fix")
+        for r in rows:
+            f = lambda v: "no win" if v is None else f"{v:.0f}µm"  # noqa: E731
+            print(f"  {r['material']:7}{f(r['t_base']):>8}{f(r['t_carrier']):>10}"
+                  f"{f(r['t_full']):>10}  {r['binding']:14} {r['fix']}")
+        out = plot_diagnosis(rows, os.path.join(ROOT, "results", "advpack_materials.png"))
+        print(f"\n  {CYAN}wrote {out}{RESET}")
+        return
 
     if args.prescribe:
         rows = prescription_table(args.material, args.dice)

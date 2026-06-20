@@ -208,9 +208,37 @@ Ga2O3["G_c"] = Ga2O3["K_Ic"]**2 / Ga2O3["E"]
 Ga2O3["fracture_table"] = _sic_fracture_table(Ga2O3["eps_fracture"])
 
 
+# ── Glass substrate (panel-level / glass-core packaging) ──────────────────────
+# Refs: Corning/Schott panel glass; fused-silica/borosilicate typical.
+# Low CTE (Si-matched), low E (warps more), brittle (low K_Ic, flaw-limited
+# strength) → hard to thin and dice. Intel-pushed glass-core substrates.
+Glass = {
+    "name":              "Glass",
+    "C_t_grinding":      1000.0,
+    "density":           2230.0,      # kg/m³
+    "E":                 74e9,        # Pa (lower than Si → more warp)
+    "nu":                0.20,
+    "K_Ic":              0.75e6,      # Pa·m^0.5 — brittle
+    "H_v":               6.0e9,       # Pa
+    "sigma_tensile":     50e6,        # Pa — flaw-limited
+    "sigma_compress":    1100e6,      # Pa
+    "sigma_flex":        70e6,        # Pa
+    "dp_friction_angle": 55.0,
+    "dp_cohesion_Pa":    400e6,
+    "dp_dilation_angle": 0.0,
+    "K_dp":              1.0,
+    "eps_fracture":      1.5e-4,
+    "k_thermal":         1.1,         # W/(m·K) — poor (laser heat localizes)
+    "alpha_thermal":     3.2e-6,      # 1/K — Si-matched (the packaging appeal)
+    "Cp":                830.0,
+}
+Glass["G_c"] = Glass["K_Ic"]**2 / Glass["E"]
+Glass["fracture_table"] = _sic_fracture_table(Glass["eps_fracture"])
+
+
 ALL_MATERIALS = {
     "Si": Si, "SiC": SiC, "GaN": GaN,
-    "Diamond": Diamond, "Ga2O3": Ga2O3,
+    "Diamond": Diamond, "Ga2O3": Ga2O3, "Glass": Glass,
     "Si_damaged": Si_damaged,
     "BladeResin": BladeResin,
 }
