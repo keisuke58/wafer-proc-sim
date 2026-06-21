@@ -1,8 +1,9 @@
 """
-wafer-proc-sim Streamlit demo — three-tab layout:
-  Tab 1: SiC Dicing Live Monitor (blade anomaly detection)
-  Tab 2: KABRA® BO Optimizer    (interactive multi-objective BO)
-  Tab 3: Physical Process Limits (first-principles limits explorer)
+wafer-proc-sim Streamlit demo — four-tab layout:
+  Tab 1: SiC Dicing Live Monitor      (blade anomaly detection)
+  Tab 2: KABRA® BO Optimizer          (interactive multi-objective BO)
+  Tab 3: Physical Process Limits      (first-principles limits explorer)
+  Tab 4: Cleavage Anisotropy          (SiC/GaN dicing orientation guide)
 """
 import os
 import sys
@@ -259,10 +260,11 @@ with st.sidebar:
 # ═════════════════════════════════════════════════════════════════════════════
 # Tabs
 # ═════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "🔴 Live Dicing Monitor",
     "⚡ KABRA® BO Optimizer",
     "📐 Physical Limits",
+    "🔬 Cleavage Anisotropy",
 ])
 
 
@@ -561,3 +563,112 @@ with tab3:
         st.caption("Model: t_min = a√(12(1-ν²)σ_yield/(π²E)). At 100 µm depth: kerf_min ≈ 7.2 µm.")
     except Exception as e:
         st.error(f"Could not load physical_limits: {e}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tab 4: Cleavage Anisotropy
+# ─────────────────────────────────────────────────────────────────────────────
+with tab4:
+    st.header("Cleavage Anisotropy — SiC / GaN Dicing Orientation Guide")
+    st.caption(
+        "Anisotropic AT2 model: Gc_eff(φ) = Gc · (1 + β sin²(φ − θ_cut)). "
+        "β < 0 → cleavage is the soft direction. "
+        "Cut **along** a cleavage plane (θ_cut → 0° or 90°) to null the "
+        "deflection force and minimise chipping."
+    )
+
+    # material parameters (SiC β from wafer-proc-sim MAP fit; Si/GaN illustrative)
+    _MAT = {
+        "SiC": dict(beta=-0.51, color="#b8860b"),
+        "GaN": dict(beta=-0.30, color="#c0392b"),
+        "Si":  dict(beta=-0.12, color="#1f6f6f"),
+    }
+
+    def _gc_eff(phi, theta, beta):
+        return 1.0 + beta * np.sin(phi - theta) ** 2
+
+    def _kerf_toughness(theta, beta):
+        return 1.0 + beta * np.sin(theta) ** 2
+
+    def _deflection_force(theta, beta):
+        return np.abs(beta * np.sin(2.0 * theta))
+
+    col_ctrl, col_info = st.columns([1, 2])
+    with col_ctrl:
+        theta_deg = st.slider("Cut angle θ_cut to cleavage plane [deg]", 0, 90, 45, 1)
+        sel_mats  = st.multiselect("Materials", list(_MAT), default=list(_MAT))
+        theta_rad = np.deg2rad(theta_deg)
+        st.divider()
+        st.markdown("**At selected θ_cut:**")
+        for n in sel_mats:
+            kt = _kerf_toughness(theta_rad, _MAT[n]["beta"])
+            df = _deflection_force(theta_rad, _MAT[n]["beta"])
+            st.markdown(f"- **{n}** — kerf Gc_eff/Gc = `{kt:.3f}`, deflection force = `{df:.3f}`")
+
+    with col_info:
+        th  = np.linspace(0, np.pi / 2, 181)
+        phi = np.linspace(0, 2 * np.pi, 361)
+
+        c1, c2 = st.columns(2)
+
+        # (a) kerf toughness vs cut orientation
+        fig_kt = go.Figure()
+        for n in sel_mats:
+            fig_kt.add_trace(go.Scatter(
+                x=np.rad2deg(th),
+                y=_kerf_toughness(th, _MAT[n]["beta"]),
+                name=n, line=dict(color=_MAT[n]["color"], width=2),
+            ))
+        fig_kt.add_vline(x=theta_deg, line_dash="dash", line_color="gray",
+                          annotation_text=f"θ={theta_deg}°",
+                          annotation_position="top right")
+        fig_kt.update_layout(
+            title="Kerf cutting effort (Gc_eff/Gc)<br><sup>lower = easier split</sup>",
+            xaxis_title="Cut angle θ_cut [deg]",
+            yaxis_title="Gc_eff / Gc",
+            height=300, margin=dict(l=50, r=20, t=60, b=40),
+            legend=dict(orientation="h", y=-0.25),
+        )
+        c1.plotly_chart(fig_kt, use_container_width=True)
+
+        # (b) deflection/chipping tendency vs cut orientation
+        fig_df = go.Figure()
+        for n in sel_mats:
+            fig_df.add_trace(go.Scatter(
+                x=np.rad2deg(th),
+                y=_deflection_force(th, _MAT[n]["beta"]),
+                name=n, line=dict(color=_MAT[n]["color"], width=2),
+            ))
+        fig_df.add_vline(x=theta_deg, line_dash="dash", line_color="gray",
+                          annotation_text=f"θ={theta_deg}°",
+                          annotation_position="top right")
+        fig_df.update_layout(
+            title="Kerf-deviation / chipping tendency<br><sup>ZERO at θ=0° or 90° → dice along cleavage</sup>",
+            xaxis_title="Cut angle θ_cut [deg]",
+            yaxis_title="|dGc_eff/dφ|",
+            height=300, margin=dict(l=50, r=20, t=60, b=40),
+            legend=dict(orientation="h", y=-0.25),
+        )
+        c2.plotly_chart(fig_df, use_container_width=True)
+
+    # polar plot — full toughness landscape at selected θ_cut
+    st.divider()
+    st.subheader(f"Toughness anisotropy polar (θ_cut = {theta_deg}°)")
+    fig_polar = go.Figure()
+    for n in sel_mats:
+        r = _gc_eff(phi, theta_rad, _MAT[n]["beta"])
+        fig_polar.add_trace(go.Scatterpolar(
+            r=r, theta=np.rad2deg(phi),
+            mode="lines", name=f"{n} (β={_MAT[n]['beta']:+.2f})",
+            line=dict(color=_MAT[n]["color"], width=2),
+        ))
+    fig_polar.update_layout(
+        polar=dict(radialaxis=dict(range=[0, 1.1])),
+        height=400,
+        margin=dict(l=40, r=40, t=40, b=40),
+        legend=dict(orientation="h", y=-0.1),
+    )
+    st.plotly_chart(fig_polar, use_container_width=True)
+    st.caption(
+        "β (SiC = −0.51) from wafer-proc-sim MAP fit to AT2 cleavage model. "
+        "Si/GaN values are illustrative — calibrate to fab cleavage data."
+    )
