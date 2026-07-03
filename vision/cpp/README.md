@@ -172,6 +172,22 @@ Measured on a 4-core x86 (2048×2048): Gaussian **46.6 → 697 MPix/s** (15×,
 - `vision::detect_streets` — locate every dark street centre across the field,
   turning the single-kerf inspector into a full-field front-end.
 
+### Predictive blade-wear monitoring (`wproc/spc.hpp`, `wproc/blade_health.hpp`)
+
+Turns a stream of kerf-inspection results into a maintenance signal — the
+"knowing" half of DISCO's cut-grind-polish story:
+
+- `spc::Chart` — statistical process control with the Western Electric run
+  rules (1 pt beyond 3σ; 2/3 beyond 2σ; 4/5 beyond 1σ; 8 on one side) over
+  standardized kerf-width values.
+- `blade::Monitor` — feeds each cut through the chart and a running
+  least-squares trend, then reports a **wear index** and **remaining useful
+  life (RUL)** in cuts until width or chipping crosses its spec limit.
+
+On a synthetic 0.01 µm/cut drift the monitor recovers the slope, SPC flags the
+drift early, and RUL predicts the spec crossing (~195 cuts out at cut 300); a
+stable blade reports RUL ≫ 1000 and no replacement. (`blade_health` test.)
+
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
 A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,

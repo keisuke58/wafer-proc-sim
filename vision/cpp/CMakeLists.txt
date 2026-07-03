@@ -26,6 +26,8 @@ add_library(wproc STATIC
   src/kerf_inspect.cpp
   src/simd_filters.cpp
   src/metrology.cpp
+  src/spc.cpp
+  src/blade_health.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -63,6 +65,10 @@ add_test(NAME simd_parity COMMAND test_simd_parity)
 add_executable(test_metrology tests/test_metrology.cpp)
 target_link_libraries(test_metrology PRIVATE wproc)
 add_test(NAME metrology COMMAND test_metrology)
+
+add_executable(test_blade_health tests/test_blade_health.cpp)
+target_link_libraries(test_blade_health PRIVATE wproc)
+add_test(NAME blade_health COMMAND test_blade_health)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 
