@@ -107,6 +107,39 @@ so the tool drops straight into a shell or CI pass/fail gate.
 - **Overlay:** PPM (`P6`) — green wall lines; chip boxes colored yellow
   (in-spec) or red (over the max-chip limit), with a marker at each centroid.
 
+## Optional backends (auto-detected by CMake)
+
+All three are optional: the core library stays dependency-free, and each
+backend is built only when its toolkit is found.
+
+### Qt6 GUI viewer (`kerf_viewer`)
+
+Interactive inspection: open a PGM, tune the spec parameters live, see the
+annotated overlay, a PASS/FAIL verdict, and a per-chip table; save the
+annotated PNG and JSON report. Built when Qt6 Widgets is found
+(`WPROC_BUILD_GUI`, default ON).
+
+```bash
+./build/kerf_viewer kerf.pgm            # interactive
+# headless self-test — renders off-screen, saves a screenshot, prints JSON:
+QT_QPA_PLATFORM=offscreen ./build/kerf_viewer --selftest shot.png kerf.pgm
+```
+
+### OpenCV backend + parity test (`wproc_cv`)
+
+`wproc::cv_backend::{gaussian_blur, sobel, otsu_threshold}` implement the same
+operations with OpenCV (`WPROC_WITH_OPENCV`, default ON). The `cv_parity`
+ctest cross-validates the from-scratch kernels against OpenCV on a noisy
+synthetic kerf scene: Gaussian and Sobel agree to float rounding noise
+(max |diff| ~1e-4 on a 0–255 scale) and Otsu picks the identical threshold.
+
+### CUDA backend (`wproc_cuda`)
+
+`wproc::cuda_backend::{gaussian_blur, sobel}` run the separable Gaussian and
+3x3 Sobel on the GPU with the same border/radius conventions as the CPU path
+(`WPROC_WITH_CUDA`, default ON; compiled only when `check_language(CUDA)`
+finds a toolkit — machines without CUDA skip it with a status message).
+
 ## CLI reference
 
 `gen_synthetic <out.pgm> [--width-um W] [--chip-um D] [--noise S] [--seed N]`

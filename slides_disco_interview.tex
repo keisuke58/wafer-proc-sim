@@ -1110,6 +1110,74 @@
   \end{columns}
 \end{frame}
 
+% ── 10b. C++ VISION INSPECTION SYSTEM ────────────────────────────────────────
+\begin{frame}[shrink=10]{Software --- C++ Kerf-Inspection Vision System (built from scratch)}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{Dependency-free C++17 image pipeline}\\
+      {\footnotesize Blade-camera scribe-line image $\to$ sub-pixel kerf width
+        $+$ chipping verdict}
+
+      \vspace{0.4em}
+      \begin{tikzpicture}[font=\tiny,
+          st/.style={draw=discoblue, fill=discolight, rounded corners=2pt,
+                     minimum width=1.5cm, minimum height=0.55cm, align=center},
+          arr/.style={-{Stealth[length=4pt]}, discoblue}]
+        \node[st] (a) at (0,0)    {PGM\\scribe line};
+        \node[st] (b) at (2.3,0)  {Gaussian\\$+$ Sobel};
+        \node[st] (c) at (4.6,0)  {wall ZC\\(sub-px)};
+        \node[st] (d) at (4.6,-1.2){Otsu $+$\\conn.\ comp.};
+        \node[st] (e) at (2.3,-1.2){chip\\measure};
+        \node[st,fill=discoorange!30] (f) at (0,-1.2){JSON $+$\\PASS/FAIL};
+        \draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c)--(d);
+        \draw[arr] (d)--(e); \draw[arr] (e)--(f);
+      \end{tikzpicture}
+
+      \vspace{0.4em}
+      \textbf{All algorithms hand-written (no OpenCV):}
+      \begin{itemize}\footnotesize
+        \item Separable Gaussian, $3\times3$ Sobel, Otsu threshold
+        \item Binary morphology, union-find connected components
+        \item Signed-gradient zero-crossing $\Rightarrow$ sub-pixel walls
+        \item Extensible \texttt{Stage}/\texttt{Pipeline} design; CLI $+$ ctest
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \textbf{Verified result --- defect sample}
+      \begin{block}{}
+        \footnotesize
+        kerf width $30.5~\mu$m (spec $40\pm5$) $\Rightarrow$
+          \textcolor{red}{\textbf{FAIL}}\\
+        max chip $7.75~\mu$m ($>5$) $\Rightarrow$
+          \textcolor{red}{\textbf{FAIL}}\\
+        confidence $1.00$; exit code $=$ verdict
+      \end{block}
+
+      \vspace{0.1em}
+      \centering
+      \begin{tabular}{ll}
+        \toprule
+        Layer   & Technology \\
+        \midrule
+        Core    & C++17, CMake, ctest \\
+        GUI     & Qt6 Widgets viewer \\
+        Backend & OpenCV parity test \\
+        GPU     & CUDA Gaussian/Sobel \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{0.4em}
+      \raggedright
+      {\footnotesize CPU vs.\ OpenCV: $|\Delta|\sim10^{-4}$ (0--255 scale),
+        Otsu identical; $37/37$ unit checks pass.}
+    \end{column}
+  \end{columns}
+  \vspace{0.3em}
+  {\footnotesize\textcolor{discogray}{Maps directly to the DISCO CV/inspection
+    role: C/C++ image-processing system, GUI application, OpenCV, CUDA, and
+    $0\!\to\!1$ software design.}}
+\end{frame}
+
 % ── 11. RESULTS SUMMARY TABLE ────────────────────────────────────────────────
 \begin{frame}[shrink=10]{Results Summary --- Five Modules / Five Roles}
   \centering
@@ -1152,6 +1220,10 @@
     Software
       & SW stack & 1~ms RT loop, recipe version control
                   & \texttt{pipeline/disco\_sw\_stack.py} \\
+    \cmidrule(l){1-4}
+    Software (Vision)
+      & C++ kerf inspect & sub-px width, chip PASS/FAIL, 37/37 tests
+                  & \texttt{vision/cpp/} \\
     \bottomrule
   \end{tabular}
 
