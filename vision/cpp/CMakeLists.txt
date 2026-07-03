@@ -24,8 +24,20 @@ add_library(wproc STATIC
   src/connected.cpp
   src/draw.cpp
   src/kerf_inspect.cpp
+  src/simd_filters.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+find_package(Threads REQUIRED)
+target_link_libraries(wproc PUBLIC Threads::Threads)
+
+# Enable AVX2/FMA only for the SIMD translation unit (portable elsewhere).
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-mavx2" WPROC_HAS_MAVX2)
+if(WPROC_HAS_MAVX2)
+  set_source_files_properties(src/simd_filters.cpp PROPERTIES
+    COMPILE_OPTIONS "-mavx2;-mfma")
+endif()
 
 # Applications.
 add_executable(kerf_inspect apps/kerf_inspect_main.cpp)
@@ -34,11 +46,18 @@ target_link_libraries(kerf_inspect PRIVATE wproc)
 add_executable(gen_synthetic apps/gen_synthetic.cpp)
 target_link_libraries(gen_synthetic PRIVATE wproc)
 
+add_executable(bench apps/bench.cpp)
+target_link_libraries(bench PRIVATE wproc Threads::Threads)
+
 # Tests.
 enable_testing()
 add_executable(test_imgproc tests/test_imgproc.cpp)
 target_link_libraries(test_imgproc PRIVATE wproc)
 add_test(NAME imgproc COMMAND test_imgproc)
+
+add_executable(test_simd_parity tests/test_simd_parity.cpp)
+target_link_libraries(test_simd_parity PRIVATE wproc Threads::Threads)
+add_test(NAME simd_parity COMMAND test_simd_parity)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 
