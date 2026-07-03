@@ -1,0 +1,204 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ウェハ裏面研削（バックグラインド）— 注釈つき解説</title>
+<style>
+  :root{
+    --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674;
+    --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b;
+    --blue:#2a6fd6; --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.08);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5;
+    --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a;
+    --blue:#5b9bf0; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);} }
+  :root[data-theme="light"]{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674; --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6; }
+  :root[data-theme="dark"]{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5; --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:40px 20px 72px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  a{ color:var(--accent); }
+  .back{ font-size:13px; }
+  header{ margin:14px 0 8px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; color:var(--accent); margin:0 0 8px; }
+  h1{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:64ch; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:24px; }
+  .card > h2{ font-size:19px; margin:0 0 4px; letter-spacing:-.01em; }
+  .card > .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  p{ margin:10px 0; }
+  .analogy{ background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:14.5px; margin:14px 0; }
+  .analogy b{ color:var(--accent); }
+  .figbox{ position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b0d10; line-height:0; }
+  .figbox img{ width:100%; display:block; }
+  .cap{ color:var(--muted); font-size:13px; margin-top:9px; line-height:1.6; }
+  .badge{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; color:#fff; font-size:12.5px; font-weight:800; }
+  .pin{ position:absolute; width:24px; height:24px; border-radius:50%; color:#fff; font-size:13px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.5); transform:translate(-50%,-50%); }
+  ul.keys{ list-style:none; padding:0; margin:12px 0 0; display:grid; gap:9px; }
+  ul.keys li{ display:grid; grid-template-columns:26px 1fr; gap:11px; align-items:start; font-size:14.5px; }
+  .terms{ display:grid; gap:10px; margin-top:6px; }
+  .term{ background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:14px; }
+  .term b{ color:var(--ink); }
+  .term .u{ color:var(--accent); font-weight:700; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .verdict{ font-weight:800; }
+  .ok{ color:var(--good); } .ng{ color:var(--bad); } .wn{ color:var(--warn); }
+  .num{ display:inline-block; min-width:1.5em; }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="grind.html">研削ダッシュボードを開く →</a>
+
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>ウェハ裏面研削（バックグラインド）とは？— 注釈つき解説</h1>
+    <p class="lead">「ウェハを薄く削る」工程を、大学生でも分かるように図で解説します。
+      そして、その品質を自動で見張るためにC++でゼロから作った検査・制御ツールが、
+      実際に何をどう測っているのかを一つずつ見ていきます。</p>
+  </header>
+
+  <div class="card">
+    <h2>① そもそも「研削（バックグラインド）」って何？</h2>
+    <p class="sub">半導体をつくる工程のうち、「削る」パート。</p>
+    <p>スマホやSiCパワー半導体の中身は、シリコンやSiCの薄い円板（<b>ウェハ</b>）です。
+      回路を作り終えたウェハは厚さ約0.8mmありますが、そのままだと厚すぎて、
+      積み重ねたり曲げたりできません。そこで<b>裏面をダイヤモンド砥石で削って薄くする</b>のが
+      裏面研削（バックグラインド）です。最新のパワー半導体では <b>100µm（髪の毛1本ぶん）</b>
+      以下まで薄くします。</p>
+    <div class="analogy">
+      🪵 <b>たとえるなら：</b>分厚い板を紙やすりで削って、均一な薄さに仕上げる作業。
+      ただし相手は<b>髪の毛の太さ</b>で、<b>0.001mm（1µm）</b>単位の精度が要求されます。
+      薄く削りすぎても、ムラがあっても、チップは割れてしまいます。
+    </div>
+    <p>DISCOはこの「削る」装置（グラインダ <span class="mono">DGP/DFG</span> シリーズ、
+      極薄化の <span class="mono">TAIKO</span> プロセス）で世界トップシェア。だからこそ、
+      <b>削った後のウェハが「どれだけ平らで・均一で・傷がないか」を自動で測る技術</b>が重要になります。
+      以下は、そのための自作ツールの中身です。</p>
+  </div>
+
+  <div class="card">
+    <h2>② 厚みマップ ― どれだけ「平ら」に削れたか</h2>
+    <p class="sub">ウェハ全面の厚みを測って、色分け表示したもの。青＝薄い、赤＝厚い。</p>
+    <div class="figbox">
+      <img src="assets/grind_thickness.png" alt="厚みマップ（発散配色）">
+      <span class="pin" style="left:22%; top:50%; background:var(--blue)">1</span>
+      <span class="pin" style="left:50%; top:50%; background:var(--accent)">2</span>
+      <span class="pin" style="left:88%; top:50%; background:var(--bad)">3</span>
+    </div>
+    <ul class="keys">
+      <li><span class="badge" style="background:var(--blue)">1</span>
+        <span><b>薄い側（青）：</b>ここは削れすぎ気味。左右で色が違うのは、
+          ステージがわずかに傾いていたため（＝<b>傾き成分</b>）。</span></li>
+      <li><span class="badge" style="background:var(--accent)">2</span>
+        <span><b>中心：</b>基準面より少しへこんでいる（＝<b>BOW／お椀状のたわみ</b>）。</span></li>
+      <li><span class="badge" style="background:var(--bad)">3</span>
+        <span><b>厚い側（赤）とフチ：</b>外周が厚めに残る「エッジロールオフ」。
+          ウェハの端でよく起きる典型パターン。</span></li>
+    </ul>
+    <p style="margin-top:14px">この分布から、3つの「平らさの指標」を自動計算します：</p>
+    <div class="terms">
+      <div class="term"><b>TTV</b>（Total Thickness Variation）= <span class="u">6.5&nbsp;µm</span><br>
+        ウェハの中で<b>一番厚いところと一番薄いところの差</b>。小さいほど均一。</div>
+      <div class="term"><b>WARP</b>（そり）= <span class="u">2.9&nbsp;µm</span><br>
+        ステージの傾きを数学的に取り除いた後に残る、<b>本当のうねりの大きさ</b>。
+        （傾きは置き方の問題なので、最小二乗で基準面を当てて引き算します。）</div>
+      <div class="term"><b>BOW</b>（中心のたわみ）= <span class="u">−0.6&nbsp;µm</span><br>
+        中心が基準面より<b>へこんでいれば負、盛り上がっていれば正</b>。符号で向きが分かる。</div>
+    </div>
+    <p class="cap">計測結果：TTV 6.5µm・WARP 2.9µm・BOW −0.6µm・均一度98.6%（有効セル約49,000点）。
+      数値は <code class="inl">grind_metrology</code>（自作C++、OpenCV不使用）が出力。</p>
+    <div class="analogy">
+      📐 <b>なぜ大事？</b> ウェハが平らでないと、後工程で回路がピントから外れたり、
+      薄いチップが応力で割れたりします。TTV/WARP/BOWは、そのリスクを数値化した「健康診断の値」です。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ 研削痕とサブサーフェスダメージ（SSD）― 削り「傷」を見る</h2>
+    <p class="sub">削った面のミクロな傷を可視化。明るい（黄～白）ほどダメージ大。</p>
+    <div class="figbox">
+      <img src="assets/grind_ssd.png" alt="SSDヒートマップ">
+      <span class="pin" style="left:30%; top:28%; background:var(--accent)">1</span>
+      <span class="pin" style="left:78%; top:76%; background:var(--bad)">2</span>
+    </div>
+    <ul class="keys">
+      <li><span class="badge" style="background:var(--accent)">1</span>
+        <span><b>研削痕（グラインドマーク）：</b>砥石が通った跡の細かい筋。
+          画像の「明るさの変化の向き」を<b>構造テンソル</b>で調べると、
+          筋の向き（この例では約180°＝横向き）と、どれだけ揃っているか（コヒーレンス0.92）が分かります。</span></li>
+      <li><span class="badge" style="background:var(--bad)">2</span>
+        <span><b>SSDホットスポット：</b>右下だけ特に荒れている領域＝
+          表面下に潜む微小クラック（サブサーフェスダメージ）が多い場所。
+          画像の<b>高周波成分（細かいザラつき）</b>だけを取り出して強調しています。</span></li>
+    </ul>
+    <div class="analogy">
+      🔍 <b>たとえるなら：</b>やすりがけした木の表面を斜めから見ると、削り筋やささくれが見える —
+      それを機械が数値で「筋の向き」「ザラつきの強さ」「傷の集中場所」として自動判定します。
+      この例は研削痕が強すぎるため <span class="verdict ng">NG判定</span>。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>④ インフィードAPC ― 削る量を自動で微調整</h2>
+    <p class="sub">砥石が目減りしても、狙った厚みちょうどに仕上げ続ける制御。</p>
+    <p>砥石は使うほど切れ味が鈍り、同じ設定でも<b>削れる量が少しずつ減って</b>いきます。
+      放っておくと、ウェハがどんどん厚く仕上がってしまいます（下の「制御なし」）。
+      そこで、1枚ごとに測った厚みを見て<b>次の押し込み量を自動で補正</b>する
+      Run-to-Run制御（EWMA）を入れると、ずっと目標100µmに張り付きます（「制御あり」）。</p>
+    <table>
+      <tr><th>方式</th><th>厚みの狙いからのズレ（RMS）</th><th>結果</th></tr>
+      <tr><td>制御なし（固定設定）</td><td class="n">26.0&nbsp;µm</td><td class="verdict ng">大きくドリフト</td></tr>
+      <tr><td>APC制御あり</td><td class="n">0.65&nbsp;µm</td><td class="verdict ok">目標を維持</td></tr>
+    </table>
+    <div class="analogy">
+      🌡️ <b>たとえるなら：</b>エアコンの自動温度調整。暑くなれば強め、寒くなれば弱め —
+      と同じで、厚みがズレそうになったら削る量をこまめに直します。<b>約40倍</b>精度が上がりました。
+    </div>
+    <p class="cap">グラフは <a href="grind.html">研削ダッシュボード</a>で見られます（300ウェハの合成劣化シナリオ）。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 砥石の寿命予知とコスト ― いつ交換？1枚いくら？</h2>
+    <p class="sub">研削力の上昇から「あと何枚で砥石交換」を予測し、コストまで一気通貫。</p>
+    <p>砥石が鈍ると<b>研削の力（負荷）が少しずつ上がって</b>いきます。この上がり方を直線で当てはめれば、
+      ドレス（目立て）が必要な限界（30N）まで<b>あと何枚もつか（RUL）</b>を予測できます。</p>
+    <table>
+      <tr><th>指標</th><th>値</th><th>意味</th></tr>
+      <tr><td>現在の研削力</td><td class="n">29.5&nbsp;N</td><td>限界30Nに接近</td></tr>
+      <tr><td>残り寿命（RUL）</td><td class="n">約10&nbsp;枚</td><td class="verdict wn">まもなくドレス推奨</td></tr>
+      <tr><td>良品ダイあたりコスト</td><td class="n">$0.0064</td><td>装置＋砥石＋消耗品／歩留り</td></tr>
+      <tr><td>良品ダイ／時</td><td class="n">25,476</td><td>スループット×歩留り</td></tr>
+    </table>
+    <div class="analogy">
+      🪛 <b>たとえるなら：</b>紙やすりがすり減ると力が要るようになる — その「重さ」を測って、
+      使い切る前に交換時期を知らせます。壊れてから止めるより、予測して段取りする方が安く速い。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑥ まとめ ― なぜこれがDISCO受けするのか</h2>
+    <p>DISCOは「切る（ダイシング）・削る（グラインダ）・磨く」の精密加工装置メーカー。
+      この解説で見た<b>厚みマップ計測・研削痕/傷の検査・自動制御・寿命予知・コスト</b>は、
+      すべて研削装置（<span class="mono">DGP/DFG</span>、<span class="mono">TAIKO</span>）の
+      <b>品質と生産性を左右する中核テーマ</b>です。</p>
+    <p>しかもこれらを、市販ライブラリに頼らず<b>C++17でゼロから実装し、テストで検証</b>しています
+      （ctest全通過・警告ゼロ）。「C/C++での画像処理システム開発経験」という必須要件に、
+      ダイシングだけでなく研削まで含めて実物で応えられる、という位置づけです。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/grind_demo</code> の実測出力。
+    図は自作C++ツール（<code class="inl">grind_metrology</code> / <code class="inl">grind_surface</code>）が生成。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+    インタラクティブ版は <a href="grind.html">研削ダッシュボード</a>へ。
+  </footer>
+</div>
