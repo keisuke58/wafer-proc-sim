@@ -26,6 +26,7 @@ charts use a CVD-validated palette with light/dark themes and hover tooltips.
 
 - **Live landing page:** https://keisuke58.github.io/wafer-proc-sim/
 - **Inspection dashboard:** https://keisuke58.github.io/wafer-proc-sim/dashboard.html
+- **Grinding / thinning dashboard:** https://keisuke58.github.io/wafer-proc-sim/grind.html
 - **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
 - Source committed at [`docs/landing.html`](docs/landing.html),
   [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
@@ -230,6 +231,38 @@ spec, then reports overall **yield** and a **centre-vs-edge** zone breakdown tha
 exposes edge-ring signatures. Renders an ASCII map and a color wafer map. On a
 synthetic edge-heavy chipping pattern it finds ~1264 dies inside a 40×40 grid
 with 100% centre yield vs 28% edge yield (58.9% overall). (`wafer_map` test.)
+
+### Back-grind / thinning intelligence (`wproc/grind_*.hpp`)
+
+The grinding-side counterpart to the dicing stack, covering wafer **thinning**
+(DGP/DFG back-grind and the DBG/TAIKO thin-wafer flows). Four cooperating
+pieces, all pure C++17 with tests:
+
+- **Thickness metrology** (`grind_metrology.hpp`) — from a thickness map over the
+  wafer disk it fits a least-squares reference plane and reports **TTV**, **WARP**
+  (de-tilted peak-to-valley), **BOW** (centre deflection), sigma and uniformity,
+  plus a diverging thickness color map. On a synthetic thinned wafer: TTV 6.5 µm,
+  WARP 2.9 µm, BOW −0.6 µm, 98.6% uniformity.
+- **Surface inspection** (`grind_surface.hpp`) — the gradient **structure tensor**
+  recovers grinding-mark direction and coherence; the high-pass residual gives a
+  roughness Ra proxy and an **SSD index** (subsurface-damage energy fraction),
+  with an SSD hotspot heat map.
+- **Infeed APC** (`grind_control.hpp`) — a run-to-run EWMA controller trims the
+  infeed each wafer so the final thickness holds target through wheel dulling.
+  On a 300-wafer dulling run it cuts thickness RMS from **26 µm (open loop) to
+  0.65 µm**.
+- **Wheel health + economics** (`grind_control.hpp`) — fits the grinding-force
+  trend to predict **wafers-until-dress (RUL)** with a G-ratio proxy, and rolls
+  throughput / yield / consumables into cost per wafer and per good die.
+
+Run the end-to-end demo (writes two color figures, prints all metrics as JSON):
+
+```bash
+./build/grind_demo --thickness thickness.ppm --ssd ssd.ppm
+```
+
+Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/grind.html>.
+(`grind_metrology`, `grind_surface`, `grind_control` tests.)
 
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 

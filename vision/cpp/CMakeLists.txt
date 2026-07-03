@@ -31,6 +31,9 @@ add_library(wproc STATIC
   src/apc.cpp
   src/stealth_ir.cpp
   src/wafer_map.cpp
+  src/grind_metrology.cpp
+  src/grind_surface.cpp
+  src/grind_control.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -54,6 +57,9 @@ target_link_libraries(gen_synthetic PRIVATE wproc)
 
 add_executable(bench apps/bench.cpp)
 target_link_libraries(bench PRIVATE wproc Threads::Threads)
+
+add_executable(grind_demo apps/grind_demo.cpp)
+target_link_libraries(grind_demo PRIVATE wproc)
 
 # Tests.
 enable_testing()
@@ -84,6 +90,18 @@ add_test(NAME stealth COMMAND test_stealth)
 add_executable(test_wafer_map tests/test_wafer_map.cpp)
 target_link_libraries(test_wafer_map PRIVATE wproc)
 add_test(NAME wafer_map COMMAND test_wafer_map)
+
+add_executable(test_grind_metrology tests/test_grind_metrology.cpp)
+target_link_libraries(test_grind_metrology PRIVATE wproc)
+add_test(NAME grind_metrology COMMAND test_grind_metrology)
+
+add_executable(test_grind_surface tests/test_grind_surface.cpp)
+target_link_libraries(test_grind_surface PRIVATE wproc)
+add_test(NAME grind_surface COMMAND test_grind_surface)
+
+add_executable(test_grind_control tests/test_grind_control.cpp)
+target_link_libraries(test_grind_control PRIVATE wproc)
+add_test(NAME grind_control COMMAND test_grind_control)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 

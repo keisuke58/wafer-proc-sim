@@ -1,0 +1,7 @@
+{
+  "thickness": {"target_um": 100.0000, "mean_um": 99.5271, "ttv_um": 6.4825, "warp_um": 2.9342, "bow_um": -0.6421, "sigma_um": 1.3696, "uniformity_pct": 98.6239, "n_inside": 49396},
+  "surface": {"coherence": 0.9181, "mark_angle_deg": 178.4857, "mark_severity": 0.9181, "roughness_ra": 10.7176, "ssd_index": 0.7357, "ok": false},
+  "apc": {"target_um": 100.0000, "open_rms_um": 26.0458, "closed_rms_um": 0.6480, "final_infeed": 7.2482, "nominal_infeed": 6.8000},
+  "wheel": {"current_force_n": 29.4934, "force_slope_per_wafer": 0.0530, "rul_wafers": 9.5586, "g_ratio": 13245.0344, "dress_now": false},
+  "econ": {"throughput_wph": 22.0000, "good_dies_per_hour": 25476.0000, "cost_per_wafer": 7.3545, "cost_per_good_die": 0.0064}
+}
