@@ -11,6 +11,12 @@ gradients, Otsu thresholding, binary morphology, connected-component labeling)
 are implemented directly, which keeps the build portable to any machine with a
 C++ compiler and demonstrates the underlying computer-vision math end to end.
 
+> **Visual explainer:** a student-friendly, annotated walkthrough of a FAIL-sample
+> inspection (numbered callouts, color legend, measurement-vs-spec, and a
+> plain-language primer) is published here:
+> https://claude.ai/code/artifact/d3ef3e24-f807-4e54-958f-74b70b5598d3
+> The same page is committed at [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
+
 ## What it does
 
 Given a grayscale scribe-line image (a dark kerf channel on a brighter silicon
