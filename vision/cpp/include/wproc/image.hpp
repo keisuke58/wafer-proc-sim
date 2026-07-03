@@ -67,11 +67,7 @@ class ColorImage {
 public:
     ColorImage() = default;
     ColorImage(int w, int h)
-        : width_(w), height_(h),
-          data_(static_cast<std::size_t>(w) * h * 3, 0) {
-        if (w < 0 || h < 0)
-            throw std::invalid_argument("ColorImage: negative dimension");
-    }
+        : width_(w), height_(h), data_(check_size(w, h) * 3, 0) {}
 
     int width() const noexcept { return width_; }
     int height() const noexcept { return height_; }
@@ -89,6 +85,14 @@ public:
     const std::uint8_t* data() const noexcept { return data_.data(); }
 
 private:
+    // Validate before the vector is sized: a negative dimension cast to
+    // size_t would wrap to a huge allocation instead of throwing cleanly.
+    static std::size_t check_size(int w, int h) {
+        if (w < 0 || h < 0)
+            throw std::invalid_argument("ColorImage: negative dimension");
+        return static_cast<std::size_t>(w) * static_cast<std::size_t>(h);
+    }
+
     int width_ = 0;
     int height_ = 0;
     std::vector<std::uint8_t> data_;

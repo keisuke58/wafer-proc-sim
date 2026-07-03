@@ -10,6 +10,10 @@ namespace wproc {
 Image gaussian_blur(const Image& src, float sigma) {
     if (sigma <= 0.0f)
         throw std::invalid_argument("gaussian_blur: sigma must be > 0");
+    // Upper bound guards the float->int radius conversion below from UB on
+    // oversized CLI-provided values (also rejects NaN, which fails both tests).
+    if (!(sigma <= 1000.0f))
+        throw std::invalid_argument("gaussian_blur: sigma too large (max 1000)");
     if (src.empty()) return src;
 
     const int radius = static_cast<int>(std::ceil(3.0f * sigma));

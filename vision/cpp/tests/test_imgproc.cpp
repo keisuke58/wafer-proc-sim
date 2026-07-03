@@ -182,6 +182,28 @@ static void test_pgm_crlf_header() {
     CHECK_NEAR(img.at(2, 1), 60.0, 1e-6);
 }
 
+static void test_invalid_construction_and_params() {
+    // ColorImage must reject negative dimensions with invalid_argument, not
+    // attempt a wrapped-size_t giant allocation.
+    bool threw = false;
+    try {
+        ColorImage bad(-1, 5);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    CHECK(threw);
+
+    // Oversized sigma must be rejected before the float->int radius cast.
+    threw = false;
+    try {
+        Image img(8, 8, 1.0f);
+        gaussian_blur(img, 1e30f);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    CHECK(threw);
+}
+
 static void test_no_kerf_on_flat() {
     Image img(100, 100, 128.0f);  // no channel
     KerfInspector insp;
@@ -200,6 +222,7 @@ int main() {
     test_kerf_chip_detection();
     test_dust_blob_not_counted_as_chip();
     test_pgm_crlf_header();
+    test_invalid_construction_and_params();
     test_no_kerf_on_flat();
 
     std::cout << (g_total - g_failed) << "/" << g_total << " checks passed\n";

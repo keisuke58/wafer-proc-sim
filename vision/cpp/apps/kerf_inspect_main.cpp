@@ -6,35 +6,17 @@
 // Usage:
 //   kerf_inspect <in.pgm> [--um-per-px U] [--nominal-um N] [--tol-um T]
 //                [--max-chip-um C] [--blur S] [--annotate out.ppm] [--quiet]
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <string>
 
+#include "cli_args.hpp"
 #include "wproc/io.hpp"
 #include "wproc/kerf_inspect.hpp"
 
 using namespace wproc;
-
-namespace {
-
-double arg_double(int argc, char** argv, const char* flag, double def) {
-    for (int i = 1; i < argc - 1; ++i)
-        if (std::strcmp(argv[i], flag) == 0) return std::atof(argv[i + 1]);
-    return def;
-}
-const char* arg_str(int argc, char** argv, const char* flag, const char* def) {
-    for (int i = 1; i < argc - 1; ++i)
-        if (std::strcmp(argv[i], flag) == 0) return argv[i + 1];
-    return def;
-}
-bool has_flag(int argc, char** argv, const char* flag) {
-    for (int i = 1; i < argc; ++i)
-        if (std::strcmp(argv[i], flag) == 0) return true;
-    return false;
-}
-
-}  // namespace
+using wproc_cli::arg_double;
+using wproc_cli::arg_str;
+using wproc_cli::has_flag;
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {

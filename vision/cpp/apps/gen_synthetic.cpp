@@ -6,27 +6,17 @@
 //
 // Usage:
 //   gen_synthetic <out.pgm> [--width-um W] [--chip-um D] [--noise S] [--seed N]
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <random>
 #include <string>
 
+#include "cli_args.hpp"
 #include "wproc/filters.hpp"
 #include "wproc/image.hpp"
 #include "wproc/io.hpp"
 
 using namespace wproc;
-
-namespace {
-
-double arg_double(int argc, char** argv, const char* flag, double def) {
-    for (int i = 1; i < argc - 1; ++i)
-        if (std::strcmp(argv[i], flag) == 0) return std::atof(argv[i + 1]);
-    return def;
-}
-
-}  // namespace
+using wproc_cli::arg_double;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
