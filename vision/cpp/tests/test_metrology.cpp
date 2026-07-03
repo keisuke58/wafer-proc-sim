@@ -70,6 +70,14 @@ static void test_calibration() {
     CHECK_NEAR(c.um_per_px, 0.5, 0.02);
     std::cout << "calibration: pitch=" << c.pixel_pitch_px
               << "px  um/px=" << c.um_per_px << "\n";
+
+    // Heavily blurred / defocused grating: the estimate must still lock onto
+    // the true ~24 px period, not collapse onto a trivial small lag.
+    Image soft = gaussian_blur(target, 3.5f);
+    metro::Calibration cs = metro::estimate_um_per_px(soft, 12.0);
+    CHECK(cs.ok);
+    CHECK_NEAR(cs.pixel_pitch_px, 24.0, 1.5);
+    std::cout << "calibration (defocused): pitch=" << cs.pixel_pitch_px << "px\n";
 }
 
 int main() {

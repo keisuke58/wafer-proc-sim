@@ -66,23 +66,37 @@ Calibration estimate_um_per_px(const Image& target, double known_pitch_um,
                    [mean](double v) { return v - mean; });
 
     if (max_period_px <= 0) max_period_px = W / 2;
-    max_period_px = std::min(max_period_px, W - 1);
-    if (min_period_px < 1) min_period_px = 1;
+    max_period_px = std::min(max_period_px, W - 2);
+    if (min_period_px < 2) min_period_px = 2;
     if (min_period_px >= max_period_px) return c;
 
-    // Autocorrelation; the lag maximizing it (above the trivial lag 0) is the
-    // dominant period.
-    double best_val = -1e300;
+    // Overlap-normalized autocorrelation r[lag] = mean over the overlap. The
+    // per-lag mean removes the small-lag bias that raw sums have (short lags
+    // sum more terms). We then pick the strongest *local* maximum rather than
+    // the global max, so a smooth/defocused target does not collapse onto the
+    // trivial near-zero lags where neighbouring samples are still correlated.
+    const int hi = std::min(max_period_px + 1, W - 1);
+    std::vector<double> r(hi + 1, 0.0);
+    for (int lag = 1; lag <= hi; ++lag) {
+        double acc = 0.0;
+        int cnt = 0;
+        for (int x = 0; x + lag < W; ++x) {
+            acc += proj[x] * proj[x + lag];
+            ++cnt;
+        }
+        r[lag] = cnt > 0 ? acc / cnt : 0.0;
+    }
+
+    double best_val = 0.0;
     int best_lag = -1;
     for (int lag = min_period_px; lag <= max_period_px; ++lag) {
-        double acc = 0.0;
-        for (int x = 0; x + lag < W; ++x) acc += proj[x] * proj[x + lag];
-        if (acc > best_val) {
-            best_val = acc;
+        if (r[lag] > 0.0 && r[lag] >= r[lag - 1] && r[lag] >= r[lag + 1] &&
+            r[lag] > best_val) {
+            best_val = r[lag];
             best_lag = lag;
         }
     }
-    if (best_lag <= 0 || best_val <= 0.0) return c;
+    if (best_lag < 0) return c;  // no periodic structure found
 
     c.ok = true;
     c.pixel_pitch_px = static_cast<double>(best_lag);
