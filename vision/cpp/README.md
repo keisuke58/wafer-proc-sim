@@ -11,18 +11,20 @@ gradients, Otsu thresholding, binary morphology, connected-component labeling)
 are implemented directly, which keeps the build portable to any machine with a
 C++ compiler and demonstrates the underlying computer-vision math end to end.
 
-> **Results dashboard:** an interactive dashboard visualizing the toolkit's
-> measured results — throughput bars, the SPC blade-wear control chart with RUL,
-> the open-vs-closed-loop APC control, and the annotated inspection — is
-> published here:
-> https://claude.ai/code/artifact/f320d65f-7d88-4c9d-a18a-afd71461f47e
-> (committed at [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html)).
->
-> **Visual explainer:** a student-friendly, annotated walkthrough of a FAIL-sample
-> inspection (numbered callouts, color legend, measurement-vs-spec, and a
-> plain-language primer) is published here:
-> https://claude.ai/code/artifact/d3ef3e24-f807-4e54-958f-74b70b5598d3
-> The same page is committed at [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
+## 📊 Live results dashboard
+
+[![wproc dashboard](docs/dashboard_preview.png)](https://keisuke58.github.io/wafer-proc-sim/)
+
+An interactive dashboard visualizing the toolkit's **own measured results** —
+real-time throughput bars, the SPC blade-wear control chart with RUL prediction,
+open-vs-closed-loop APC regulation, the full-wafer yield map, and the annotated
+inspection. Numbers are emitted by the C++ tools; charts use a CVD-validated
+palette with light/dark themes and hover tooltips.
+
+- **Live (GitHub Pages):** https://keisuke58.github.io/wafer-proc-sim/
+- **Explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
+- Source committed at [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html)
+  and [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
 
 ## What it does
 
