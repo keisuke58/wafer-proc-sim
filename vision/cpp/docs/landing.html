@@ -53,6 +53,9 @@
     <a class="navcard" href="grind.html">
       <div class="ic">⚙️</div><b>研削/薄化ダッシュボード</b>
       <span>厚みマップ(TTV/WARP/BOW)・研削痕/SSD・インフィードAPC・砥石摩耗・コスト</span></a>
+    <a class="navcard" href="laser.html">
+      <div class="ic">⚡</div><b>レーザー加工ダッシュボード</b>
+      <span>アブレーション溝検査・ステルスSD層/HAZ・パルスAPC・光学系寿命・KABRAスライス</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -63,6 +66,9 @@
 
   <h2 class="sec">研削・薄化（バックグラインド）<a href="grind.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="grind_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
   <div class="gal" id="g-grind"></div>
+
+  <h2 class="sec">レーザー加工（ステルス/アブレーション/KABRA）<a href="laser.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="laser_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
+  <div class="gal" id="g-laser"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -87,6 +93,10 @@ const GAL = {
   'g-grind': [
     ['grind_thickness.png','厚みマップ（TTV/WARP/BOW）','薄化後ウェハの厚み分布と非平坦性計測'],
     ['grind_ssd.png','研削痕・サブサーフェス（SSD）','研削痕の方向性とSSDホットスポット検出'],
+  ],
+  'g-laser': [
+    ['laser_groove.png','アブレーション溝検査','溝幅・深さ・HAZ帯・デブリの自動計測'],
+    ['laser_sd.png','ステルスSD層・HAZ','IR断面の多層SD検出とHAZ/クラック評価'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

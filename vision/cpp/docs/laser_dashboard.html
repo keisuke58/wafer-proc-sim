@@ -1,0 +1,207 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="レーザー加工の知能化ダッシュボード：アブレーション溝検査、ステルスSD層/HAZ、パルスエネルギーAPC、光学系寿命予知、KABRA型SiCインゴットスライスのコスト/歩留りを自作C++ツールの実測値で可視化。">
+<title>wproc — レーザー加工（ステルス/アブレーション/KABRA）知能化</title>
+<style>
+  :root{
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e;
+    --line:#dde4ec; --grid:#eaeff5; --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+    --open:#e34948; --closed:#2a78d6; --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2;
+    --line:#243139; --grid:#1c2731; --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+    --open:#e66767; --closed:#3987e5; --good:#0ca30c; --warn:#fab219; --critical:#e05555;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5; --open:#e34948; --closed:#2a78d6; --critical:#d03b3b; --warn:#fab219; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731; --open:#e66767; --closed:#3987e5; --critical:#e05555; --warn:#fab219; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:36px 20px 72px; }
+  a{ color:var(--disco); } .back{ font-size:13px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:14px 0 6px; }
+  header h1{ font-size:clamp(25px,4.2vw,38px); line-height:1.08; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  header p.lead{ color:var(--muted); font-size:16.5px; margin:0; max-width:66ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:24px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:22px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--disco); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-top:22px; }
+  .card h2{ font-size:16px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:22px; } @media (min-width:820px){ .grid2{ grid-template-columns:1fr 1fr; } }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:8px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:22px; height:3px; border-radius:2px; display:inline-block; }
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+  .axis{ fill:var(--muted); font-size:10px; } .axis-title{ fill:var(--muted); font-size:10.5px; font-weight:600; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  figure{ margin:0; } .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#0b0d10; }
+  .figure img{ width:100%; display:block; image-rendering:pixelated; }
+  figcaption{ color:var(--muted); font-size:12.5px; margin-top:8px; }
+  .bars{ display:grid; gap:9px; margin-top:6px; }
+  .bar-row{ display:grid; grid-template-columns:120px 1fr 92px; align-items:center; gap:10px; font-size:12.5px; }
+  .bar-track{ background:var(--surface-2); border:1px solid var(--line); border-radius:6px; height:16px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px 0 0 6px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.ok{ background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a>
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>レーザー加工の知能化</h1>
+    <p class="lead">SiC/Siのレーザー加工 ── <b>ステルスダイシング</b>・<b>アブレーション溝加工</b>・
+      SiCインゴットをレーザーでスライスする <b>KABRA型プロセス</b> ── を対象に、C++17でゼロから作った
+      溝検査・SD層/HAZ検査・パルスエネルギーAPC・光学系寿命予知・スライス経済性を統合。
+      以下はすべてツール（<code class="inl">laser_demo</code>）自身が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>アブレーション溝の検査</h2>
+      <p class="sub">上面画像から溝幅・深さ指標・HAZ幅・デブリを自動計測。緑＝溝端、黄＝HAZ帯、赤＝デブリ。</p>
+      <figure>
+        <div class="figure"><img src="assets/laser_groove.png" alt="注釈つきアブレーション溝"></div>
+        <figcaption id="grooveCap"></figcaption>
+      </figure>
+    </div>
+    <div class="card">
+      <h2>ステルスSD層・HAZ検査</h2>
+      <p class="sub">IR断面から多層SDの深さ/ピッチ、HAZ厚、表面到達クラックを検出。緑＝検出したSD層。</p>
+      <figure>
+        <div class="figure"><img src="assets/laser_sd.png" alt="ステルスSD層 断面（検出線つき）"></div>
+        <figcaption id="sdCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>アブレーション深さのクローズドループ制御（パルスエネルギーAPC）</h2>
+    <p class="sub">光学系が劣化してもRun-to-Run制御でパルスエネルギーを補正し、加工深さを目標20µmに維持。</p>
+    <div id="apcChart"></div>
+    <div class="legend">
+      <span class="it"><span class="swatch" style="background:var(--open)"></span>オープンループ（固定エネルギー）</span>
+      <span class="it"><span class="swatch" style="background:var(--closed)"></span>クローズドループ（APC）</span>
+      <span class="it"><span class="swatch" style="background:var(--muted)"></span>目標 20µm</span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>光学系の寿命予知（伝達パワー）</h2>
+      <p class="sub">基準ショットの伝達パワー低下をトレンド化し、下限（15W）到達までの残ショット数(RUL)を予測。</p>
+      <div id="powerChart"></div>
+      <div class="legend">
+        <span class="it"><span class="swatch" style="background:var(--s2)"></span>伝達パワー [W]</span>
+        <span class="it"><span class="swatch" style="background:var(--critical)"></span>下限 15W</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>KABRA型 SiCインゴットスライス</h2>
+      <p class="sub">レーザー分離層でスライス vs ダイヤモンドワイヤ。同一インゴットからの取れ枚数とコスト。</p>
+      <div class="bars" id="kabraBars"></div>
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:16px">
+        <div><div class="v" id="extra" style="font-size:22px;font-weight:800;color:var(--good)"></div><div class="k" style="font-size:11.5px;color:var(--muted)">追加取得ウェハ（vs ワイヤ）</div></div>
+        <div><div class="v" id="save" style="font-size:22px;font-weight:800"></div><div class="k" style="font-size:11.5px;color:var(--muted)">ウェハあたりコスト削減</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/laser_demo</code> をこのホスト（x86）で実行した実測値。
+    溝240×140、SD断面96×130、APC/光学系は300ショットの合成劣化シナリオ、KABRAは30mmインゴット・350µmウェハ。
+    ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、ctest 全通過。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script id="laser-data" type="application/json">
+{"groove":{"width_um":19.5,"depth_index":0.738,"haz_um":4.0,"debris_index":0.0011,"ok":true},"sd":{"layer_count":3,"mean_pitch_px":20.0,"pitch_uniformity_pct":100.0,"haz_thickness_px":5.0,"surface_risk":0.05,"ok":true},"apc":{"target_um":20.0,"open_rms_um":3.4719,"closed_rms_um":0.1657,"final_energy":25.9025},"optics":{"current_power_w":17.0,"power_slope_per_shot":-0.01,"rul_shots":200.0},"kabra":{"laser_wafers":66,"saw_wafers":50,"extra_wafers":16,"extra_wafers_pct":32.0,"laser_util_pct":77.0,"saw_util_pct":58.3333,"cost_per_wafer_laser":83.7576,"cost_per_wafer_saw":105.0,"savings_pct":20.2309,"sep_uniformity_pct":99.5025,"sep_ok":true},"series":{"open_depth_um":[19.89,20.13,20.06,19.87,19.96,20.05,19.92,20.06,20.11,19.63,19.56,19.54,19.64,20.04,19.57,19.86,19.85,19.57,19.5,19.86,19.77,19.53,19.53,19.54,19.38,19.5,19.34,19.25,19.4,19.56,19.3,19.47,19.44,19.42,19.6,19.48,18.99,19.48,19.22,19.31,19.28,19.17,19.04,18.94,18.88,19.05,19.06,18.95,19.08,19.04,19.03,18.88,19.18,18.66,19.17,18.62,18.92,18.75,18.76,18.84,18.69,18.82,18.94,18.73,18.44,18.64,18.83,18.79,18.72,18.81,18.92,18.57,18.32,18.73,18.22,18.48,18.41,18.29,18.11,18.37,18.3,18.32,18.37,18.07,18.29,17.89,18.28,18.14,17.87,18.09,18.15,18.29,18.2,18.02,18.14,18.06,18.36,18.29,18.01,18.05,17.78,17.99,17.95,17.83,18.06,17.75,17.86,17.65,17.73,18.05,17.9,17.66,17.7,17.8,17.75,17.54,17.45,17.63,17.72,17.55,17.58,17.48,17.32,17.77,17.39,17.7,17.39,17.24,17.53,17.62,17.59,17.39,17.4,17.17,17.41,17.18,17.48,17.24,17.05,17.12,17.37,17.11,17.2,17.28,17.3,17.0,16.82,16.93,17.11,16.97,17.08,16.84,17.16,16.89,16.99,16.86,17.17,16.73,16.84,16.67,16.56,16.83,16.71,16.94,16.55,16.46,16.61,16.73,16.48,16.62,16.77,16.53,16.72,16.45,16.63,16.43,16.53,16.19,16.29,16.41,16.32,16.18,16.28,16.13,16.04,16.49,16.4,16.39,16.5,16.05,16.14,16.08,16.0,15.94,16.47,16.29,16.27,15.97,16.16,16.13,15.84,15.89,15.89,16.05,15.85,15.76,15.98,15.98,15.93,15.82,15.96,15.86,15.96,15.86,15.91,15.51,15.65,15.67,15.48,15.64,15.55,15.59,15.28,15.42,15.71,15.37,15.75,15.07,15.46,15.55,15.24,15.33,15.25,15.37,15.27,15.36,15.49,15.42,15.06,15.37,15.23,15.37,15.14,15.05,15.07,14.96,15.11,15.44,14.99,14.78,14.98,14.76,14.59,14.96,14.68,15.03,14.88,14.86,15.05,14.72,14.96,14.66,14.6,14.75,14.79,14.54,14.74,14.51,14.68,14.71,14.43,14.4,14.43,14.69,14.38,14.74,14.61,14.21,14.19,14.42,14.31,14.42,14.28,14.34,14.27,13.97,14.26,14.27,14.34,14.25,14.15,14.27,14.41,14.13,14.2,13.86,14.26,14.09,14.07,14.05],"closed_depth_um":[19.75,20.05,20.2,19.8,20.04,19.76,20.34,20.15,19.76,19.89,20.06,19.77,20.04,19.89,19.9,19.69,19.84,20.0,19.83,19.78,19.71,20.06,19.99,20.07,19.8,20.1,20.08,19.81,19.87,20.31,19.95,19.8,20.02,20.13,20.01,19.82,20.13,19.69,19.97,19.77,19.93,19.99,20.23,19.66,19.85,20.02,19.94,19.78,19.84,20.08,19.79,20.07,19.92,19.82,20.01,20.02,19.84,20.06,19.71,19.5,19.98,20.07,20.03,19.93,20.05,19.85,19.97,20.07,19.67,19.87,20.0,19.88,19.71,20.11,19.91,19.99,20.11,19.87,19.98,20.04,19.84,19.84,19.91,19.76,20.12,20.13,19.95,19.95,19.7,20.19,19.62,19.82,19.78,20.01,20.16,19.89,19.9,20.16,20.05,19.97,20.04,19.81,19.86,20.01,19.89,20.01,19.81,20.05,20.06,19.96,19.86,20.23,19.9,19.84,19.64,20.12,19.83,19.67,20.05,19.87,19.94,19.95,19.76,19.84,20.37,19.8,20.0,20.2,19.71,20.07,20.03,19.74,19.99,19.8,19.66,20.03,19.99,19.86,19.85,19.93,20.22,19.94,19.86,20.01,20.07,19.65,19.88,19.78,19.94,19.93,20.25,19.87,19.94,19.83,19.89,20.27,19.8,19.94,19.93,19.85,20.13,19.79,20.03,19.8,20.15,19.93,19.93,20.03,20.0,19.89,19.88,19.75,19.93,19.5,20.05,19.84,20.22,19.93,19.91,20.0,19.94,19.8,19.84,20.27,19.94,19.96,20.05,19.89,20.07,19.92,19.81,19.74,19.82,19.98,20.03,19.98,20.0,19.84,19.79,20.24,19.89,19.89,19.99,19.77,19.91,19.97,19.95,19.83,19.88,20.02,20.03,19.72,19.93,19.8,19.86,19.86,19.94,20.07,19.6,20.07,20.26,19.96,19.93,19.99,20.12,19.8,20.01,19.72,19.88,19.7,20.04,19.84,20.27,19.8,19.97,20.07,19.79,20.04,19.89,19.82,20.16,19.98,20.22,19.71,20.02,19.93,19.84,20.09,19.92,19.89,19.84,19.95,19.84,19.91,20.19,19.76,19.76,19.92,19.99,20.04,19.88,19.66,20.2,19.93,20.09,19.79,19.93,20.01,19.76,19.94,19.7,20.14,20.12,19.93,19.79,20.05,19.94,20.1,20.05,19.92,19.92,19.78,19.68,19.75,20.25,19.93,19.97,19.79,19.77,20.09,19.98,20.13,19.97,19.8,20.09,19.79,20.2,20.01,20.0,19.62],"power_w":[19.99,19.98,19.97,19.96,19.95,19.94,19.93,19.92,19.91,19.9,19.89,19.88,19.87,19.86,19.85,19.84,19.83,19.82,19.81,19.8,19.79,19.78,19.77,19.76,19.75,19.74,19.73,19.72,19.71,19.7,19.69,19.68,19.67,19.66,19.65,19.64,19.63,19.62,19.61,19.6,19.59,19.58,19.57,19.56,19.55,19.54,19.53,19.52,19.51,19.5,19.49,19.48,19.47,19.46,19.45,19.44,19.43,19.42,19.41,19.4,19.39,19.38,19.37,19.36,19.35,19.34,19.33,19.32,19.31,19.3,19.29,19.28,19.27,19.26,19.25,19.24,19.23,19.22,19.21,19.2,19.19,19.18,19.17,19.16,19.15,19.14,19.13,19.12,19.11,19.1,19.09,19.08,19.07,19.06,19.05,19.04,19.03,19.02,19.01,19.0,18.99,18.98,18.97,18.96,18.95,18.94,18.93,18.92,18.91,18.9,18.89,18.88,18.87,18.86,18.85,18.84,18.83,18.82,18.81,18.8,18.79,18.78,18.77,18.76,18.75,18.74,18.73,18.72,18.71,18.7,18.69,18.68,18.67,18.66,18.65,18.64,18.63,18.62,18.61,18.6,18.59,18.58,18.57,18.56,18.55,18.54,18.53,18.52,18.51,18.5,18.49,18.48,18.47,18.46,18.45,18.44,18.43,18.42,18.41,18.4,18.39,18.38,18.37,18.36,18.35,18.34,18.33,18.32,18.31,18.3,18.29,18.28,18.27,18.26,18.25,18.24,18.23,18.22,18.21,18.2,18.19,18.18,18.17,18.16,18.15,18.14,18.13,18.12,18.11,18.1,18.09,18.08,18.07,18.06,18.05,18.04,18.03,18.02,18.01,18.0,17.99,17.98,17.97,17.96,17.95,17.94,17.93,17.92,17.91,17.9,17.89,17.88,17.87,17.86,17.85,17.84,17.83,17.82,17.81,17.8,17.79,17.78,17.77,17.76,17.75,17.74,17.73,17.72,17.71,17.7,17.69,17.68,17.67,17.66,17.65,17.64,17.63,17.62,17.61,17.6,17.59,17.58,17.57,17.56,17.55,17.54,17.53,17.52,17.51,17.5,17.49,17.48,17.47,17.46,17.45,17.44,17.43,17.42,17.41,17.4,17.39,17.38,17.37,17.36,17.35,17.34,17.33,17.32,17.31,17.3,17.29,17.28,17.27,17.26,17.25,17.24,17.23,17.22,17.21,17.2,17.19,17.18,17.17,17.16,17.15,17.14,17.13,17.12,17.11,17.1,17.09,17.08,17.07,17.06,17.05,17.04,17.03,17.02,17.01,17.0]}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('laser-data').textContent);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t,a)=>{const e=document.createElementNS(NS,t);for(const k in(a||{}))e.setAttribute(k,a[k]);return e;};
+const fmt = (x,n=2)=>Number(x).toFixed(n);
+
+const tiles = [
+  ['溝幅', fmt(D.groove.width_um,1), 'µm', `HAZ ${fmt(D.groove.haz_um,1)}µm・深さ指標${fmt(D.groove.depth_index,2)}`, true],
+  ['SD層', String(D.sd.layer_count), '層', `ピッチ均一度${fmt(D.sd.pitch_uniformity_pct,0)}%・HAZ${fmt(D.sd.haz_thickness_px,0)}px`],
+  ['表面クラック risk', fmt(D.sd.surface_risk,2), '', D.sd.ok?'合格（表面未到達）':'要注意'],
+  ['APC RMS', fmt(D.apc.closed_rms_um,2), 'µm', `開ループ${fmt(D.apc.open_rms_um,1)}→閉ループ`, true],
+  ['光学系RUL', fmt(D.optics.rul_shots,0), 'shot', `伝達${fmt(D.optics.current_power_w,1)}W→下限15W`],
+  ['KABRA追加', '+'+String(D.kabra.extra_wafers), '枚', `vsワイヤ ${fmt(D.kabra.extra_wafers_pct,0)}%増`, true],
+];
+const tw=document.getElementById('tiles');
+tiles.forEach(([k,v,u,note,acc])=>{const d=document.createElement('div');d.className='tile';
+  d.innerHTML=`<div class="v${acc?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div>`;tw.appendChild(d);});
+
+document.getElementById('grooveCap').innerHTML =
+  `溝幅 <b>${fmt(D.groove.width_um,1)}</b> µm・深さ指標 <b>${fmt(D.groove.depth_index,2)}</b>・`+
+  `HAZ <b>${fmt(D.groove.haz_um,1)}</b> µm/片側・デブリ率 <b>${(D.groove.debris_index*100).toFixed(2)}%</b> → `+
+  `<span class="pill ok">合格</span>`;
+document.getElementById('sdCap').innerHTML =
+  `SD層 <b>${D.sd.layer_count}</b> 層・平均ピッチ <b>${fmt(D.sd.mean_pitch_px,0)}</b> px・`+
+  `ピッチ均一度 <b>${fmt(D.sd.pitch_uniformity_pct,0)}%</b>・HAZ厚 <b>${fmt(D.sd.haz_thickness_px,0)}</b> px → `+
+  `<span class="pill ok">合格</span>`;
+
+function lineChart(host, opts){
+  const W=640,H=250,m={t:12,r:14,b:34,l:46}; const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  const xs=v=>m.l+(v-opts.xmin)/(opts.xmax-opts.xmin)*iw;
+  const ys=v=>m.t+(opts.ymax-v)/(opts.ymax-opts.ymin)*ih;
+  (opts.yticks||[]).forEach(t=>{svg.appendChild(el('line',{class:'gridline',x1:m.l,x2:m.l+iw,y1:ys(t),y2:ys(t)}));
+    const tx=el('text',{class:'axis',x:m.l-7,y:ys(t)+3,'text-anchor':'end'});tx.textContent=t;svg.appendChild(tx);});
+  (opts.xticks||[]).forEach(t=>{const tx=el('text',{class:'axis',x:xs(t),y:m.t+ih+16,'text-anchor':'middle'});tx.textContent=t;svg.appendChild(tx);});
+  (opts.refs||[]).forEach(r=>svg.appendChild(el('line',{x1:m.l,x2:m.l+iw,y1:ys(r.y),y2:ys(r.y),stroke:r.color,'stroke-width':1.5,'stroke-dasharray':'5 4',opacity:.9})));
+  opts.series.forEach(s=>{let d='';s.data.forEach((v,i)=>{const x=xs(opts.x0+i*opts.xstep),y=ys(v);d+=(i?'L':'M')+fmt(x,1)+' '+fmt(y,1);});
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w||1.8,'stroke-linejoin':'round'}));});
+  const xt=el('text',{class:'axis-title',x:m.l+iw/2,y:H-4,'text-anchor':'middle'});xt.textContent=opts.xtitle;svg.appendChild(xt);
+  const yt=el('text',{class:'axis-title',x:14,y:m.t+ih/2,'text-anchor':'middle',transform:`rotate(-90 14 ${m.t+ih/2})`});yt.textContent=opts.ytitle;svg.appendChild(yt);
+  host.appendChild(svg);
+}
+
+const N=D.series.open_depth_um.length;
+lineChart(document.getElementById('apcChart'),{
+  x0:1,xstep:1,xmin:1,xmax:N,ymin:13,ymax:21,
+  xticks:[1,60,120,180,240,300],yticks:[14,16,18,20],
+  xtitle:'ショット番号',ytitle:'加工深さ [µm]',refs:[{y:20,color:'var(--muted)'}],
+  series:[{data:D.series.open_depth_um,color:'var(--open)',w:1.8},{data:D.series.closed_depth_um,color:'var(--closed)',w:1.8}],
+});
+lineChart(document.getElementById('powerChart'),{
+  x0:1,xstep:1,xmin:1,xmax:N,ymin:14,ymax:20.5,
+  xticks:[1,100,200,300],yticks:[15,17,19],
+  xtitle:'ショット番号',ytitle:'伝達パワー [W]',refs:[{y:15,color:'var(--critical)'}],
+  series:[{data:D.series.power_w,color:'var(--s2)',w:2}],
+});
+
+// KABRA comparison bars: wafers and cost/wafer, laser vs saw.
+const kb=document.getElementById('kabraBars');
+const maxW=Math.max(D.kabra.laser_wafers,D.kabra.saw_wafers);
+const maxC=Math.max(D.kabra.cost_per_wafer_laser,D.kabra.cost_per_wafer_saw);
+const rows=[
+  ['レーザー 取れ枚数',D.kabra.laser_wafers,maxW,'var(--s2)',D.kabra.laser_wafers+' 枚'],
+  ['ワイヤ 取れ枚数',D.kabra.saw_wafers,maxW,'var(--s1)',D.kabra.saw_wafers+' 枚'],
+  ['レーザー コスト/枚',D.kabra.cost_per_wafer_laser,maxC,'var(--s3)','$'+D.kabra.cost_per_wafer_laser.toFixed(1)],
+  ['ワイヤ コスト/枚',D.kabra.cost_per_wafer_saw,maxC,'var(--open)','$'+D.kabra.cost_per_wafer_saw.toFixed(1)],
+];
+rows.forEach(([k,v,mx,c,lab])=>{const r=document.createElement('div');r.className='bar-row';
+  r.innerHTML=`<div>${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/mx*100).toFixed(1)}%;background:${c}"></div></div><div class="mono" style="text-align:right">${lab}</div>`;kb.appendChild(r);});
+document.getElementById('extra').innerHTML='+'+D.kabra.extra_wafers+' 枚';
+document.getElementById('save').innerHTML=fmt(D.kabra.savings_pct,1)+'%';
+</script>

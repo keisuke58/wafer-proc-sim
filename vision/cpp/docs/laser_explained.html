@@ -1,0 +1,184 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="半導体のレーザー加工（ステルスダイシング・アブレーション溝加工・KABRA型SiCインゴットスライス）を大学生でも分かるように図解。溝検査、SD層/HAZ、パルスエネルギーAPC、光学系寿命、取れ枚数/コストを自作C++ツールの実測値で解説。">
+<title>半導体のレーザー加工 — 注釈つき解説</title>
+<style>
+  :root{
+    --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674;
+    --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b;
+    --blue:#2a6fd6; --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.08);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5;
+    --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a;
+    --blue:#5b9bf0; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);} }
+  :root[data-theme="light"]{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674; --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6; }
+  :root[data-theme="dark"]{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5; --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:40px 20px 72px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  a{ color:var(--accent); } .back{ font-size:13px; }
+  header{ margin:14px 0 8px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; color:var(--accent); margin:0 0 8px; }
+  h1{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:64ch; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:24px; }
+  .card > h2{ font-size:19px; margin:0 0 4px; letter-spacing:-.01em; }
+  .card > .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  p{ margin:10px 0; }
+  .analogy{ background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:14.5px; margin:14px 0; }
+  .analogy b{ color:var(--accent); }
+  .figbox{ position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b0d10; line-height:0; }
+  .figbox img{ width:100%; display:block; image-rendering:pixelated; }
+  .cap{ color:var(--muted); font-size:13px; margin-top:9px; line-height:1.6; }
+  .badge{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; color:#fff; font-size:12.5px; font-weight:800; }
+  .pin{ position:absolute; width:24px; height:24px; border-radius:50%; color:#fff; font-size:13px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.5); transform:translate(-50%,-50%); }
+  ul.keys{ list-style:none; padding:0; margin:12px 0 0; display:grid; gap:9px; }
+  ul.keys li{ display:grid; grid-template-columns:26px 1fr; gap:11px; align-items:start; font-size:14.5px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .verdict{ font-weight:800; } .ok{ color:var(--good); } .ng{ color:var(--bad); } .wn{ color:var(--warn); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="laser.html">レーザーダッシュボードを開く →</a>
+
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>半導体の「レーザー加工」とは？— 注釈つき解説</h1>
+    <p class="lead">刃物ではなく<b>光（レーザー）</b>でウェハを加工する3つの方法を、大学生でも分かるように
+      図解します。そして、その品質やコストを自動で見張るためにC++でゼロから作ったツールが、
+      実際に何を測っているのかを一つずつ見ていきます。</p>
+  </header>
+
+  <div class="card">
+    <h2>① そもそも「レーザー加工」って何？ 3つの使い方</h2>
+    <p class="sub">刃で削る代わりに、集光した光で「焼く・割る・剥がす」。</p>
+    <p>ダイヤモンドの刃で切る（ダイシング）・削る（研削）に対し、レーザーは<b>光のエネルギーを一点に集めて</b>
+      材料を加工します。半導体では主に3つの使い方があります：</p>
+    <ul class="keys">
+      <li><span class="badge" style="background:var(--blue)">A</span>
+        <span><b>ステルスダイシング：</b>シリコンは近赤外の光を透過するので、
+          <b>ウェハの内部だけ</b>にレーザーを焦点を結ばせて改質層（もろい層）を作り、
+          あとでテープを伸ばしてパキッと割る。表面を削らないので粉が出ない。</span></li>
+      <li><span class="badge" style="background:var(--accent)">B</span>
+        <span><b>アブレーション溝加工：</b>表面の膜（低誘電率層＝low-kや金属）を
+          レーザーで<b>蒸発させて溝</b>を掘る。もろい膜を刃で切る前の下ごしらえ。</span></li>
+      <li><span class="badge" style="background:var(--good)">C</span>
+        <span><b>KABRA型インゴットスライス：</b>SiCの丸太（インゴット）の中に
+          レーザーで<b>分離層</b>を作り、薄いウェハを1枚ずつ剥がす。
+          ワイヤソーより<b>切り代（捨てる分）が少なく</b>、1本から多く取れる。</span></li>
+    </ul>
+    <div class="analogy">
+      💡 <b>たとえるなら：</b>A＝ガラスの内部にヒビの種を仕込んで割る、B＝表面をレーザーポインタで焦がして溝を掘る、
+      C＝丸太を「ここで剥がれる」層を作ってスライスする。DISCOはこのA・B・Cすべての装置を手がけています。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② アブレーション溝の検査 ― うまく掘れたか</h2>
+    <p class="sub">溝を上から撮った画像。緑＝溝の端、黄＝熱の影響帯(HAZ)、赤＝飛び散ったカス(デブリ)。</p>
+    <div class="figbox">
+      <img src="assets/laser_groove.png" alt="注釈つきアブレーション溝">
+      <span class="pin" style="left:50%; top:50%; background:var(--ink)">1</span>
+      <span class="pin" style="left:37%; top:22%; background:var(--warn)">2</span>
+      <span class="pin" style="left:12%; top:62%; background:var(--bad)">3</span>
+    </div>
+    <ul class="keys">
+      <li><span class="badge" style="background:var(--ink)">1</span>
+        <span><b>溝（緑の線の間）：</b>暗い部分がレーザーで掘れた溝。両側の緑線の間隔が<b>溝幅</b>。
+          暗さ＝どれだけ深く掘れたか（<b>深さ指標</b>）。</span></li>
+      <li><span class="badge" style="background:var(--warn)">2</span>
+        <span><b>HAZ（黄の帯）：</b>溝の脇の、熱で変質した帯（Heat-Affected Zone）。
+          広すぎると周りの回路を傷める。</span></li>
+      <li><span class="badge" style="background:var(--bad)">3</span>
+        <span><b>デブリ（赤い点）：</b>蒸発した材料が飛び散って再付着したカス。
+          多いと欠陥源になるので、基板上の異常点を数えて<b>デブリ率</b>にします。</span></li>
+    </ul>
+    <p class="cap">計測結果：溝幅 <b>19.5</b> µm（目標20±4）・深さ指標 <b>0.74</b>・HAZ <b>4.0</b> µm/片側・
+      デブリ率 <b>0.11%</b> → <span class="verdict ok">合格</span>。数値は <code class="inl">laser_groove</code>（自作C++）が出力。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ ステルスSD層・HAZの検査 ― 内部を透かして見る</h2>
+    <p class="sub">近赤外で撮ったウェハ断面。明るい横線＝レーザーが内部に書いた改質層(SD層)。緑＝自動検出。</p>
+    <div class="figbox">
+      <img src="assets/laser_sd.png" alt="ステルスSD層 断面（検出線つき）">
+      <span class="pin" style="left:80%; top:29%; background:var(--good)">1</span>
+      <span class="pin" style="left:20%; top:50%; background:var(--accent)">2</span>
+    </div>
+    <ul class="keys">
+      <li><span class="badge" style="background:var(--good)">1</span>
+        <span><b>SD層（緑線）：</b>厚いウェハでは深さを変えて<b>複数回</b>レーザーを打ち、改質層を積み重ねます。
+          各層を自動検出し、<b>層数</b>と<b>層の間隔(ピッチ)の揃い具合</b>を測定。均一なほどキレイに割れる。</span></li>
+      <li><span class="badge" style="background:var(--accent)">2</span>
+        <span><b>HAZ厚と表面クラック：</b>各層の明るい帯の厚さ＝熱影響の大きさ(HAZ)。
+          層から表面に向かう<b>クラックが表面まで届いていないか</b>もチェック（届くと不良）。</span></li>
+    </ul>
+    <p class="cap">計測結果：SD層 <b>3</b> 層・ピッチ均一度 <b>100%</b>・HAZ厚 <b>5</b> px・
+      表面クラック risk <b>0.05</b>（表面未到達）→ <span class="verdict ok">合格</span>。土台に既存の <code class="inl">stealth_ir</code> を再利用。</p>
+  </div>
+
+  <div class="card">
+    <h2>④ パルスエネルギーAPC ― 掘る深さを自動で微調整</h2>
+    <p class="sub">レンズやミラー（光学系）が劣化しても、狙った深さちょうどに掘り続ける制御。</p>
+    <p>レーザーの通り道（光学系）は使うほど汚れ・劣化して、<b>同じ設定でも掘れる深さが減って</b>いきます。
+      放置すると浅くなる一方（下の「制御なし」）。1ショットごとに深さを見て<b>次のパルスエネルギーを自動補正</b>
+      すると、目標20µmに張り付きます（「制御あり」）。</p>
+    <table>
+      <tr><th>方式</th><th>深さの狙いからのズレ(RMS)</th><th>結果</th></tr>
+      <tr><td>制御なし（固定エネルギー）</td><td class="n">3.5&nbsp;µm</td><td class="verdict ng">浅くドリフト</td></tr>
+      <tr><td>APC制御あり</td><td class="n">0.17&nbsp;µm</td><td class="verdict ok">目標を維持</td></tr>
+    </table>
+    <div class="analogy">
+      🌡️ <b>たとえるなら：</b>暗くなってきた懐中電灯を、明るさが一定になるよう電池を足していくイメージ。
+      約<b>20倍</b>精度が上がりました。グラフは <a href="laser.html">レーザーダッシュボード</a>にあります。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 光学系の寿命予知 ＆ ⑥ KABRAの経済性</h2>
+    <p class="sub">「あと何ショットで整備？」と「レーザーだと1本から何枚多く取れる？」を数値化。</p>
+    <p><b>寿命予知：</b>基準ショットの<b>伝達パワー</b>が落ちていく傾きから、下限（15W）に達するまでの
+      残ショット数(RUL)を予測 ── この例では<b>約200ショット</b>。壊れる前に整備の段取りができます。</p>
+    <p><b>KABRAの経済性：</b>SiCは硬くて高価。ワイヤソーは太い切り代を「おがくず」として捨てますが、
+      レーザー分離層なら切り代が小さく、同じ丸太から<b>多く取れます</b>。</p>
+    <table>
+      <tr><th>方式</th><th>30mmインゴットの取れ枚数</th><th>コスト/枚</th></tr>
+      <tr><td>ダイヤモンドワイヤ</td><td class="n">50&nbsp;枚</td><td class="n">$105</td></tr>
+      <tr><td>レーザー分離（KABRA型）</td><td class="n">66&nbsp;枚</td><td class="n">$83.8</td></tr>
+      <tr><td><b>差</b></td><td class="n verdict ok">+16&nbsp;枚</td><td class="n verdict ok">−20%</td></tr>
+    </table>
+    <div class="analogy">
+      🪵 <b>たとえるなら：</b>厚い鋸で丸太を切ると木くずで損をする。薄く剥がせば同じ丸太から板が多く取れる ──
+      高価なSiCでは、この差が大きなコスト削減になります。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑦ まとめ ― なぜこれがDISCO受けするのか</h2>
+    <p>DISCOは「切る・削る・磨く」の精密加工装置メーカーで、<b>レーザー加工装置</b>
+      （ステルスダイシング、アブレーション、KABRA）も主力です。
+      この解説で見た<b>溝検査・SD層/HAZ検査・自動制御・寿命予知・スライス経済性</b>は、
+      いずれもレーザー装置の品質と生産性の中核テーマ。</p>
+    <p>これらを市販ライブラリに頼らず<b>C++17でゼロから実装し、テストで検証</b>しました
+      （ctest全通過・警告ゼロ）。ダイシング・研削に加えてレーザーまで、
+      「C/C++での画像処理システム開発経験」を実物で示せる位置づけです。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/laser_demo</code> の実測出力。
+    図は自作C++ツール（<code class="inl">laser_groove</code> / <code class="inl">laser_sd</code>）が生成。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+    インタラクティブ版は <a href="laser.html">レーザーダッシュボード</a>へ。
+  </footer>
+</div>
