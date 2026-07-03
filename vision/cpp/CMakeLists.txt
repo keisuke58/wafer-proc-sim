@@ -28,6 +28,7 @@ add_library(wproc STATIC
   src/metrology.cpp
   src/spc.cpp
   src/blade_health.cpp
+  src/apc.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -69,6 +70,10 @@ add_test(NAME metrology COMMAND test_metrology)
 add_executable(test_blade_health tests/test_blade_health.cpp)
 target_link_libraries(test_blade_health PRIVATE wproc)
 add_test(NAME blade_health COMMAND test_blade_health)
+
+add_executable(test_apc tests/test_apc.cpp)
+target_link_libraries(test_apc PRIVATE wproc)
+add_test(NAME apc COMMAND test_apc)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 

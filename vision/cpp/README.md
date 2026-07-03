@@ -188,6 +188,16 @@ On a synthetic 0.01 µm/cut drift the monitor recovers the slope, SPC flags the
 drift early, and RUL predicts the spec crossing (~195 cuts out at cut 300); a
 stable blade reports RUL ≫ 1000 and no replacement. (`blade_health` test.)
 
+### Closed-loop kerf regulation — run-to-run APC (`wproc/apc.hpp`)
+
+The "doing" half: feed the measured kerf width back into the recipe.
+`apc::R2RController` is a run-to-run EWMA controller — it tracks the process
+offset and sets the next feed so the predicted width lands on target, rejecting
+the slow drift a fixed recipe can't. In simulation against a drifting plant
+(0.02 µm/cut wear), closed-loop RMS error is **0.13 µm vs 2.9 µm open-loop**
+(≈23× tighter), with the feed automatically backing off to compensate.
+(`apc` test.)
+
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
 A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,

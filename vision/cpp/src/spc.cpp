@@ -1,5 +1,6 @@
 #include "wproc/spc.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <numeric>
 
@@ -41,9 +42,9 @@ Point Chart::add(double value) {
                                    zhist_.end());
     };
     auto count_side = [](const std::vector<double>& v, double thr, bool upper) {
-        int c = 0;
-        for (double z : v) c += upper ? (z > thr) : (z < -thr);
-        return c;
+        return static_cast<int>(std::count_if(
+            v.begin(), v.end(),
+            [thr, upper](double z) { return upper ? (z > thr) : (z < -thr); }));
     };
 
     // WE1: current point beyond 3-sigma.
