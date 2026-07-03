@@ -11,6 +11,13 @@ gradients, Otsu thresholding, binary morphology, connected-component labeling)
 are implemented directly, which keeps the build portable to any machine with a
 C++ compiler and demonstrates the underlying computer-vision math end to end.
 
+> **Results dashboard:** an interactive dashboard visualizing the toolkit's
+> measured results — throughput bars, the SPC blade-wear control chart with RUL,
+> the open-vs-closed-loop APC control, and the annotated inspection — is
+> published here:
+> https://claude.ai/code/artifact/f320d65f-7d88-4c9d-a18a-afd71461f47e
+> (committed at [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html)).
+>
 > **Visual explainer:** a student-friendly, annotated walkthrough of a FAIL-sample
 > inspection (numbered callouts, color legend, measurement-vs-spec, and a
 > plain-language primer) is published here:
