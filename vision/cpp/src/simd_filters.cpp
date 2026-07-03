@@ -24,7 +24,8 @@ std::vector<float> gaussian_kernel(float sigma, int& radius) {
         k[i + radius] = w;
         sum += w;
     }
-    for (float& w : k) w /= sum;
+    std::transform(k.begin(), k.end(), k.begin(),
+                   [sum](float w) { return w / sum; });
     return k;
 }
 

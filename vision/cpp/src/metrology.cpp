@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -30,11 +31,10 @@ Repeatability repeatability(const Image& base, const KerfInspector& insp, int n,
     if (r.n == 0) return r;
 
     auto stats = [](const std::vector<double>& v, double& mean, double& sd) {
-        double s = 0.0;
-        for (double x : v) s += x;
-        mean = s / v.size();
-        double ss = 0.0;
-        for (double x : v) ss += (x - mean) * (x - mean);
+        mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+        double ss = std::accumulate(
+            v.begin(), v.end(), 0.0,
+            [mean](double a, double x) { return a + (x - mean) * (x - mean); });
         sd = v.size() > 1 ? std::sqrt(ss / (v.size() - 1)) : 0.0;  // sample sd
     };
 
@@ -61,10 +61,9 @@ Calibration estimate_um_per_px(const Image& target, double known_pitch_um,
         for (int x = 0; x < W; ++x) proj[x] += g.gx.at(x, y);
 
     // Detrend (remove DC) so autocorrelation reflects periodicity, not offset.
-    double mean = 0.0;
-    for (double v : proj) mean += v;
-    mean /= W;
-    for (double& v : proj) v -= mean;
+    double mean = std::accumulate(proj.begin(), proj.end(), 0.0) / W;
+    std::transform(proj.begin(), proj.end(), proj.begin(),
+                   [mean](double v) { return v - mean; });
 
     if (max_period_px <= 0) max_period_px = W / 2;
     max_period_px = std::min(max_period_px, W - 1);
