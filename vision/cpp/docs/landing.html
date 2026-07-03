@@ -1,0 +1,116 @@
+<title>wafer-proc-sim — DISCO ダイシング/研削 シミュレーション &amp; 知能化検査</title>
+<style>
+  :root {
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb;
+    --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:40px 20px 72px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:0 0 8px; }
+  h1{ font-size:clamp(26px,4.4vw,40px); line-height:1.1; margin:0 0 12px; letter-spacing:-.02em; text-wrap:balance; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:66ch; }
+  .nav{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:26px; }
+  @media (min-width:640px){ .nav{ grid-template-columns:repeat(3,1fr); } }
+  .navcard{ display:block; text-decoration:none; color:inherit; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:18px; box-shadow:var(--shadow); transition:transform .12s, border-color .12s; }
+  .navcard:hover{ transform:translateY(-2px); border-color:var(--disco); }
+  .navcard .ic{ font-size:22px; }
+  .navcard b{ display:block; margin:6px 0 3px; font-size:16px; }
+  .navcard span{ color:var(--muted); font-size:13px; }
+  h2.sec{ font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    margin:38px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  .gal{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  @media (min-width:720px){ .gal{ grid-template-columns:repeat(3,1fr); } }
+  figure{ margin:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  figure a{ display:block; background:#fff; }
+  figure img{ width:100%; height:150px; object-fit:contain; display:block; background:#fff; }
+  figcaption{ padding:9px 11px; font-size:12.5px; color:var(--muted); }
+  figcaption b{ color:var(--ink); display:block; font-size:13px; margin-bottom:1px; }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:36px; border-top:1px solid var(--line); padding-top:16px; }
+  a{ color:var(--disco); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
+    <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。以下はツール群が出力した実測結果です。</p>
+  </header>
+
+  <div class="nav">
+    <a class="navcard" href="dashboard.html">
+      <div class="ic">📊</div><b>知能化検査ダッシュボード</b>
+      <span>スループット・SPC摩耗予知・APC制御・ウェハ歩留りを実測値で可視化</span></a>
+    <a class="navcard" href="kerf_annotated.html">
+      <div class="ic">🔬</div><b>カーフ検査 解説</b>
+      <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
+    <a class="navcard" href="https://github.com/keisuke58/wafer-proc-sim" target="_blank" rel="noopener">
+      <div class="ic">💻</div><b>ソースコード（GitHub）</b>
+      <span>C++ wproc・FEM・ML代理モデル・パイプライン一式</span></a>
+  </div>
+
+  <h2 class="sec">知能化検査・ビジョン</h2>
+  <div class="gal" id="g-vision"></div>
+
+  <h2 class="sec">プロセス・FEM 物理モデル</h2>
+  <div class="gal" id="g-fem"></div>
+
+  <h2 class="sec">ブレード摩耗・信頼性</h2>
+  <div class="gal" id="g-wear"></div>
+
+  <h2 class="sec">最適化・代理モデル（R&amp;D）</h2>
+  <div class="gal" id="g-ml"></div>
+
+  <footer>
+    図はリポジトリの解析スクリプトが生成した実測結果です。クリックで拡大。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script>
+const GAL = {
+  'g-vision': [
+    ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],
+    ['vision_accuracy.png','検査精度','幅計測の精度・パラメータ感度'],
+    ['cfrp_defect_detection.png','CFRP欠陥検出','複合材切断面の欠陥自動検出'],
+    ['cfrp_ndt_delamination.png','非破壊検査（層間剥離）','NDTによる層間剥離マップ'],
+  ],
+  'g-fem': [
+    ['fno_stress_fields.png','応力場（FNO代理）','Fourier Neural Operatorによる応力場予測'],
+    ['deeponet_field_comparison.png','DeepONet 応力場','物理拘束DeepONetと参照解の比較'],
+    ['fem_exp_comparison.png','FEM vs 実験','有限要素解析と実験値の突き合わせ'],
+    ['crystal_anisotropy.png','結晶異方性','SiC結晶方位による切断挙動'],
+    ['die_strength_analysis.png','ダイ強度','抜き取り強度分布の解析'],
+    ['cfrp_cutting_model.png','切断モデル','CFRP切断の応力・損傷モデル'],
+  ],
+  'g-wear': [
+    ['disco_blade_wear_gp.png','ブレード摩耗 GP','ガウス過程による摩耗トレンド推定'],
+    ['disco_blade_wear_realdata.png','実データ摩耗','実測データに基づく摩耗較正'],
+    ['blade_wear.png','摩耗モデル','摩耗進行の物理モデル'],
+    ['disco_chip_volume.png','チップ体積','切削チップ体積の推定'],
+  ],
+  'g-ml': [
+    ['active_learning_ei.png','能動学習（EI）','期待改善による次実験点選択'],
+    ['gp_experimental_heatmap.png','GP実験ヒートマップ','応答曲面のGP推定'],
+    ['disect_tmcmc_calibration.png','TMCMCベイズ較正','事後分布によるパラメータ較正'],
+    ['ekf_state_estimation.png','EKF状態推定','拡張カルマンフィルタによる状態推定'],
+    ['cost_per_die.png','ダイあたりコスト','プロセス条件とコストのトレードオフ'],
+    ['gp_multifidelity.png','多忠実度GP','低/高忠実度データの融合代理モデル'],
+  ],
+};
+for(const id in GAL){
+  const host=document.getElementById(id);
+  host.innerHTML = GAL[id].map(([f,t,c])=>
+    `<figure><a href="assets/${f}" target="_blank" rel="noopener">
+       <img loading="lazy" src="assets/${f}" alt="${t}"
+            onerror="this.closest('figure').style.display='none'"></a>
+     <figcaption><b>${t}</b>${c}</figcaption></figure>`).join('');
+}
+</script>

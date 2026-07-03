@@ -31,9 +31,25 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site
-          cp vision/cpp/docs/wproc_dashboard.html _site/index.html
+          mkdir -p _site/assets
+          cp vision/cpp/docs/landing.html         _site/index.html
+          cp vision/cpp/docs/wproc_dashboard.html _site/dashboard.html
           cp vision/cpp/docs/kerf_annotated.html  _site/kerf_annotated.html
+          # Curated result figures for the gallery on the landing page.
+          for f in \
+            notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \
+            results/cfrp_defect_detection.png results/cfrp_ndt_delamination.png \
+            results/cfrp_cutting_model.png \
+            results/fno_stress_fields.png results/deeponet_field_comparison.png \
+            results/fem_exp_comparison.png results/crystal_anisotropy.png \
+            results/die_strength_analysis.png \
+            results/disco_blade_wear_gp.png results/disco_blade_wear_realdata.png \
+            results/blade_wear.png results/disco_chip_volume.png \
+            results/active_learning_ei.png results/gp_experimental_heatmap.png \
+            results/disect_tmcmc_calibration.png results/ekf_state_estimation.png \
+            results/cost_per_die.png results/gp_multifidelity.png; do
+            [ -f "$f" ] && cp "$f" _site/assets/ || echo "missing: $f"
+          done
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

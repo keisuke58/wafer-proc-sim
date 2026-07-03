@@ -11,20 +11,25 @@ gradients, Otsu thresholding, binary morphology, connected-component labeling)
 are implemented directly, which keeps the build portable to any machine with a
 C++ compiler and demonstrates the underlying computer-vision math end to end.
 
-## 📊 Live results dashboard
+## 📊 Live results (GitHub Pages)
 
 [![wproc dashboard](docs/dashboard_preview.png)](https://keisuke58.github.io/wafer-proc-sim/)
 
-An interactive dashboard visualizing the toolkit's **own measured results** —
-real-time throughput bars, the SPC blade-wear control chart with RUL prediction,
-open-vs-closed-loop APC regulation, the full-wafer yield map, and the annotated
-inspection. Numbers are emitted by the C++ tools; charts use a CVD-validated
-palette with light/dark themes and hover tooltips.
+A published portfolio site visualizing the toolkit's **own measured results**.
+The landing page collects a gallery of every figure the analysis scripts emit
+(vision inspection, FEM/physics models, blade-wear reliability, and the
+optimization/surrogate R&D), and links to two interactive pages: the intelligent
+inspection dashboard (real-time throughput, the SPC blade-wear control chart with
+RUL prediction, open-vs-closed-loop APC regulation, the full-wafer yield map) and
+the annotated kerf-inspection walkthrough. Numbers are emitted by the C++ tools;
+charts use a CVD-validated palette with light/dark themes and hover tooltips.
 
-- **Live (GitHub Pages):** https://keisuke58.github.io/wafer-proc-sim/
-- **Explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
-- Source committed at [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html)
-  and [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
+- **Live landing page:** https://keisuke58.github.io/wafer-proc-sim/
+- **Inspection dashboard:** https://keisuke58.github.io/wafer-proc-sim/dashboard.html
+- **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
+- Source committed at [`docs/landing.html`](docs/landing.html),
+  [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
+  [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
 
 ## What it does
 
