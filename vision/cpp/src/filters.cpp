@@ -1,5 +1,6 @@
 #include "wproc/filters.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -20,7 +21,8 @@ Image gaussian_blur(const Image& src, float sigma) {
         kernel[k + radius] = w;
         sum += w;
     }
-    for (float& w : kernel) w /= sum;  // normalize
+    std::transform(kernel.begin(), kernel.end(), kernel.begin(),
+                   [sum](float w) { return w / sum; });  // normalize
 
     const int W = src.width(), H = src.height();
 
