@@ -68,8 +68,12 @@ Image read_pgm(const std::string& path) {
             std::string t = next_token(in);
             img.data()[i] = static_cast<float>(to_int(t, "pixel"));
         }
-    } else {  // P5: single whitespace byte then raw bytes
-        in.get();  // consume the single separator after maxval
+    } else {  // P5: whitespace separator then raw bytes
+        // The spec says a single whitespace byte follows maxval, but Windows
+        // tooling writes CRLF; consume the '\n' too so it isn't read as the
+        // first pixel (which would silently shift the whole image).
+        int sep = in.get();
+        if (sep == '\r' && in.peek() == '\n') in.get();
         std::vector<char> buf(n);
         in.read(buf.data(), static_cast<std::streamsize>(n));
         if (static_cast<std::size_t>(in.gcount()) != n)

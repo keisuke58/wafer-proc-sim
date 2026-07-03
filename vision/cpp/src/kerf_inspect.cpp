@@ -109,6 +109,14 @@ KerfResult KerfInspector::inspect(const Image& img) const {
     for (const auto& c : comps) {
         Chip chip;
         chip.side = (c.cx < left) ? -1 : +1;
+        // Chipping protrudes from a wall; a dark blob that doesn't reach the
+        // wall (dust, fiducial, texture) is not a chip and must not be
+        // measured back to it, which would report a huge bogus protrusion.
+        bool touches_wall =
+            (chip.side < 0)
+                ? (static_cast<double>(c.max_x) >= left - p_.wall_attach_margin_px)
+                : (static_cast<double>(c.min_x) <= right + p_.wall_attach_margin_px);
+        if (!touches_wall) continue;
         double depth_px = (chip.side < 0) ? (left - c.min_x)
                                           : (c.max_x - right);
         if (depth_px < 0.0) depth_px = 0.0;

@@ -1,12 +1,15 @@
 // test_imgproc.cpp — self-contained unit tests (no framework, ctest-friendly).
 // Exit code 0 = all passed, 1 = one or more failures.
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 #include "wproc/connected.hpp"
 #include "wproc/filters.hpp"
 #include "wproc/image.hpp"
+#include "wproc/io.hpp"
 #include "wproc/kerf_inspect.hpp"
 #include "wproc/morphology.hpp"
 #include "wproc/threshold.hpp"
@@ -140,6 +143,45 @@ static void test_kerf_chip_detection() {
     CHECK(js.find("chips") != std::string::npos);
 }
 
+static void test_dust_blob_not_counted_as_chip() {
+    // Dark blob far from both walls (dust/fiducial) must not be reported as
+    // chipping — previously it was measured back to the nearest wall and
+    // produced a huge bogus protrusion.
+    Image img(400, 200, 150.0f);
+    for (int y = 0; y < 200; ++y)
+        for (int x = 160; x <= 240; ++x) img.at(x, y) = 40.0f;  // kerf
+    for (int y = 100; y < 108; ++y)
+        for (int x = 20; x < 28; ++x) img.at(x, y) = 40.0f;     // dust at x~20
+    img = gaussian_blur(img, 1.0f);
+
+    KerfInspector::Params p;
+    p.um_per_px = 0.5;
+    KerfInspector insp(p);
+    KerfResult r = insp.inspect(img);
+    CHECK(r.found);
+    CHECK(r.chips.empty());          // dust ignored
+    CHECK(r.chipping_in_spec);
+    CHECK(r.pass);                   // width 40um in spec, no chipping
+}
+
+static void test_pgm_crlf_header() {
+    // P5 with CRLF line endings (Windows tooling): the '\n' after maxval must
+    // not be consumed as the first pixel.
+    const char* path = "test_crlf.pgm";
+    {
+        std::ofstream f(path, std::ios::binary);
+        f << "P5\r\n3 2\r\n255\r\n";
+        const unsigned char px[6] = {10, 20, 30, 40, 50, 60};
+        f.write(reinterpret_cast<const char*>(px), 6);
+    }
+    Image img = read_pgm(path);
+    std::remove(path);
+    CHECK(img.width() == 3);
+    CHECK(img.height() == 2);
+    CHECK_NEAR(img.at(0, 0), 10.0, 1e-6);  // not shifted by the stray '\n'
+    CHECK_NEAR(img.at(2, 1), 60.0, 1e-6);
+}
+
 static void test_no_kerf_on_flat() {
     Image img(100, 100, 128.0f);  // no channel
     KerfInspector insp;
@@ -156,6 +198,8 @@ int main() {
     test_morphology_open_removes_speck();
     test_kerf_width_measurement();
     test_kerf_chip_detection();
+    test_dust_blob_not_counted_as_chip();
+    test_pgm_crlf_header();
     test_no_kerf_on_flat();
 
     std::cout << (g_total - g_failed) << "/" << g_total << " checks passed\n";

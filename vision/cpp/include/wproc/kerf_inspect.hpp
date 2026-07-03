@@ -10,8 +10,9 @@
 //     the signed Sobel-x column projection (left wall = strongest negative
 //     slope, right wall = strongest positive slope), refined to sub-pixel by
 //     parabolic interpolation.
-//   - Chips are dark connected components lying outside the kerf band; each is
-//     measured for protrusion depth and area.
+//   - Chips are dark connected components outside the kerf band that reach a
+//     wall (within wall_attach_margin_px); each is measured for protrusion
+//     depth and area. Isolated dark marks away from the walls are ignored.
 #pragma once
 
 #include <string>
@@ -55,6 +56,11 @@ public:
         float dark_threshold = -1.0f; // <0 -> Otsu automatic
         int morph_radius = 1;         // opening radius to drop specks
         long min_chip_area_px = 8;    // ignore blobs smaller than this
+        // A blob only counts as chipping if it reaches within this many pixels
+        // of a kerf wall; isolated dark marks (dust, fiducials) elsewhere on
+        // the substrate are ignored. Allows for blur + morphological erosion
+        // pulling a wall-attached blob slightly off the wall.
+        double wall_attach_margin_px = 4.0;
         double min_wall_snr = 8.0;    // projection peak / mean for confidence=1
         // Spec limits for pass/fail (set width_tol_um < 0 to skip the check).
         double nominal_width_um = 40.0;
