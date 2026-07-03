@@ -205,6 +205,16 @@ the slow drift a fixed recipe can't. In simulation against a drifting plant
 (≈23× tighter), with the feed automatically backing off to compensate.
 (`apc` test.)
 
+### Stealth-dicing subsurface inspection (`wproc/stealth_ir.hpp`)
+
+For DISCO's laser (stealth) dicing, silicon is IR-transparent so a transmission
+cross-section shows the internal modified (SD) layers and any cracks. `stealth::
+inspect_stealth` locates the SD layers from the row-projection peaks, reports
+their **count and pitch**, and measures **crack propagation** from the top layer
+toward the wafer surface (flagging cracks that reach it). On a synthetic 3-layer
+IR image it recovers the layers and 20 px pitch, measures an 18 px crack, and
+distinguishes a surface-reaching crack. (`stealth` test.)
+
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
 A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,
