@@ -1,6 +1,7 @@
 #include "wproc/cv_backend.hpp"
 
 #include <cmath>
+#include <stdexcept>
 
 #include <opencv2/imgproc.hpp>
 
@@ -27,6 +28,12 @@ Image to_image(const cv::Mat& m) {
 }  // namespace
 
 Image gaussian_blur(const Image& src, float sigma) {
+    // Mirror the core backend's contract: reject non-positive, NaN, and
+    // oversized sigma before the float->int radius conversion (UB otherwise).
+    if (sigma <= 0.0f)
+        throw std::invalid_argument("cv gaussian_blur: sigma must be > 0");
+    if (!(sigma <= 1000.0f))
+        throw std::invalid_argument("cv gaussian_blur: sigma too large (max 1000)");
     const int radius = static_cast<int>(std::ceil(3.0f * sigma));
     const int ksize = 2 * radius + 1;
     cv::Mat in = to_mat(src), out;

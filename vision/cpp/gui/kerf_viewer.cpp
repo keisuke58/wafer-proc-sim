@@ -238,6 +238,10 @@ int main(int argc, char** argv) {
         ViewerWindow w;
         if (!w.loadAndInspect(args[selftestIdx + 2].toStdString())) return 3;
         w.show();
+        // show() only schedules layout/paint; on the offscreen QPA backend the
+        // widget may not be painted yet, so pump the event loop before grab()
+        // or the screenshot can come out blank/incomplete.
+        QApplication::processEvents();
         w.grab().save(args[selftestIdx + 1]);
         std::cout << wproc::to_json(w.result());
         return w.result().pass ? 0 : 1;
