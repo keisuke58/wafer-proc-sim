@@ -1,6 +1,7 @@
 // test_apc.cpp — closed-loop kerf regulation rejects blade-wear drift.
 #include <cmath>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -20,8 +21,9 @@ static int g_total = 0, g_failed = 0;
 
 // RMS deviation of a series from target.
 static double rms_err(const std::vector<double>& w, double target) {
-    double s = 0.0;
-    for (double x : w) s += (x - target) * (x - target);
+    double s = std::accumulate(
+        w.begin(), w.end(), 0.0,
+        [target](double a, double x) { return a + (x - target) * (x - target); });
     return std::sqrt(s / w.size());
 }
 
