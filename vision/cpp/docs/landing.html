@@ -50,6 +50,9 @@
     <a class="navcard" href="dashboard.html">
       <div class="ic">📊</div><b>知能化検査ダッシュボード</b>
       <span>スループット・SPC摩耗予知・APC制御・ウェハ歩留りを実測値で可視化</span></a>
+    <a class="navcard" href="grind.html">
+      <div class="ic">⚙️</div><b>研削/薄化ダッシュボード</b>
+      <span>厚みマップ(TTV/WARP/BOW)・研削痕/SSD・インフィードAPC・砥石摩耗・コスト</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -57,6 +60,9 @@
       <div class="ic">💻</div><b>ソースコード（GitHub）</b>
       <span>C++ wproc・FEM・ML代理モデル・パイプライン一式</span></a>
   </div>
+
+  <h2 class="sec">研削・薄化（バックグラインド）<a href="grind.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボードを開く</a></h2>
+  <div class="gal" id="g-grind"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -78,6 +84,10 @@
 
 <script>
 const GAL = {
+  'g-grind': [
+    ['grind_thickness.png','厚みマップ（TTV/WARP/BOW）','薄化後ウェハの厚み分布と非平坦性計測'],
+    ['grind_ssd.png','研削痕・サブサーフェス（SSD）','研削痕の方向性とSSDホットスポット検出'],
+  ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],
     ['vision_accuracy.png','検査精度','幅計測の精度・パラメータ感度'],

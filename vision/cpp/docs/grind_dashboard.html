@@ -1,0 +1,249 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wproc — 研削/薄化（バックグラインド）知能化</title>
+<style>
+  :root {
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb;
+    --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5;
+    --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+    --open:#e34948; --closed:#2a78d6; --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c;
+    --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731;
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+    --open:#e66767; --closed:#3987e5; --good:#0ca30c; --warn:#fab219; --critical:#e05555;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5; --open:#e34948; --closed:#2a78d6; --critical:#d03b3b; --warn:#fab219; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731; --open:#e66767; --closed:#3987e5; --critical:#e05555; --warn:#fab219; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:36px 20px 72px; }
+  a{ color:var(--disco); }
+  .back{ font-size:13px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:14px 0 6px; }
+  header h1{ font-size:clamp(25px,4.2vw,38px); line-height:1.08; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  header p.lead{ color:var(--muted); font-size:16.5px; margin:0; max-width:66ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:24px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:22px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--disco); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-top:22px; }
+  .card h2{ font-size:16px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:22px; }
+  @media (min-width:820px){ .grid2{ grid-template-columns:1fr 1fr; } }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:8px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:22px; height:3px; border-radius:2px; display:inline-block; }
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+  .axis{ fill:var(--muted); font-size:10px; }
+  .axis-title{ fill:var(--muted); font-size:10.5px; font-weight:600; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  figure{ margin:0; }
+  .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#0b0d10; }
+  .figure img{ width:100%; display:block; }
+  figcaption{ color:var(--muted); font-size:12.5px; margin-top:8px; }
+  .bars{ display:grid; gap:9px; margin-top:6px; }
+  .bar-row{ display:grid; grid-template-columns:130px 1fr 74px; align-items:center; gap:10px; font-size:12.5px; }
+  .bar-track{ background:var(--surface-2); border:1px solid var(--line); border-radius:6px; height:16px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px 0 0 6px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.bad{ background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical); }
+  .pill.warn{ background:color-mix(in srgb, var(--warn) 22%, transparent); color:#a5730a; }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a>
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>研削/薄化（バックグラインド）の知能化</h1>
+    <p class="lead">SiC/Siウェハの裏面研削・薄化（DGP/DFG、DBG/TAIKO）を対象に、
+      C++17でゼロから作った<b>厚みマップ計測（TTV/WARP/BOW）</b>・<b>研削痕/サブサーフェス検査</b>・
+      <b>インフィードAPC制御</b>・<b>砥石摩耗予知</b>・<b>コスト/歩留り</b>を統合。
+      以下はすべてツール（<code class="inl">grind_demo</code>）自身が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>厚みマップ（TTV/WARP/BOW）</h2>
+      <p class="sub">薄化後ウェハの厚み分布。最小二乗基準面で傾きを除去し非平坦性を評価。青＝薄、赤＝厚。</p>
+      <figure>
+        <div class="figure"><img src="assets/grind_thickness.png" alt="厚みマップ（発散配色）"></div>
+        <figcaption id="thickCap"></figcaption>
+      </figure>
+    </div>
+    <div class="card">
+      <h2>研削痕・サブサーフェスダメージ（SSD）</h2>
+      <p class="sub">構造テンソルで研削痕の方向性を、高周波残差でSSDホットスポットを検出。明＝ダメージ大。</p>
+      <figure>
+        <div class="figure"><img src="assets/grind_ssd.png" alt="SSDヒートマップ"></div>
+        <figcaption id="ssdCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>目標厚みのクローズドループ制御（インフィードAPC）</h2>
+    <p class="sub">砥石が目減り（dulling）してもRun-to-Run EWMA制御でインフィードを補正し、最終厚みを目標100µmに維持。</p>
+    <div id="apcChart"></div>
+    <div class="legend">
+      <span class="it"><span class="swatch" style="background:var(--open)"></span>オープンループ（固定インフィード）</span>
+      <span class="it"><span class="swatch" style="background:var(--closed)"></span>クローズドループ（APC）</span>
+      <span class="it"><span class="swatch" style="background:var(--muted)"></span>目標 100µm</span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>砥石摩耗の予知（研削力トレンド）</h2>
+      <p class="sub">研削力の上昇を最小二乗でトレンド化し、ドレス限界（30N）までの残ウェハ数(RUL)を予測。</p>
+      <div id="forceChart"></div>
+      <div class="legend">
+        <span class="it"><span class="swatch" style="background:var(--s2)"></span>研削力 [N]</span>
+        <span class="it"><span class="swatch" style="background:var(--critical)"></span>ドレス限界 30N</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>コスト・歩留り統合</h2>
+      <p class="sub">スループット・歩留り・消耗品・砥石寿命をダイあたりコストへ集約。</p>
+      <div class="bars" id="costBars"></div>
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:16px">
+        <div><div class="v" id="cpd" style="font-size:22px;font-weight:800"></div><div class="k" style="font-size:11.5px;color:var(--muted)">良品ダイあたりコスト</div></div>
+        <div><div class="v" id="gdh" style="font-size:22px;font-weight:800"></div><div class="k" style="font-size:11.5px;color:var(--muted)">良品ダイ／時</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/grind_demo</code> をこのホスト（x86）で実行した実測値。
+    厚みマップ256×256、APC/砥石は300ウェハの合成劣化シナリオ、表面は構造テンソル＋高周波残差。
+    ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、ctest 全通過。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script id="grind-data" type="application/json">
+{"thickness":{"target_um":100.0,"mean_um":99.5271,"ttv_um":6.4825,"warp_um":2.9342,"bow_um":-0.6421,"sigma_um":1.3696,"uniformity_pct":98.6239,"n_inside":49396},"surface":{"coherence":0.9181,"mark_angle_deg":178.4857,"mark_severity":0.9181,"roughness_ra":10.7176,"ssd_index":0.7357,"ok":false},"apc":{"target_um":100.0,"open_rms_um":26.0458,"closed_rms_um":0.648,"final_infeed":7.2482,"nominal_infeed":6.8},"wheel":{"current_force_n":29.4934,"force_slope_per_wafer":0.053,"rul_wafers":9.5586,"g_ratio":13245.0344,"dress_now":false},"econ":{"throughput_wph":22.0,"good_dies_per_hour":25476.0,"cost_per_wafer":7.3545,"cost_per_good_die":0.0064},"series":{"open_thickness_um":[100.17,100.03,101.03,101.03,100.91,100.67,100.85,101.43,101.82,101.31,101.9,101.23,102.08,102.46,102.15,102.19,102.41,102.88,102.77,103.3,103.41,103.24,103.68,103.97,104.11,104.12,104.69,103.97,104.55,105.13,105.06,105.1,105.06,105.1,105.09,104.74,106.29,105.66,105.75,105.54,106.25,105.56,106.56,106.19,106.47,106.88,107.35,107.07,107.13,107.15,107.46,108.09,107.64,108.61,107.81,108.15,108.51,108.11,108.84,109.67,109.79,109.68,108.85,109.89,109.74,109.93,109.35,110.11,110.45,110.13,110.73,111.12,110.76,111.19,111.33,111.3,111.63,112.16,111.96,112.38,112.14,112.8,112.69,112.31,112.98,112.76,112.19,113.63,113.61,113.06,113.88,113.25,114.1,114.9,114.48,115.12,114.81,113.85,115.11,114.12,115.15,115.6,115.2,115.52,115.61,115.84,115.94,116.02,116.22,116.51,117.07,116.53,116.95,117.13,117.31,117.27,116.82,117.25,117.61,117.84,117.65,117.95,118.68,118.48,119.42,118.19,119.29,119.08,118.83,119.43,119.92,119.41,120.34,120.63,120.34,120.21,120.49,120.96,121.02,120.3,121.19,120.94,121.22,121.52,121.2,122.38,121.88,122.1,123.0,122.33,122.92,123.31,122.98,122.46,122.92,123.67,123.67,123.83,124.65,124.06,123.7,123.91,123.89,124.32,125.03,125.22,124.05,124.84,125.35,125.47,125.66,125.85,125.64,125.91,126.63,125.85,126.62,126.41,127.18,126.98,127.64,127.02,126.86,127.63,127.56,126.57,128.49,128.63,127.31,128.97,128.45,128.7,129.01,128.79,130.55,129.71,130.19,129.65,130.12,129.65,130.26,131.02,130.28,130.36,130.99,131.28,130.95,131.57,131.19,131.35,131.73,131.6,132.54,131.89,132.83,132.1,132.0,132.31,132.54,133.14,133.22,133.34,133.51,134.18,133.55,134.0,134.18,134.29,134.56,134.68,134.14,135.07,134.95,135.72,135.28,135.54,135.52,135.74,135.89,136.2,135.52,136.7,135.98,136.38,137.68,137.26,136.79,137.6,136.83,137.51,137.69,137.6,137.89,137.52,138.71,138.28,138.77,139.19,139.42,138.88,139.57,139.42,140.09,140.49,140.08,139.37,140.51,139.86,139.49,140.89,140.24,140.3,141.23,140.98,141.5,141.32,140.61,141.67,141.91,141.5,142.34,142.7,142.3,143.06,142.24,142.67,143.05,143.7,143.05,143.79,144.19,143.59,144.45,144.01,144.09,144.28,144.16,144.21,144.89,144.39],"closed_thickness_um":[100.08,100.65,100.66,100.23,100.43,99.9,100.37,101.23,100.59,100.26,100.94,99.83,99.93,100.54,100.35,100.47,101.15,100.36,100.13,100.04,100.83,100.36,100.45,100.93,101.04,99.77,100.55,100.55,100.46,100.11,101.09,100.99,99.76,100.92,100.67,100.83,99.78,100.41,100.48,100.25,101.02,99.97,100.57,101.67,99.9,100.21,100.56,101.1,100.58,100.45,99.59,100.52,100.89,100.56,100.21,100.06,100.64,100.85,100.6,100.27,100.31,101.41,100.44,100.22,100.53,100.58,99.88,101.15,100.6,100.44,100.05,100.66,100.56,100.95,100.38,100.63,100.75,100.18,100.17,100.07,100.19,100.33,100.8,101.39,100.42,100.12,100.84,99.66,101.42,100.68,100.43,100.38,100.17,100.52,100.88,100.62,100.84,100.14,101.41,100.39,100.17,100.89,100.07,99.97,100.48,99.6,100.23,101.05,100.25,100.29,100.35,100.83,101.0,100.24,100.44,100.04,101.55,100.25,100.78,100.11,100.89,100.44,100.01,100.8,100.2,100.64,100.19,101.6,100.8,100.8,99.81,100.32,100.13,100.32,100.72,100.07,100.5,100.92,101.17,99.55,100.77,100.35,100.25,100.54,100.2,100.09,101.53,100.78,100.14,100.88,100.87,100.75,99.65,100.7,100.91,100.07,100.66,100.15,100.77,100.21,100.88,100.02,100.67,100.39,100.55,100.77,100.69,100.48,100.54,100.78,100.14,100.31,100.15,100.44,101.1,100.54,100.0,100.17,101.23,99.98,100.68,100.68,100.94,100.81,100.55,100.29,100.2,100.07,100.35,100.65,100.34,100.29,99.95,100.87,100.75,100.27,100.59,100.95,100.36,100.24,100.64,100.56,99.85,100.13,100.88,100.72,100.61,100.59,100.82,100.88,100.79,101.17,99.67,99.96,100.61,100.48,100.61,100.38,100.45,100.08,100.74,101.24,100.3,100.37,100.43,99.91,100.03,100.6,100.95,100.56,99.94,100.7,100.28,100.67,100.35,100.62,100.76,101.61,100.25,100.75,100.04,100.4,100.96,100.9,100.01,100.44,100.3,100.14,100.17,100.92,100.78,100.22,101.2,99.44,101.23,100.36,101.03,101.08,99.57,100.31,100.76,100.28,100.21,100.82,100.53,100.51,100.88,100.33,100.78,100.78,99.9,99.92,100.79,100.25,100.1,100.6,100.51,100.36,101.51,99.98,101.07,100.67,99.51,100.11,100.59,100.3,100.87,101.09,100.12,100.71,100.17,100.13,100.39,100.85,100.69,100.29,100.36,101.48,100.76,100.49],"force_n":[13.65,13.7,13.75,13.81,13.86,13.91,13.96,14.01,14.07,14.12,14.18,14.23,14.28,14.33,14.38,14.44,14.49,14.55,14.6,14.65,14.7,14.75,14.81,14.86,14.91,14.97,15.02,15.07,15.13,15.18,15.23,15.29,15.34,15.39,15.45,15.5,15.55,15.6,15.66,15.71,15.76,15.82,15.87,15.92,15.98,16.03,16.08,16.13,16.19,16.24,16.3,16.34,16.4,16.45,16.51,16.56,16.61,16.66,16.72,16.77,16.82,16.87,16.93,16.98,17.04,17.09,17.14,17.19,17.25,17.3,17.36,17.41,17.46,17.51,17.57,17.62,17.67,17.73,17.78,17.83,17.88,17.93,17.98,18.04,18.1,18.15,18.2,18.26,18.3,18.36,18.42,18.47,18.52,18.57,18.62,18.68,18.73,18.79,18.84,18.9,18.95,19.0,19.06,19.11,19.16,19.21,19.26,19.31,19.37,19.42,19.47,19.52,19.58,19.63,19.68,19.74,19.79,19.85,19.9,19.95,20.0,20.06,20.11,20.16,20.21,20.27,20.32,20.37,20.43,20.49,20.54,20.59,20.64,20.69,20.74,20.8,20.85,20.9,20.96,21.01,21.06,21.12,21.17,21.22,21.27,21.32,21.38,21.43,21.49,21.54,21.59,21.65,21.7,21.75,21.81,21.86,21.91,21.97,22.02,22.07,22.12,22.18,22.23,22.28,22.34,22.39,22.44,22.5,22.55,22.6,22.66,22.71,22.76,22.81,22.86,22.92,22.97,23.02,23.07,23.13,23.18,23.24,23.29,23.35,23.4,23.45,23.51,23.56,23.61,23.66,23.71,23.77,23.82,23.87,23.92,23.98,24.03,24.08,24.14,24.19,24.24,24.3,24.35,24.4,24.45,24.5,24.56,24.61,24.66,24.72,24.77,24.83,24.89,24.93,24.98,25.04,25.09,25.14,25.2,25.25,25.3,25.36,25.41,25.46,25.52,25.57,25.62,25.67,25.72,25.78,25.83,25.88,25.93,25.99,26.04,26.09,26.15,26.2,26.26,26.31,26.37,26.42,26.47,26.52,26.58,26.63,26.68,26.73,26.79,26.84,26.89,26.95,27.0,27.06,27.1,27.16,27.21,27.27,27.32,27.37,27.42,27.48,27.53,27.58,27.64,27.69,27.74,27.8,27.85,27.9,27.96,28.01,28.06,28.11,28.16,28.21,28.27,28.32,28.37,28.43,28.48,28.54,28.59,28.64,28.69,28.74,28.8,28.85,28.91,28.96,29.01,29.06,29.11,29.17,29.22,29.28,29.33,29.38,29.44,29.49]}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('grind-data').textContent);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in (a||{})) e.setAttribute(k, a[k]); return e; };
+const fmt = (x, n=2) => Number(x).toFixed(n);
+
+// ── Stat tiles ───────────────────────────────────────────────────────────────
+const tiles = [
+  ['TTV', fmt(D.thickness.ttv_um), 'µm', '厚みばらつき（最大−最小）', true],
+  ['WARP', fmt(D.thickness.warp_um), 'µm', '傾き除去後の非平坦PV'],
+  ['BOW', fmt(D.thickness.bow_um), 'µm', '中心たわみ（符号つき）'],
+  ['均一度', fmt(D.thickness.uniformity_pct,1), '%', '1−σ/平均'],
+  ['APC RMS', fmt(D.apc.closed_rms_um), 'µm', `開ループ${fmt(D.apc.open_rms_um,1)}→閉ループ`, true],
+  ['砥石RUL', fmt(D.wheel.rul_wafers,0), '枚', `ドレスまで（力${fmt(D.wheel.current_force_n,1)}N）`],
+];
+const twrap = document.getElementById('tiles');
+tiles.forEach(([k,v,u,note,accent]) => {
+  const d = document.createElement('div'); d.className = 'tile';
+  d.innerHTML = `<div class="v${accent?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div>`;
+  twrap.appendChild(d);
+});
+
+// ── Figure captions ──────────────────────────────────────────────────────────
+document.getElementById('thickCap').innerHTML =
+  `TTV <b>${fmt(D.thickness.ttv_um)}</b> µm・WARP <b>${fmt(D.thickness.warp_um)}</b> µm・BOW <b>${fmt(D.thickness.bow_um)}</b> µm、`+
+  `平均 ${fmt(D.thickness.mean_um)} µm（目標 ${fmt(D.thickness.target_um,0)}）、有効セル ${D.thickness.n_inside.toLocaleString()}。`;
+const sv = D.surface;
+document.getElementById('ssdCap').innerHTML =
+  `研削痕 方向 <b>${fmt(sv.mark_angle_deg,0)}°</b>・コヒーレンス <b>${fmt(sv.coherence)}</b>・`+
+  `Ra <b>${fmt(sv.roughness_ra,1)}</b>・SSD指数 <b>${fmt(sv.ssd_index)}</b> → `+
+  `<span class="pill bad">研削痕過大 NG</span>`;
+
+// ── Line chart helper ────────────────────────────────────────────────────────
+function lineChart(host, opts) {
+  const W = 640, H = 260, m = {t:12, r:14, b:34, l:46};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, role:'img'});
+  const xs = v => m.l + (v - opts.xmin) / (opts.xmax - opts.xmin) * iw;
+  const ys = v => m.t + (opts.ymax - v) / (opts.ymax - opts.ymin) * ih;
+  // gridlines + y ticks
+  (opts.yticks||[]).forEach(t => {
+    svg.appendChild(el('line', {class:'gridline', x1:m.l, x2:m.l+iw, y1:ys(t), y2:ys(t)}));
+    const tx = el('text', {class:'axis', x:m.l-7, y:ys(t)+3, 'text-anchor':'end'}); tx.textContent = t; svg.appendChild(tx);
+  });
+  (opts.xticks||[]).forEach(t => {
+    const tx = el('text', {class:'axis', x:xs(t), y:m.t+ih+16, 'text-anchor':'middle'}); tx.textContent = t; svg.appendChild(tx);
+  });
+  // reference lines
+  (opts.refs||[]).forEach(r => {
+    svg.appendChild(el('line', {x1:m.l, x2:m.l+iw, y1:ys(r.y), y2:ys(r.y),
+      stroke:r.color, 'stroke-width':1.5, 'stroke-dasharray':'5 4', opacity:.9}));
+  });
+  // series
+  opts.series.forEach(s => {
+    let d = '';
+    s.data.forEach((v,i) => { const x = xs(opts.x0 + i*opts.xstep); const y = ys(v); d += (i? 'L':'M') + fmt(x,1) + ' ' + fmt(y,1); });
+    svg.appendChild(el('path', {d, fill:'none', stroke:s.color, 'stroke-width':s.w||1.8, 'stroke-linejoin':'round', opacity:s.opacity||1}));
+  });
+  // axis titles
+  const xt = el('text', {class:'axis-title', x:m.l+iw/2, y:H-4, 'text-anchor':'middle'}); xt.textContent = opts.xtitle; svg.appendChild(xt);
+  const yt = el('text', {class:'axis-title', x:14, y:m.t+ih/2, 'text-anchor':'middle', transform:`rotate(-90 14 ${m.t+ih/2})`}); yt.textContent = opts.ytitle; svg.appendChild(yt);
+  host.appendChild(svg);
+}
+
+// ── APC convergence ──────────────────────────────────────────────────────────
+const openS = D.series.open_thickness_um, closedS = D.series.closed_thickness_um;
+const N = openS.length;
+lineChart(document.getElementById('apcChart'), {
+  x0:1, xstep:1, xmin:1, xmax:N, ymin:96, ymax:148,
+  xticks:[1,60,120,180,240,300], yticks:[100,110,120,130,140],
+  xtitle:'ウェハ番号', ytitle:'最終厚み [µm]',
+  refs:[{y:100, color:'var(--muted)'}],
+  series:[
+    {data:openS, color:'var(--open)', w:1.8},
+    {data:closedS, color:'var(--closed)', w:1.8},
+  ],
+});
+
+// ── Wheel force trend ────────────────────────────────────────────────────────
+const forceS = D.series.force_n;
+lineChart(document.getElementById('forceChart'), {
+  x0:1, xstep:1, xmin:1, xmax:N, ymin:12, ymax:32,
+  xticks:[1,100,200,300], yticks:[15,20,25,30],
+  xtitle:'ウェハ番号', ytitle:'研削力 [N]',
+  refs:[{y:30, color:'var(--critical)'}],
+  series:[{data:forceS, color:'var(--s2)', w:2}],
+});
+
+// ── Cost breakdown bars ──────────────────────────────────────────────────────
+// machine 120/22, wheel 800/2000, consumables 1.5 (matches grind_demo inputs).
+const cost = [
+  ['装置（時間割）', 120/22, 'var(--s1)'],
+  ['砥石（枚割）', 800/2000, 'var(--s3)'],
+  ['消耗品', 1.5, 'var(--s2)'],
+];
+const total = D.econ.cost_per_wafer;
+const cb = document.getElementById('costBars');
+cost.forEach(([k,v,c]) => {
+  const row = document.createElement('div'); row.className = 'bar-row';
+  row.innerHTML = `<div>${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/total*100).toFixed(1)}%;background:${c}"></div></div><div class="mono" style="text-align:right">$${v.toFixed(2)}</div>`;
+  cb.appendChild(row);
+});
+const trow = document.createElement('div'); trow.className = 'bar-row';
+trow.innerHTML = `<div style="font-weight:700">合計／ウェハ</div><div></div><div class="mono" style="text-align:right;font-weight:700">$${total.toFixed(2)}</div>`;
+cb.appendChild(trow);
+document.getElementById('cpd').innerHTML = `$${D.econ.cost_per_good_die.toFixed(4)}`;
+document.getElementById('gdh').innerHTML = D.econ.good_dies_per_hour.toLocaleString();
+</script>
