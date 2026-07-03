@@ -27,6 +27,7 @@ charts use a CVD-validated palette with light/dark themes and hover tooltips.
 - **Live landing page:** https://keisuke58.github.io/wafer-proc-sim/
 - **Inspection dashboard:** https://keisuke58.github.io/wafer-proc-sim/dashboard.html
 - **Grinding / thinning dashboard:** https://keisuke58.github.io/wafer-proc-sim/grind.html
+- **Laser-processing dashboard:** https://keisuke58.github.io/wafer-proc-sim/laser.html
 - **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
 - Source committed at [`docs/landing.html`](docs/landing.html),
   [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
@@ -263,6 +264,38 @@ Run the end-to-end demo (writes two color figures, prints all metrics as JSON):
 
 Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/grind.html>.
 (`grind_metrology`, `grind_surface`, `grind_control` tests.)
+
+### Laser-processing intelligence (`wproc/laser_*.hpp`)
+
+The laser-processing arm — stealth dicing, ablation grooving, and KABRA-style
+SiC-ingot slicing. Pure C++17 with tests:
+
+- **Ablation-groove inspection** (`laser_groove.hpp`) — from a top-view image,
+  the groove width, a depth proxy, the HAZ transition width, and a debris/spatter
+  index, with an annotated overlay and PASS/FAIL. Synthetic groove: width 19.5 µm,
+  HAZ 4.0 µm/side, debris 0.11% → PASS.
+- **Stealth SD-layer + HAZ** (`laser_sd.hpp`) — extends `stealth_ir`: SD-layer
+  count and pitch uniformity, HAZ thickness, and a surface-crack risk from the
+  cross-section IR image (3 layers, 100% pitch uniformity, crack clear of the
+  surface → PASS).
+- **Pulse-energy APC + optics health** (`laser_control.hpp`) — a run-to-run EWMA
+  controller holds ablation depth on target through optics degradation (depth RMS
+  **3.5 µm → 0.17 µm**), and an optics-power trend predicts **shots-until-service**
+  (RUL ≈ 200).
+- **KABRA SiC-ingot slicing** (`laser_kabra.hpp`) — wafers-per-ingot, material
+  utilisation, and cost per wafer for laser slicing vs. diamond-wire sawing
+  (**66 vs. 50** wafers from a 30 mm ingot, **−20%** per wafer), plus separation-
+  layer depth-uniformity grading.
+
+Run the end-to-end demo (writes two color figures, prints all metrics as JSON):
+
+```bash
+./build/laser_demo --groove groove.ppm --sd sd.ppm
+```
+
+Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/laser.html> ·
+explainer: <https://keisuke58.github.io/wafer-proc-sim/laser_explained.html>.
+(`laser_groove`, `laser_control`, `laser_kabra`, `laser_sd` tests.)
 
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 

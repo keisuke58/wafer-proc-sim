@@ -34,6 +34,10 @@ add_library(wproc STATIC
   src/grind_metrology.cpp
   src/grind_surface.cpp
   src/grind_control.cpp
+  src/laser_groove.cpp
+  src/laser_control.cpp
+  src/laser_kabra.cpp
+  src/laser_sd.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -60,6 +64,9 @@ target_link_libraries(bench PRIVATE wproc Threads::Threads)
 
 add_executable(grind_demo apps/grind_demo.cpp)
 target_link_libraries(grind_demo PRIVATE wproc)
+
+add_executable(laser_demo apps/laser_demo.cpp)
+target_link_libraries(laser_demo PRIVATE wproc)
 
 # Tests.
 enable_testing()
@@ -102,6 +109,22 @@ add_test(NAME grind_surface COMMAND test_grind_surface)
 add_executable(test_grind_control tests/test_grind_control.cpp)
 target_link_libraries(test_grind_control PRIVATE wproc)
 add_test(NAME grind_control COMMAND test_grind_control)
+
+add_executable(test_laser_groove tests/test_laser_groove.cpp)
+target_link_libraries(test_laser_groove PRIVATE wproc)
+add_test(NAME laser_groove COMMAND test_laser_groove)
+
+add_executable(test_laser_control tests/test_laser_control.cpp)
+target_link_libraries(test_laser_control PRIVATE wproc)
+add_test(NAME laser_control COMMAND test_laser_control)
+
+add_executable(test_laser_kabra tests/test_laser_kabra.cpp)
+target_link_libraries(test_laser_kabra PRIVATE wproc)
+add_test(NAME laser_kabra COMMAND test_laser_kabra)
+
+add_executable(test_laser_sd tests/test_laser_sd.cpp)
+target_link_libraries(test_laser_sd PRIVATE wproc)
+add_test(NAME laser_sd COMMAND test_laser_sd)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 

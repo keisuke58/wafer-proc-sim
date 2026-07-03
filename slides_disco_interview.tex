@@ -1230,6 +1230,57 @@
     with metrology, inspection, and APC. \texttt{ctest} all pass, warning-free.}}
 \end{frame}
 
+% ── 10c. C++ LASER-PROCESSING INTELLIGENCE ───────────────────────────────────
+\begin{frame}[shrink=10]{Software --- C++ Laser-Processing Intelligence (built from scratch)}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{Stealth dicing $\cdot$ ablation grooving $\cdot$ KABRA-style slicing}\\
+      {\footnotesize Inspection $+$ closed-loop control $+$ SiC-ingot economics}
+
+      \vspace{0.4em}
+      \begin{tikzpicture}[font=\tiny,
+          st/.style={draw=discoblue, fill=discolight, rounded corners=2pt,
+                     minimum width=1.7cm, minimum height=0.55cm, align=center},
+          arr/.style={-{Stealth[length=4pt]}, discoblue}]
+        \node[st] (a) at (0,0)     {groove\\width/HAZ};
+        \node[st] (b) at (2.5,0)   {stealth SD\\layers/HAZ};
+        \node[st] (c) at (5.0,0)   {surface-crack\\risk};
+        \node[st] (d) at (5.0,-1.2){optics power\\$\Rightarrow$ RUL};
+        \node[st] (e) at (2.5,-1.2){pulse-energy\\R2R APC};
+        \node[st,fill=discoorange!30] (f) at (0,-1.2){KABRA\\wafers/ingot};
+        \draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c)--(d);
+        \draw[arr] (d)--(e); \draw[arr] (e)--(f);
+      \end{tikzpicture}
+
+      \vspace{0.4em}
+      \textbf{All hand-written C++17 (no OpenCV), with tests:}
+      \begin{itemize}\footnotesize
+        \item Ablation-groove width / depth / HAZ / debris from a top view
+        \item Stealth SD-layer count $+$ pitch $+$ HAZ $+$ surface-crack risk (IR)
+        \item Run-to-run pulse-energy APC; optics-power RUL
+        \item KABRA SiC-ingot slice yield / material use / cost vs.\ diamond wire
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \includegraphics[width=\textwidth]{vision/cpp/docs/assets/laser_groove.png}\\
+      {\scriptsize\centering Ablation groove: width 19.5, HAZ 4.0\,$\mu$m; debris 0.11\%\par}
+
+      \vspace{0.3em}
+      \begin{block}{}
+        \footnotesize
+        Pulse-energy APC vs.\ optics decay: depth RMS $3.5 \Rightarrow$
+          \textcolor{discoblue}{\textbf{$0.17~\mu$m}}\\
+        optics RUL $\sim$200 shots to service\\
+        KABRA: \textbf{66 vs.\ 50} wafers/ingot, $-20\%$ \$/wafer
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.2em}
+  {\footnotesize\textcolor{discogray}{Extends the C/C++ scope to \textbf{laser}
+    processing --- DISCO's stealth dicing, ablation grooving and KABRA SiC
+    slicing --- with inspection, APC and yield. \texttt{ctest} all pass, warning-free.}}
+\end{frame}
+
 % ── 11. RESULTS SUMMARY TABLE ────────────────────────────────────────────────
 \begin{frame}[shrink=10]{Results Summary --- Five Modules / Five Roles}
   \centering
