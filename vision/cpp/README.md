@@ -11,11 +11,20 @@ gradients, Otsu thresholding, binary morphology, connected-component labeling)
 are implemented directly, which keeps the build portable to any machine with a
 C++ compiler and demonstrates the underlying computer-vision math end to end.
 
-> **Visual explainer:** a student-friendly, annotated walkthrough of a FAIL-sample
-> inspection (numbered callouts, color legend, measurement-vs-spec, and a
-> plain-language primer) is published here:
-> https://claude.ai/code/artifact/d3ef3e24-f807-4e54-958f-74b70b5598d3
-> The same page is committed at [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
+## 📊 Live results dashboard
+
+[![wproc dashboard](docs/dashboard_preview.png)](https://keisuke58.github.io/wafer-proc-sim/)
+
+An interactive dashboard visualizing the toolkit's **own measured results** —
+real-time throughput bars, the SPC blade-wear control chart with RUL prediction,
+open-vs-closed-loop APC regulation, the full-wafer yield map, and the annotated
+inspection. Numbers are emitted by the C++ tools; charts use a CVD-validated
+palette with light/dark themes and hover tooltips.
+
+- **Live (GitHub Pages):** https://keisuke58.github.io/wafer-proc-sim/
+- **Explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
+- Source committed at [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html)
+  and [`docs/kerf_annotated.html`](docs/kerf_annotated.html).
 
 ## What it does
 
@@ -139,6 +148,93 @@ synthetic kerf scene: Gaussian and Sobel agree to float rounding noise
 3x3 Sobel on the GPU with the same border/radius conventions as the CPU path
 (`WPROC_WITH_CUDA`, default ON; compiled only when `check_language(CUDA)`
 finds a toolkit — machines without CUDA skip it with a status message).
+
+## Performance, metrology & machine-vision layers
+
+### Real-time filters + benchmark (`bench`)
+
+`wproc::simd::{gaussian_blur, sobel}` add AVX2/FMA (8 floats/lane, scalar
+borders) and row-tiled multithreaded variants, bit-parity with the scalar path
+(`simd_parity` test). The `bench` app reports throughput and camera frame rate:
+
+```bash
+./build/bench --width 2048 --height 2048 --iters 7
+```
+
+Measured on a 4-core x86 (2048×2048): Gaussian **46.6 → 697 MPix/s** (15×,
+139 fps @ 5 MP); Sobel **167 → 1326 MPix/s** (265 fps @ 5 MP).
+
+### Metrology — repeatability & calibration (`wproc/metrology.hpp`)
+
+- `metro::repeatability(...)` inspects N noisy realizations of a scene and
+  reports kerf-width mean, **1-σ spread**, min/max, and CV% (Gage-R&R-style
+  precision; measured CV ≈ 0.02 % on a synthetic kerf).
+- `metro::estimate_um_per_px(...)` recovers the pixel scale from a periodic
+  calibration target via the dominant autocorrelation period of the signed
+  Sobel-x projection, making width measurements traceable.
+
+### Machine-vision front-end — skew & multi-street (`wproc/street_detect.hpp`, OpenCV)
+
+- `vision::estimate_skew_deg` / `deskew` — find the street orientation
+  (Canny + Hough) and straighten the image; skew round-trips to ~0° after
+  deskew.
+- `vision::detect_streets` — locate every dark street centre across the field,
+  turning the single-kerf inspector into a full-field front-end.
+
+### Predictive blade-wear monitoring (`wproc/spc.hpp`, `wproc/blade_health.hpp`)
+
+Turns a stream of kerf-inspection results into a maintenance signal — the
+"knowing" half of DISCO's cut-grind-polish story:
+
+- `spc::Chart` — statistical process control with the Western Electric run
+  rules (1 pt beyond 3σ; 2/3 beyond 2σ; 4/5 beyond 1σ; 8 on one side) over
+  standardized kerf-width values.
+- `blade::Monitor` — feeds each cut through the chart and a running
+  least-squares trend, then reports a **wear index** and **remaining useful
+  life (RUL)** in cuts until width or chipping crosses its spec limit.
+
+On a synthetic 0.01 µm/cut drift the monitor recovers the slope, SPC flags the
+drift early, and RUL predicts the spec crossing (~195 cuts out at cut 300); a
+stable blade reports RUL ≫ 1000 and no replacement. (`blade_health` test.)
+
+### Closed-loop kerf regulation — run-to-run APC (`wproc/apc.hpp`)
+
+The "doing" half: feed the measured kerf width back into the recipe.
+`apc::R2RController` is a run-to-run EWMA controller — it tracks the process
+offset and sets the next feed so the predicted width lands on target, rejecting
+the slow drift a fixed recipe can't. In simulation against a drifting plant
+(0.02 µm/cut wear), closed-loop RMS error is **0.13 µm vs 2.9 µm open-loop**
+(≈23× tighter), with the feed automatically backing off to compensate.
+(`apc` test.)
+
+### Stealth-dicing subsurface inspection (`wproc/stealth_ir.hpp`)
+
+For DISCO's laser (stealth) dicing, silicon is IR-transparent so a transmission
+cross-section shows the internal modified (SD) layers and any cracks. `stealth::
+inspect_stealth` locates the SD layers from the row-projection peaks, reports
+their **count and pitch**, and measures **crack propagation** from the top layer
+toward the wafer surface (flagging cracks that reach it). On a synthetic 3-layer
+IR image it recovers the layers and 20 px pitch, measures an 18 px crack, and
+distinguishes a surface-reaching crack. (`stealth` test.)
+
+### Full-wafer defect map & yield binning (`wproc/wafer_map.hpp`)
+
+Aggregates per-die inspection results into a wafer map: `wafer::classify` bins
+each die in a grid as inside/outside the round wafer and pass/fail against a
+spec, then reports overall **yield** and a **centre-vs-edge** zone breakdown that
+exposes edge-ring signatures. Renders an ASCII map and a color wafer map. On a
+synthetic edge-heavy chipping pattern it finds ~1264 dies inside a 40×40 grid
+with 100% centre yield vs 28% edge yield (58.9% overall). (`wafer_map` test.)
+
+### FPGA — streaming 3×3 Sobel (`fpga/`)
+
+A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,
+zero-padded stream) with a self-checking testbench that compares every output
+bit-exact against an independent reference. Run with Icarus Verilog:
+
+```bash
+bash fpga/run_sim.sh    # iverilog + vvp; prints "TB PASS"
+```
 
 ## CLI reference
 
