@@ -1,4 +1,5 @@
 // test_simd_parity.cpp — SIMD/threaded filters must match the scalar path.
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <random>

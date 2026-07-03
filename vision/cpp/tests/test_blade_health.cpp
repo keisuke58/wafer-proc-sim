@@ -45,13 +45,34 @@ static void test_spc_rules() {
     CHECK(we1);
     CHECK(!p.in_control);
 
-    // Eight consecutive above the mean trips WE4.
+    // Two of three beyond 2-sigma (>41.0), same side, trips WE2.
     spc::Chart c2({40.0, 0.5});
+    c2.add(40.0);           // z = 0
+    c2.add(41.1);           // z = 2.2
+    spc::Point w2 = c2.add(41.2);  // z = 2.4 -> 2 of last 3 beyond 2 sigma
+    bool we2 = false;
+    for (auto r : w2.violations) we2 |= (r == spc::Rule::TwoOfThree2Sigma);
+    CHECK(we2);
+
+    // Four of five beyond 1-sigma (>40.5), same side, trips WE3.
+    spc::Chart c3({40.0, 0.5});
+    spc::Point w3;
+    for (int i = 0; i < 5; ++i) w3 = c3.add(40.6);  // z = 1.2 each
+    bool we3 = false;
+    for (auto r : w3.violations) we3 |= (r == spc::Rule::FourOfFive1Sigma);
+    CHECK(we3);
+
+    // Eight consecutive above the mean trips WE4.
+    spc::Chart c4({40.0, 0.5});
     spc::Point q;
-    for (int i = 0; i < 8; ++i) q = c2.add(40.2);  // all slightly high
+    for (int i = 0; i < 8; ++i) q = c4.add(40.2);  // all slightly high
     bool we4 = false;
     for (auto r : q.violations) we4 |= (r == spc::Rule::EightOneSide);
     CHECK(we4);
+
+    // A degenerate sigma must not silently pass everything (NaN-guard).
+    spc::Chart degenerate({40.0, 0.0});
+    CHECK(degenerate.limits().sigma > 0.0);
 }
 
 static void test_wear_prediction() {

@@ -6,6 +6,7 @@
 // "real-time image-processing" numbers for the inspection pipeline.
 //
 // Usage: bench [--width W] [--height H] [--sigma S] [--iters N] [--threads T]
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <functional>
@@ -61,7 +62,8 @@ int main(int argc, char** argv) {
     const int W = static_cast<int>(arg_double(argc, argv, "--width", 2048));
     const int H = static_cast<int>(arg_double(argc, argv, "--height", 2048));
     const float sigma = static_cast<float>(arg_double(argc, argv, "--sigma", 1.2));
-    const int iters = static_cast<int>(arg_double(argc, argv, "--iters", 7));
+    int iters = static_cast<int>(arg_double(argc, argv, "--iters", 7));
+    if (iters < 1) iters = 1;  // need at least one sample for the median
     const int threads = static_cast<int>(arg_double(argc, argv, "--threads", 0));
 
     Image img = make_image(W, H);

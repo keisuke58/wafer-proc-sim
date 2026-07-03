@@ -40,7 +40,11 @@ struct Point {
 // evaluated point including any run-rule violations at that sample.
 class Chart {
 public:
-    explicit Chart(Limits lim) : lim_(lim) {}
+    explicit Chart(Limits lim) : lim_(lim) {
+        // Guard every construction path (not just baseline-derived limits):
+        // a non-positive sigma would make z = NaN/Inf and silently pass rules.
+        if (!(lim_.sigma > 0.0)) lim_.sigma = 1.0;
+    }
     const Limits& limits() const { return lim_; }
 
     Point add(double value);

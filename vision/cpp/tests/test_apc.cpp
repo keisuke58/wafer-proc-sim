@@ -3,6 +3,7 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 #include "wproc/apc.hpp"
@@ -27,7 +28,34 @@ static double rms_err(const std::vector<double>& w, double target) {
     return std::sqrt(s / w.size());
 }
 
+// The controller must reject a degenerate model up front.
+static bool throws_invalid(const apc::R2RParams& p) {
+    try {
+        apc::R2RController c(p);
+        (void)c;
+        return false;
+    } catch (const std::invalid_argument&) {
+        return true;
+    }
+}
+
+static void test_validation() {
+    apc::R2RParams bad_gain;
+    bad_gain.gain = 0.0;
+    CHECK(throws_invalid(bad_gain));
+
+    apc::R2RParams bad_lambda_hi;
+    bad_lambda_hi.lambda = 1.5;
+    CHECK(throws_invalid(bad_lambda_hi));
+
+    apc::R2RParams bad_lambda_lo;
+    bad_lambda_lo.lambda = 0.0;
+    CHECK(throws_invalid(bad_lambda_lo));
+}
+
 int main() {
+    test_validation();
+
     apc::DicingPlant plant;
     plant.offset0_um = 32.5;      // width = 32.5 + 5*feed + drift*k
     plant.gain = 5.0;             // feed 1.5 -> 40 um at k=0

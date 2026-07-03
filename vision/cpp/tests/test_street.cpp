@@ -1,5 +1,6 @@
 // test_street.cpp — skew estimation, deskew, and multi-street detection.
 // Built with the OpenCV backend (uses warpAffine to synthesize a tilted input).
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>

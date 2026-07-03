@@ -39,9 +39,22 @@ SdResult inspect_stealth(const Image& img, SdParams p) {
     double thr_row = rmin + p.min_layer_prominence * (rmax - rmin);
 
     // Local maxima above the prominence threshold = layer depths (top-first).
+    std::vector<int> candidates;
     for (int y = 1; y < H - 1; ++y)
         if (rs[y] > thr_row && rs[y] >= rs[y - 1] && rs[y] >= rs[y + 1])
-            r.layer_depths_px.push_back(static_cast<double>(y));
+            candidates.push_back(y);
+
+    // Merge adjacent/plateaued candidates so a single wide (or saturated) SD
+    // band isn't reported as several layers, which would corrupt the pitch.
+    for (std::size_t i = 0; i < candidates.size();) {
+        std::size_t j = i;
+        while (j + 1 < candidates.size() && candidates[j + 1] - candidates[j] <= 1)
+            ++j;
+        double sum = 0.0;
+        for (std::size_t k = i; k <= j; ++k) sum += candidates[k];
+        r.layer_depths_px.push_back(sum / static_cast<double>(j - i + 1));
+        i = j + 1;
+    }
     r.layer_count = static_cast<int>(r.layer_depths_px.size());
 
     if (r.layer_count >= 2) {

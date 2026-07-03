@@ -14,6 +14,17 @@ namespace wproc::simd {
 
 namespace {
 
+// Runtime AVX2 detection: the TU is compiled with -mavx2, but the binary may
+// run on an older CPU, so gate the intrinsic paths at runtime to avoid SIGILL.
+bool cpu_has_avx2() {
+#if defined(__AVX2__)
+    static const bool ok = __builtin_cpu_supports("avx2");
+    return ok;
+#else
+    return false;
+#endif
+}
+
 std::vector<float> gaussian_kernel(float sigma, int& radius) {
     radius = static_cast<int>(std::ceil(3.0f * sigma));
     std::vector<float> k(2 * radius + 1);
@@ -58,6 +69,7 @@ void gauss_h_rows(const float* in, float* out, int W, int /*H*/, const float* k,
         for (int x = 0; x < lo; ++x) orow[x] = scalar_at(row, x);  // left border
         int x = lo;
 #if defined(__AVX2__)
+        if (cpu_has_avx2())
         for (; x + 8 <= hi; x += 8) {
             __m256 acc = _mm256_setzero_ps();
             for (int i = -radius; i <= radius; ++i) {
@@ -86,6 +98,7 @@ void gauss_v_rows(const float* in, float* out, int W, int H, const float* k,
         float* orow = out + static_cast<std::size_t>(y) * W;
         int x = 0;
 #if defined(__AVX2__)
+        if (cpu_has_avx2())
         for (; x + 8 <= W; x += 8) {
             __m256 acc = _mm256_setzero_ps();
             for (int i = -radius; i <= radius; ++i) {
@@ -130,6 +143,7 @@ void sobel_rows(const float* in, float* gx, float* gy, int W, int H, int y0,
         }
         x = 1;
 #if defined(__AVX2__)
+        if (cpu_has_avx2()) {
         const __m256 two = _mm256_set1_ps(2.0f);
         for (; x + 8 <= W - 1; x += 8) {
             __m256 tl = _mm256_loadu_ps(r0 + x - 1), tc = _mm256_loadu_ps(r0 + x),
@@ -146,6 +160,7 @@ void sobel_rows(const float* in, float* gx, float* gy, int W, int H, int y0,
             _mm256_storeu_ps(ogx + x, gxr);
             _mm256_storeu_ps(ogy + x, gyr);
         }
+        }  // if (cpu_has_avx2())
 #endif
         for (; x < W - 1; ++x) {
             ogx[x] = (r0[x + 1] + 2 * r1[x + 1] + r2[x + 1]) -
@@ -215,13 +230,7 @@ Gradient sobel_impl(const Image& src, int threads) {
 
 }  // namespace
 
-bool avx2_enabled() {
-#if defined(__AVX2__)
-    return true;
-#else
-    return false;
-#endif
-}
+bool avx2_enabled() { return cpu_has_avx2(); }
 
 Image gaussian_blur(const Image& src, float sigma) {
     return gaussian_impl(src, sigma, 1);

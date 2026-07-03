@@ -9,7 +9,12 @@
 // in raster order — one per original pixel.
 //
 // out_gx / out_gy are signed; the 3x3 Sobel of 8-bit pixels fits in 11 bits
-// (max magnitude 4*255 = 1020), so DW+3 bits is sufficient.
+// (max magnitude 4*255 = 1020). The ports are declared [DW+3:0] (= DW+4 bits,
+// 12 bits for DW=8), giving one spare bit of headroom.
+//
+// Flow control: fixed-rate, always-accept. The core consumes one pixel per
+// clock whenever in_valid is high and never stalls, so a downstream consumer
+// must always be ready (there is no ready/backpressure handshake).
 `default_nettype none
 `timescale 1ns/1ps
 
