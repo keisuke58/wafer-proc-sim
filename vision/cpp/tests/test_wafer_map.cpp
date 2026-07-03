@@ -1,4 +1,5 @@
 // test_wafer_map.cpp — die binning, yield, and centre/edge zone analysis.
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -46,8 +47,7 @@ int main() {
 
     // ASCII map dimensions and legend characters.
     std::string a = ascii_map(w);
-    int nl = 0;
-    for (char ch : a) nl += (ch == '\n');
+    int nl = static_cast<int>(std::count(a.begin(), a.end(), '\n'));
     CHECK(nl == R);
     CHECK(a.find('.') != std::string::npos);  // outside cells exist
     CHECK(a.find('o') != std::string::npos);  // some pass
