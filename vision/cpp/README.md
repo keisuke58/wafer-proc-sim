@@ -140,6 +140,48 @@ synthetic kerf scene: Gaussian and Sobel agree to float rounding noise
 (`WPROC_WITH_CUDA`, default ON; compiled only when `check_language(CUDA)`
 finds a toolkit — machines without CUDA skip it with a status message).
 
+## Performance, metrology & machine-vision layers
+
+### Real-time filters + benchmark (`bench`)
+
+`wproc::simd::{gaussian_blur, sobel}` add AVX2/FMA (8 floats/lane, scalar
+borders) and row-tiled multithreaded variants, bit-parity with the scalar path
+(`simd_parity` test). The `bench` app reports throughput and camera frame rate:
+
+```bash
+./build/bench --width 2048 --height 2048 --iters 7
+```
+
+Measured on a 4-core x86 (2048×2048): Gaussian **46.6 → 697 MPix/s** (15×,
+139 fps @ 5 MP); Sobel **167 → 1326 MPix/s** (265 fps @ 5 MP).
+
+### Metrology — repeatability & calibration (`wproc/metrology.hpp`)
+
+- `metro::repeatability(...)` inspects N noisy realizations of a scene and
+  reports kerf-width mean, **1-σ spread**, min/max, and CV% (Gage-R&R-style
+  precision; measured CV ≈ 0.02 % on a synthetic kerf).
+- `metro::estimate_um_per_px(...)` recovers the pixel scale from a periodic
+  calibration target via the dominant autocorrelation period of the signed
+  Sobel-x projection, making width measurements traceable.
+
+### Machine-vision front-end — skew & multi-street (`wproc/street_detect.hpp`, OpenCV)
+
+- `vision::estimate_skew_deg` / `deskew` — find the street orientation
+  (Canny + Hough) and straighten the image; skew round-trips to ~0° after
+  deskew.
+- `vision::detect_streets` — locate every dark street centre across the field,
+  turning the single-kerf inspector into a full-field front-end.
+
+### FPGA — streaming 3×3 Sobel (`fpga/`)
+
+A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,
+zero-padded stream) with a self-checking testbench that compares every output
+bit-exact against an independent reference. Run with Icarus Verilog:
+
+```bash
+bash fpga/run_sim.sh    # iverilog + vvp; prints "TB PASS"
+```
+
 ## CLI reference
 
 `gen_synthetic <out.pgm> [--width-um W] [--chip-um D] [--noise S] [--seed N]`
