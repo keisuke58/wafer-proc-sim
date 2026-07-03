@@ -215,6 +215,15 @@ toward the wafer surface (flagging cracks that reach it). On a synthetic 3-layer
 IR image it recovers the layers and 20 px pitch, measures an 18 px crack, and
 distinguishes a surface-reaching crack. (`stealth` test.)
 
+### Full-wafer defect map & yield binning (`wproc/wafer_map.hpp`)
+
+Aggregates per-die inspection results into a wafer map: `wafer::classify` bins
+each die in a grid as inside/outside the round wafer and pass/fail against a
+spec, then reports overall **yield** and a **centre-vs-edge** zone breakdown that
+exposes edge-ring signatures. Renders an ASCII map and a color wafer map. On a
+synthetic edge-heavy chipping pattern it finds ~1264 dies inside a 40×40 grid
+with 100% centre yield vs 28% edge yield (58.9% overall). (`wafer_map` test.)
+
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
 A synthesizable line-buffer Verilog Sobel core (`sobel3x3.v`, one pixel/clock,

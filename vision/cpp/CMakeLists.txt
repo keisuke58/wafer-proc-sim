@@ -30,6 +30,7 @@ add_library(wproc STATIC
   src/blade_health.cpp
   src/apc.cpp
   src/stealth_ir.cpp
+  src/wafer_map.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -79,6 +80,10 @@ add_test(NAME apc COMMAND test_apc)
 add_executable(test_stealth tests/test_stealth.cpp)
 target_link_libraries(test_stealth PRIVATE wproc)
 add_test(NAME stealth COMMAND test_stealth)
+
+add_executable(test_wafer_map tests/test_wafer_map.cpp)
+target_link_libraries(test_wafer_map PRIVATE wproc)
+add_test(NAME wafer_map COMMAND test_wafer_map)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 
