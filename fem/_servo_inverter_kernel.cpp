@@ -90,7 +90,7 @@ public:
     double v_dc, t_dead_us, T_sw_us, E_on_mJ, E_off_mJ;
     double i_a, i_b, i_c, energy_loss_J;
 
-    InverterSimulator(double v_dc_=600.0, double t_dead_us_=1.5,
+    explicit InverterSimulator(double v_dc_=600.0, double t_dead_us_=1.5,
                       double f_sw_kHz=15.0,
                       double E_on_mJ_=0.5, double E_off_mJ_=0.3)
         : v_dc(v_dc_), t_dead_us(t_dead_us_), T_sw_us(1e3/f_sw_kHz),

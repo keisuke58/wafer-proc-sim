@@ -120,6 +120,8 @@ py::dict archard_analysis(
     py::dict r;
     r["material"]             = material_name;
     r["hardness_GPa"]         = m.hardness_GPa;
+    r["K_IC_MPa_sqrt_m"]      = m.K_IC;
+    r["E_GPa"]                = m.E_GPa;
     r["archard_k"]            = m.archard_k;
     r["F_N_newtons"]          = F_N;
     r["peripheral_speed_m_min"] = V_m_min;

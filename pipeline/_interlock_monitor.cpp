@@ -24,6 +24,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdexcept>
+#include <numeric>
 
 namespace py = pybind11;
 
@@ -119,11 +120,10 @@ public:
             AlarmRecord rec{name, lv, value, clock_ms};
             alarm_log.push_back(rec);
             // Update or insert active alarm for this sensor
-            bool found = false;
-            for (auto& a : active_alarms) {
-                if (a.sensor == name) { a = rec; found = true; break; }
-            }
-            if (!found) active_alarms.push_back(rec);
+            auto slot = std::find_if(active_alarms.begin(), active_alarms.end(),
+                [&](const AlarmRecord& a){ return a.sensor == name; });
+            if (slot != active_alarms.end()) *slot = rec;
+            else active_alarms.push_back(rec);
             if (lv == AlarmLevel::FAULT) e_stop_active = true;
         } else {
             // Clear active alarm for this sensor if it went back to OK
@@ -153,10 +153,11 @@ public:
     // ── state ─────────────────────────────────────────────────────────────────
 
     AlarmLevel system_level() const {
-        AlarmLevel worst = AlarmLevel::OK;
-        for (const auto& a : active_alarms)
-            if ((int)a.level > (int)worst) worst = a.level;
-        return worst;
+        return std::accumulate(
+            active_alarms.begin(), active_alarms.end(), AlarmLevel::OK,
+            [](AlarmLevel worst, const AlarmRecord& a) {
+                return (int)a.level > (int)worst ? a.level : worst;
+            });
     }
 
     std::string system_level_name() const {
@@ -217,6 +218,20 @@ public:
             lst.append(d);
         }
         return lst;
+    }
+
+    // Full sensor snapshot: name / value / unit / current alarm level.
+    py::dict get_sensor_info(const std::string& name) const {
+        auto it = sensors.find(name);
+        if (it == sensors.end())
+            throw std::invalid_argument("unknown sensor: " + name);
+        const Sensor& s = it->second;
+        py::dict d;
+        d["name"]  = s.name;
+        d["value"] = s.value;
+        d["unit"]  = s.unit;
+        d["level"] = alarm_level_name(s.level());
+        return d;
     }
 
     double get_sensor_value(const std::string& name) const {
@@ -301,6 +316,7 @@ PYBIND11_MODULE(_interlock_monitor, m) {
         .def("get_alarm_log",     &InterlockMonitor::get_alarm_log,
              py::arg("last_n")=-1)
         .def("get_sensor_value",  &InterlockMonitor::get_sensor_value)
+        .def("get_sensor_info",   &InterlockMonitor::get_sensor_info)
         .def("get_sensor_level",  &InterlockMonitor::get_sensor_level)
         .def_static("disco_dicing_interlocks",
                     &InterlockMonitor::disco_dicing_interlocks,

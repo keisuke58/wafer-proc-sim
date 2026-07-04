@@ -19,20 +19,40 @@ Key result benchmark (target):
   LOO RMSE (PAT fine-tuned, n=11): ≤ 1.40 µm   ← target improvement
 """
 
+from __future__ import annotations
+
 import os
 import math
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+# torch is only needed by the transformer model / training functions below.
+# The data helpers (make_fem_data / make_experimental_data / physics_features)
+# are pure NumPy, so keep them importable on torch-less environments (CI).
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    from torch.utils.data import TensorDataset, DataLoader
+    _HAS_TORCH = True
+except ImportError:               # pragma: no cover - exercised on CI only
+    torch = None
+    _HAS_TORCH = False
+
+    class _NnStub:                # placeholder so class definition below parses
+        class Module:             # noqa: D401 - minimal stand-in
+            def __init__(self, *a, **k):
+                raise ImportError(
+                    "PyTorch is required for PhysicsAwareTransformer; "
+                    "install torch to use the surrogate model.")
+    nn = _NnStub()
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.preprocessing import StandardScaler
 
-torch.manual_seed(42)
 np.random.seed(42)
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if _HAS_TORCH:
+    torch.manual_seed(42)
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+else:
+    DEVICE = None
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 
 

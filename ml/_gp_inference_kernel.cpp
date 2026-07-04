@@ -153,7 +153,7 @@ py::dict gp_predict_full(const arr2d& X_test_arr,
     auto sig = std_arr.mutable_unchecked<1>();
 
     // Reusable k_star buffer
-    std::vector<double> kstar(N), v(N);
+    std::vector<double> kstar(N);
 
     for (ssize_t i = 0; i < M; ++i) {
         // Compute k_star
@@ -175,7 +175,6 @@ py::dict gp_predict_full(const arr2d& X_test_arr,
             double dot = 0.0;
             for (ssize_t c = 0; c <= r; ++c)
                 dot += L_inv(r, c) * kstar[c];
-            v[r] = dot;
             var -= dot * dot;
         }
         sig(i) = (var > 0.0) ? std::sqrt(var) : 0.0;

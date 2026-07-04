@@ -48,8 +48,8 @@ static double mean_vec(const std::vector<double> &v) {
 
 static double rms_vec(const std::vector<double> &v) {
     if (v.empty()) return 0.0;
-    double s = 0.0;
-    for (double x : v) s += x * x;
+    const double s = std::accumulate(v.begin(), v.end(), 0.0,
+        [](double acc, double x) { return acc + x * x; });
     return std::sqrt(s / v.size());
 }
 

@@ -73,9 +73,8 @@ py::dict series_system(const std::vector<double>& mtbf_hours) {
 py::dict parallel_system(const std::vector<double>& mtbf_hours) {
     if (mtbf_hours.empty()) throw std::invalid_argument("empty mtbf list");
     int n = static_cast<int>(mtbf_hours.size());
-    double avg_mtbf = 0.0;
-    for (double m : mtbf_hours) avg_mtbf += m;
-    avg_mtbf /= n;
+    double avg_mtbf =
+        std::accumulate(mtbf_hours.begin(), mtbf_hours.end(), 0.0) / n;
     // Use average MTBF assumption (identical units).
     double harmonic = 0.0;
     for (int k = 1; k <= n; ++k) harmonic += 1.0 / k;

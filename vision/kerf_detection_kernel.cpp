@@ -101,8 +101,8 @@ static std::pair<float,float> find_walls_zero_crossing(
     auto s = smooth3(proj_signed);
 
     // Adaptive threshold
-    float max_abs = 0.0f;
-    for (float v : s) max_abs = std::max(max_abs, std::abs(v));
+    const float max_abs = std::accumulate(s.begin(), s.end(), 0.0f,
+        [](float acc, float v) { return std::max(acc, std::abs(v)); });
     float thr = max_abs * min_signal_frac;
     if (thr < 1.0f) return std::make_pair(-1.0f, -1.0f);
 
@@ -206,10 +206,10 @@ py::dict detect_kerf_width(
     }
 
     float width_mm = (right_subpx - left_subpx) / pixel_per_mm;
-    // Confidence: how symmetric the two wall signals are (heuristic)
-    float conf = std::max(0.0f, 1.0f - std::abs(right_subpx - left_subpx -
-                          (right_subpx - left_subpx)) / (right_subpx - left_subpx + 1e-6f));
-    conf = std::min(1.0f, (right_subpx - left_subpx) / (static_cast<float>(W) * 0.05f));
+    // Confidence: kerf width relative to a plausible minimum (heuristic).
+    // (The previous "symmetry" expression was dead code: x - x == 0 always.)
+    float conf = std::min(1.0f, (right_subpx - left_subpx) /
+                                (static_cast<float>(W) * 0.05f));
     res["kerf_width_mm"]    = width_mm;
     res["left_edge_px"]     = static_cast<int>(std::round(left_subpx));
     res["right_edge_px"]    = static_cast<int>(std::round(right_subpx));

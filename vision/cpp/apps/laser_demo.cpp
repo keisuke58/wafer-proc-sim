@@ -58,9 +58,9 @@ Image make_sd(int w, int h, unsigned seed) {
     std::normal_distribution<double> noise(0.0, 4.0);
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
-            float v = 30.0f;
-            for (int r : rows)
-                if (y >= r - 2 && y <= r + 2) v = 220.0f;
+            const bool on_row = std::any_of(rows.begin(), rows.end(),
+                [y](int r) { return y >= r - 2 && y <= r + 2; });
+            const float v = on_row ? 220.0f : 30.0f;
             img.at(x, y) = static_cast<float>(v + noise(gen));
         }
     return img;

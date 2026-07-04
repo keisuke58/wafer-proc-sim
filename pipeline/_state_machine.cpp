@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include <functional>
 #include <stdexcept>
+#include <algorithm>
+#include <iterator>
 
 namespace py = pybind11;
 
@@ -81,10 +83,8 @@ public:
         auto it = TRANSITIONS.find((int)_state);
         if (it == TRANSITIONS.end()) return false;
         const auto& allowed = it->second;
-        bool ok = false;
-        for (int s : allowed) {
-            if (s == (int)target) { ok = true; break; }
-        }
+        const bool ok = std::any_of(allowed.begin(), allowed.end(),
+                                    [&](int s) { return s == (int)target; });
         if (!ok) return false;
 
         _history.push_back({state_name(_state), state_name(target), reason});
@@ -92,14 +92,14 @@ public:
         // Fire exit callbacks for old state.
         auto exit_it = _exit_cbs.find((int)_state);
         if (exit_it != _exit_cbs.end())
-            for (auto& cb : exit_it->second) cb();
+            for (const auto& cb : exit_it->second) cb();
 
         _state = target;
 
         // Fire entry callbacks for new state.
         auto enter_it = _enter_cbs.find((int)_state);
         if (enter_it != _enter_cbs.end())
-            for (auto& cb : enter_it->second) cb();
+            for (const auto& cb : enter_it->second) cb();
 
         return true;
     }
@@ -127,7 +127,9 @@ public:
         std::vector<std::string> out;
         auto it = TRANSITIONS.find((int)_state);
         if (it != TRANSITIONS.end())
-            for (int s : it->second) out.emplace_back(state_name((State)s));
+            std::transform(it->second.begin(), it->second.end(),
+                           std::back_inserter(out),
+                           [](int s) { return state_name((State)s); });
         return out;
     }
 
