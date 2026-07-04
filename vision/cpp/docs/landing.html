@@ -68,6 +68,9 @@
     <a class="navcard" href="optomech.html">
       <div class="ic">📷</div><b>レンズ鏡筒メカ設計（Sony向け）</b>
       <span>公差スタックアップ+光学感度・AF機構+VCM制御・鏡筒FEA(熱/落下/モード)・手ブレ補正(OIS)</span></a>
+    <a class="navcard" href="inspection.html">
+      <div class="ic">🛰️</div><b>マスク/ウェハ欠陥検査（Lasertec向け）</b>
+      <span>サブピクセルDie-to-Die・適応統計検出（nuisance抑制）・位相欠陥チャネル・DL異常検出</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -93,6 +96,9 @@
 
   <h2 class="sec">レンズ鏡筒メカ設計 ― optomech（Sony向け）<a href="optomech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-optomech"></div>
+
+  <h2 class="sec">マスク/ウェハ欠陥検査 ― inspection（Lasertec向け）<a href="inspection.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-inspection"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -139,6 +145,11 @@ const GAL = {
     ['tol_hist.png','鏡筒公差スタックアップ','偏心/傾き/間隔公差→像面ボアサイト誤差（モンテカルロ）'],
     ['cam_step.png','AF機構＋VCM制御','ボイスコイルのPID+FFステップ応答（整定3.9ms）'],
     ['ois_trace.png','手ブレ補正（OIS）','ジャイロ検出→アクチュエータで像を安定化（3.2 stops）'],
+  ],
+  'g-inspection': [
+    ['insp_phase.png','位相欠陥の検出','振幅像で不可視の位相欠陥をthrough-focus（∇²φ）で暴く'],
+    ['insp_detect.png','検出マップ比較','固定しきい値 vs 適応統計 vs DL vs 融合（nuisance抑制）'],
+    ['insp_curve.png','捕捉率 vs 偽欠陥数','振幅のみは0.75で頭打ち→位相融合で1.0（検査の実KPI）'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],
