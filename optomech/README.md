@@ -74,3 +74,26 @@ docs/               self-contained GitHub Pages dashboard + assets
   numerically.
 - **OIS** — the actuator is a 2nd-order servo whose finite bandwidth sets how much
   high-frequency tremor leaks through.
+
+## Finite-element barrel model (`fem/barrel_fem.py`, Python)
+
+A genuine mesh-based **Euler-Bernoulli beam FE** model of the barrel (2 DOF/node),
+complementing the closed-form C++ `fea` module. It assembles element
+stiffness/consistent-mass matrices and runs three analyses a lens-barrel
+designer actually performs:
+
+- **Modal** — generalized eigenproblem for natural frequencies + mode shapes;
+  the first mode (**10,639 Hz**) matches the closed-form cantilever within
+  **0.14%**.
+- **Thermal-structural coupling** — a radial temperature gradient imposes a
+  thermal curvature; the FE tip deflection equals the analytic uniform-curvature
+  result (**3.15 µm** per 5 °C gradient).
+- **Drop-shock transient** — Newmark-β time integration under a half-sine base
+  pulse → peak root bending stress and **safety factor 30.6** (a more realistic,
+  transient answer than the closed-form estimate).
+
+```bash
+python3 fem/barrel_fem.py    # writes fem/figures/*.png + barrel_fem_results.json
+```
+Requires `numpy` + `matplotlib` (`scipy` used for the eigensolver if present).
+

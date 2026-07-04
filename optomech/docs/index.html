@@ -179,6 +179,19 @@
     </table>
   </div>
 
+
+  <div class="card">
+    <h2>⑨ 本格FEA検証 ― Python 有限要素モデル（メッシュベース）</h2>
+    <p class="sub">閉形式ではなく、オイラー・ベルヌーイ梁要素を組み立てた実FEM。一般化固有値問題で固有振動・モード形状、熱-構造連成、Newmark-β法で落下衝撃の過渡応答を解き、閉形式解と照合検証。研究で培ったFEA（Abaqus/Ansys/自作FEM）の実力を実装で提示。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr" >
+      <div class="figure" style="background:#fff"><img src="assets/barrel_modes.png" alt="モード形状"></div>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <div class="figure" style="background:#fff"><img src="assets/barrel_thermal.png" alt="熱勾配たわみ"></div>
+        <div class="figure" style="background:#fff"><img src="assets/barrel_shock.png" alt="落下衝撃過渡"></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：1次モード <b>10,639 Hz</b>（閉形式 10,624 Hz と <b>0.14%</b> 一致）／熱勾配たわみ FE=解析解 一致（<b>3.15 µm</b>/5℃勾配）／落下衝撃 <b>安全率30.6</b>（Newmark-β過渡）。24要素・梁FE。</p>
+  </div>
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

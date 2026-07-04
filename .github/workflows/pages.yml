@@ -64,6 +64,9 @@ jobs:
           cp vision/cpp/docs/assets/tol_hist.png        _site/assets/ || echo "missing tol_hist"
           cp vision/cpp/docs/assets/cam_step.png        _site/assets/ || echo "missing cam_step"
           cp vision/cpp/docs/assets/ois_trace.png       _site/assets/ || echo "missing ois_trace"
+          cp vision/cpp/docs/assets/barrel_modes.png    _site/assets/ || echo "missing barrel_modes"
+          cp vision/cpp/docs/assets/barrel_thermal.png  _site/assets/ || echo "missing barrel_thermal"
+          cp vision/cpp/docs/assets/barrel_shock.png    _site/assets/ || echo "missing barrel_shock"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

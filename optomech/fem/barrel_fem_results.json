@@ -1,0 +1,18 @@
+{
+  "material": "Al 6061",
+  "n_elements": 24,
+  "modal_hz": [
+    10638.6,
+    85330.6,
+    259204.6
+  ],
+  "first_mode_hz": 10638.6,
+  "closed_form_f1_hz": 10624.1,
+  "modal_vs_closed_form_pct": 0.14,
+  "thermal_tip_um_per_5C_grad": -3.147,
+  "thermal_analytic_um": 3.147,
+  "shock_a_peak_g": 1418.7,
+  "shock_peak_tip_um": 4.04,
+  "shock_peak_stress_MPa": 9.01,
+  "shock_safety_factor": 30.6
+}
