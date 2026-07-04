@@ -82,6 +82,9 @@ jobs:
           cp vision/cpp/docs/assets/insp_detect.png     _site/assets/ || echo "missing insp_detect"
           cp vision/cpp/docs/assets/insp_phase.png      _site/assets/ || echo "missing insp_phase"
           cp vision/cpp/docs/assets/insp_curve.png      _site/assets/ || echo "missing insp_curve"
+          cp vision/cpp/docs/assets/real_gallery.png    _site/assets/ || echo "missing real_gallery"
+          cp vision/cpp/docs/assets/real_auroc.png      _site/assets/ || echo "missing real_auroc"
+          cp vision/cpp/docs/assets/neu_real_classifier.png _site/assets/ || echo "missing neu_real_classifier"
           cp vision/cpp/docs/assets/barrel_gdt.png      _site/assets/ || echo "missing barrel_gdt"
           # Curated result figures for the gallery on the landing page.
           for f in \

@@ -48,3 +48,31 @@ fixed nuisance budget: amplitude channel **0.0**, phase channel **1.0**.
 Figures: `insp_scene.png` (array + phase channel), `insp_detect.png` (fixed vs
 adaptive vs DL vs fused maps), `insp_phase.png` (phase-defect reveal),
 `insp_curve.png` (capture vs nuisance).
+
+## Real-photograph validation (`real_anomaly.py`)
+
+The synthetic bench proves the algorithms with exact ground truth; this script
+answers *does it work on real images?* using three NEU steel-surface sets that
+ship **pixel-precise ground-truth masks** (51 photo+mask pairs, 640×480 — the
+same evaluation structure as MVTec AD, whose distribution channels are blocked
+from this environment). A lone photograph has no defect-free reference die, so
+the detector that transfers is the *statistical* one: score each pixel in units
+of the local robust noise (local median + MAD), single- and multi-scale.
+
+Pixel AUROC (threshold-free), measured over all 51 pairs:
+
+| detector | AUROC |
+|---|---:|
+| fixed \|I−mean\| (naive) | 0.758 |
+| adaptive z, one scale | 0.709 |
+| **multi-scale adaptive z** | **0.914** |
+
+```bash
+python3 inspection/real_anomaly.py   # figures/real_gallery.png + real_auroc.png
+```
+
+Companion real-image *classification* result: the from-scratch BatchNorm CNN on
+**NEU-CLS (1,800 real photographs, 6 defect classes)** reaches **0.976
+accuracy** (macro-F1 0.976, weakest class F1 0.937) vs a pixel RandomForest
+baseline at 0.760 — `vision/neu_real_classifier.py` with a best-validation
+checkpoint. Datasets live under `data/external/` (gitignored).
