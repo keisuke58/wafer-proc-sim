@@ -96,6 +96,7 @@ Schedule evaluate(const std::vector<Station>& st, const std::vector<Job>& jobs,
     s.order = order;
     Station cur = home;
     const int ns = static_cast<int>(st.size()), nj = static_cast<int>(jobs.size());
+    std::size_t served = 0;
     for (int j : order) {
         if (j < 0 || j >= nj) continue;                        // guard: bad job index
         const Job& job = jobs[j];
@@ -105,8 +106,9 @@ Schedule evaluate(const std::vector<Station>& st, const std::vector<Job>& jobs,
         const Station& place = st[job.place];
         s.travel += dist(cur, pick) + dist(pick, place);
         cur = place;
+        ++served;
     }
-    s.makespan_s = s.travel / p.speed + static_cast<double>(order.size()) * p.handling_s;
+    s.makespan_s = s.travel / p.speed + static_cast<double>(served) * p.handling_s;
     return s;
 }
 
@@ -124,6 +126,7 @@ Schedule optimize(const std::vector<Station>& st, const std::vector<Job>& jobs,
 
     // Nearest-neighbour construction: repeatedly pick the job whose pickup is
     // closest to the robot's current position.
+    const int ns = static_cast<int>(st.size());
     std::vector<int> order;
     std::vector<std::uint8_t> used(n, 0);
     Station cur = home;
@@ -132,13 +135,15 @@ Schedule optimize(const std::vector<Station>& st, const std::vector<Job>& jobs,
         double bd = 1e300;
         for (int j = 0; j < n; ++j) {
             if (used[j]) continue;
+            if (jobs[j].pick < 0 || jobs[j].pick >= ns) { used[j] = 1; continue; }
             const double d = dist(cur, st[jobs[j].pick]);
             if (d < bd) { bd = d; best = j; }
         }
         if (best < 0) break;  // all jobs served (defensive; loop bounds ensure one)
         used[best] = 1;
         order.push_back(best);
-        cur = st[jobs[best].place];
+        const int pl = jobs[best].place;
+        cur = (pl >= 0 && pl < ns) ? st[pl] : cur;
     }
 
     // 2-opt refinement: reverse order segments while the total travel drops.

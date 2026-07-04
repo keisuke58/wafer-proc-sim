@@ -77,6 +77,12 @@ static void test_stackup() {
     else if (crit.source == "tilt") tightened[crit.element].tilt_mrad = 0.0;
     tol::Result r2 = tol::analyze(sys, tightened, 3.9, 40000);
     CHECK(r2.lateral_rss_um < r.lateral_rss_um);
+
+    // n_samples <= 0: analytic-only path, no Monte Carlo, no crash.
+    tol::Result r0 = tol::analyze(sys, tols, 20.0, /*n=*/0);
+    CHECK(r0.mc_lateral_um.empty());
+    CHECK(r0.lateral_rss_um > 0.0);
+    CHECK(r0.ok == (r0.lateral_rss_um <= 20.0));
 }
 
 int main() {

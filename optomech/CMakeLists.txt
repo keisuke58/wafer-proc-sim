@@ -23,6 +23,10 @@ add_library(optm STATIC
   src/fea.cpp
   src/ois.cpp
   src/ppm.cpp
+  src/talloc.cpp
+  src/aa.cpp
+  src/housing.cpp
+  src/athermal.cpp
 )
 target_include_directories(optm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -47,3 +51,19 @@ add_test(NAME fea COMMAND test_fea)
 add_executable(test_ois tests/test_ois.cpp)
 target_link_libraries(test_ois PRIVATE optm)
 add_test(NAME ois COMMAND test_ois)
+
+add_executable(test_talloc tests/test_talloc.cpp)
+target_link_libraries(test_talloc PRIVATE optm)
+add_test(NAME talloc COMMAND test_talloc)
+
+add_executable(test_aa tests/test_aa.cpp)
+target_link_libraries(test_aa PRIVATE optm)
+add_test(NAME aa COMMAND test_aa)
+
+add_executable(test_housing tests/test_housing.cpp)
+target_link_libraries(test_housing PRIVATE optm)
+add_test(NAME housing COMMAND test_housing)
+
+add_executable(test_athermal tests/test_athermal.cpp)
+target_link_libraries(test_athermal PRIVATE optm)
+add_test(NAME athermal COMMAND test_athermal)

@@ -16,8 +16,10 @@ constexpr double kPi = 3.14159265358979323846;
 double half_sine_daf(double f_hz, double tau_s) {
     if (f_hz <= 0.0 || tau_s <= 0.0) return 1.0;
     const double w = 2.0 * kPi * f_hz;
-    const double dt = std::min(tau_s, 1.0 / f_hz) / 400.0;
     const double t_end = tau_s + 2.0 / f_hz;   // include free-vibration tail
+    constexpr int kMaxSteps = 200000;          // cap iterations for very low f_hz
+    double dt = std::min(tau_s, 1.0 / f_hz) / 400.0;
+    dt = std::max(dt, t_end / kMaxSteps);
     double z = 0.0, zd = 0.0, maxz = 0.0;
     for (double t = 0.0; t <= t_end; t += dt) {
         const double a_base = t < tau_s ? std::sin(kPi * t / tau_s) : 0.0;  // unit amp

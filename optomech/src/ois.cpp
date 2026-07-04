@@ -20,6 +20,7 @@ double rms(const std::vector<double>& v, std::size_t skip) {
 Result simulate(double focal_mm, const Plant& plant, unsigned seed) {
     Result r;
     r.focal_mm = focal_mm;
+    if (plant.dt_s <= 0.0 || plant.duration_s <= 0.0) return r;
     const double dt = plant.dt_s;
     const int steps = static_cast<int>(plant.duration_s / dt) + 1;
 

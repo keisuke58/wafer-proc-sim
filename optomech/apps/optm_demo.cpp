@@ -11,10 +11,14 @@
 #include <string>
 #include <vector>
 
+#include "optomech/aa.hpp"
+#include "optomech/athermal.hpp"
 #include "optomech/cam.hpp"
 #include "optomech/fea.hpp"
+#include "optomech/housing.hpp"
 #include "optomech/ois.hpp"
 #include "optomech/ppm.hpp"
+#include "optomech/talloc.hpp"
 #include "optomech/tolerance.hpp"
 
 using namespace optm;
@@ -87,7 +91,7 @@ int main(int argc, char** argv) {
         // Budget line (pixel size) in red.
         const int bx = p.px(budget_um);
         c.line(bx, p.mt, bx, p.H - p.mb, {220, 70, 70});
-        write_ppm(tol_out, c);
+        if (!write_ppm(tol_out, c)) std::cerr << "warning: cannot write " << tol_out << "\n";
     }
 
     // ── Autofocus: cam curve + VCM step (FF vs no-FF) ───────────────────────
@@ -106,7 +110,7 @@ int main(int argc, char** argv) {
         polyline(c, p, s_ff.t_ms, s_ff.target_um, {150, 158, 168}, 4);
         polyline(c, p, s_no.t_ms, s_no.pos_um, {225, 120, 60}, 2);
         polyline(c, p, s_ff.t_ms, s_ff.pos_um, {45, 120, 210}, 2);
-        write_ppm(cam_out, c);
+        if (!write_ppm(cam_out, c)) std::cerr << "warning: cannot write " << cam_out << "\n";
     }
 
     // ── Barrel FEA ──────────────────────────────────────────────────────────
@@ -124,8 +128,26 @@ int main(int argc, char** argv) {
         c.line(p.ml, p.py(0), p.W - p.mr, p.py(0), {200, 206, 214});
         polyline(c, p, orr.t_s, orr.demand_um, {225, 120, 60}, 1);
         polyline(c, p, orr.t_s, orr.residual_um, {45, 120, 210}, 1);
-        write_ppm(ois_out, c);
+        if (!write_ppm(ois_out, c)) std::cerr << "warning: cannot write " << ois_out << "\n";
     }
+
+    // ── Tolerance allocation (cost-optimal) ─────────────────────────────────
+    const talloc::Result al = talloc::allocate(sys, 20.0);
+
+    // ── Active alignment ────────────────────────────────────────────────────
+    aa::Assembly aerr; aerr.element = 2;
+    aerr.decenter_x_um = 30.0; aerr.decenter_y_um = -20.0;
+    aerr.tilt_mrad = 0.05; aerr.focus_um = 15.0;
+    const aa::Result aar = aa::align(sys, aerr);
+
+    // ── Housing: material selection + rib stiffness-to-weight ────────────────
+    housing::Section solid; solid.outer_dia_mm = 30; solid.wall_mm = 2.5;
+    housing::Section ribbed; ribbed.outer_dia_mm = 30; ribbed.wall_mm = 1.4;
+    ribbed.n_ribs = 6; ribbed.rib_h_mm = 2.5; ribbed.rib_w_mm = 1.5;
+    const housing::Result hr = housing::analyze(housing::default_materials(), solid, ribbed);
+
+    // ── Athermalization + random vibration ──────────────────────────────────
+    const athermal::Result at = athermal::analyze(fea::Barrel{});
 
     // ── JSON ─────────────────────────────────────────────────────────────────
     std::cout.setf(std::ios::fixed); std::cout.precision(4);
@@ -159,7 +181,41 @@ int main(int argc, char** argv) {
               << "  \"ois\": {\"focal_mm\": " << orr.focal_mm
               << ", \"off_rms_um\": " << orr.off_rms_um
               << ", \"on_rms_um\": " << orr.on_rms_um
-              << ", \"ratio\": " << orr.ratio << ", \"stops\": " << orr.stops << "},\n";
+              << ", \"ratio\": " << orr.ratio << ", \"stops\": " << orr.stops << "},\n"
+              << "  \"talloc\": {\"budget_um\": " << al.budget_um
+              << ", \"opt_cost\": " << al.opt_cost << ", \"equal_cost\": " << al.equal_cost
+              << ", \"savings_pct\": " << al.savings_pct << ", \"alloc\": [";
+    for (std::size_t i = 0; i < std::min<std::size_t>(4, al.allocation.size()); ++i) {
+        const auto& a = al.allocation[i];
+        std::cout << (i ? "," : "") << "{\"element\":" << a.element << ",\"kind\":\""
+                  << a.kind << "\",\"sigma\":" << a.sigma << "}";
+    }
+    std::cout << "]},\n"
+              << "  \"aa\": {\"merit_before_um\": " << aar.merit_before_um
+              << ", \"merit_after_um\": " << aar.merit_after_um
+              << ", \"iterations\": " << aar.iterations
+              << ", \"adj_x_um\": " << aar.adj_x_um << ", \"adj_y_um\": " << aar.adj_y_um
+              << ", \"adj_focus_um\": " << aar.adj_focus_um << "},\n"
+              << "  \"housing\": {\"best_material\": \"" << hr.best_material
+              << "\", \"gain_pct\": " << hr.stiffness_to_weight_gain_pct
+              << ", \"solid_area_mm2\": " << hr.solid.area_mm2
+              << ", \"ribbed_area_mm2\": " << hr.ribbed.area_mm2
+              << ", \"solid_I_mm4\": " << hr.solid.inertia_mm4
+              << ", \"ribbed_I_mm4\": " << hr.ribbed.inertia_mm4 << ", \"materials\": [";
+    for (std::size_t i = 0; i < hr.ranking.size(); ++i) {
+        const auto& m = hr.ranking[i];
+        std::cout << (i ? "," : "") << "{\"name\":\"" << m.name << "\",\"ashby\":"
+                  << m.ashby_index << "}";
+    }
+    std::cout << "]},\n"
+              << "  \"athermal\": {\"uncomp_um_per_C\": " << at.uncomp_drift_um_per_C
+              << ", \"comp_um_per_C\": " << at.comp_drift_um_per_C
+              << ", \"comp_len_mm\": " << at.comp_len_mm
+              << ", \"grms\": " << at.grms_response
+              << ", \"accel_3sigma_g\": " << at.accel_3sigma_g
+              << ", \"rand_stress_MPa\": " << at.rand_stress_MPa
+              << ", \"fatigue_margin\": " << at.fatigue_margin
+              << ", \"ok\": " << (at.ok ? "true" : "false") << "},\n";
     auto series = [](const char* n, const std::vector<double>& v, int step) {
         std::cout << "\"" << n << "\":[";
         for (std::size_t i = 0; i < v.size(); i += step)

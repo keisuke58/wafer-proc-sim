@@ -6,7 +6,7 @@ control loops and the shock-response integrator — with no external dependencie
 Each module has its own tests (`ctest`), is compiler-warning-free
 (`-Wall -Wextra -Wpedantic`) and `cppcheck`-clean.
 
-**Live dashboard:** https://keisuke58.github.io/optomech-lens-sim/
+**Live dashboard:** https://keisuke58.github.io/wafer-proc-sim/optomech.html
 
 The barrel is the structural spine of a camera lens: it holds each element to a
 mechanical tolerance, moves the focus/zoom groups, survives drops, and (with OIS)

@@ -52,6 +52,12 @@ Result analyze(const LensSystem& sys, const std::vector<Tolerance>& tols,
               });
     r.ranking = std::move(contribs);
 
+    // With no Monte Carlo requested, report the analytic RSS budget only.
+    if (n_samples <= 0) {
+        r.ok = r.lateral_rss_um <= budget_um;
+        return r;
+    }
+
     // Monte Carlo: sample all sources together for the true distribution.
     std::mt19937 gen(seed);
     std::normal_distribution<double> z(0.0, 1.0);

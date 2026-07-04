@@ -37,6 +37,7 @@ double peak_accel(const CamProfile& p, int n) {
 StepResult step_response(const Vcm& v, const Pid& pid, double target_um,
                          double t_end_ms, double dt_ms) {
     StepResult r;
+    if (dt_ms <= 0.0 || t_end_ms < 0.0) return r;
     const double m = v.mass_g * 1e-3;         // kg
     const double k = v.flexure_n_per_mm * 1e3;// N/m
     const double c = v.damping * 1e3;         // N/(m/s)

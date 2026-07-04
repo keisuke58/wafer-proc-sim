@@ -68,11 +68,11 @@ Trajectory scurve(double distance, const Limits& lim, double dt) {
     double p = 0.0, v = 0.0, a = 0.0;
     int seg = 0;
     double seg_t = 0.0;
-    const int nsteps = static_cast<int>(std::ceil(total / dt)) + 1;
+    const std::size_t nsteps = static_cast<std::size_t>(std::ceil(total / dt)) + 1;
     tr.pos.reserve(nsteps);
     tr.vel.reserve(nsteps);
     tr.acc.reserve(nsteps);
-    for (int i = 0; i < nsteps; ++i) {
+    for (std::size_t i = 0; i < nsteps; ++i) {
         tr.pos.push_back(p);
         tr.vel.push_back(v);
         tr.acc.push_back(a);
