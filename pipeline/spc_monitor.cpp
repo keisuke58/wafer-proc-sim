@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <numeric>
 
 namespace py = pybind11;
 
@@ -164,16 +165,15 @@ py::dict spc_update(
     for (int g = 0; g < n_grps; ++g)
         weco_flags[g] = weco_check(z_x, static_cast<size_t>(g));
 
-    bool any_alarm = false;
-    for (uint32_t f : weco_flags) if (f) { any_alarm = true; break; }
+    const bool any_alarm = std::any_of(weco_flags.begin(), weco_flags.end(),
+                                       [](uint32_t f) { return f != 0; });
 
     // ── EWMA chart ────────────────────────────────────────────────────────────
     // Applied to individual measurements (not subgroup means)
     int M = static_cast<int>(measurements.size());
     std::vector<double> ewma(M);
-    double mu_all = 0.0;
-    for (double v : measurements) mu_all += v;
-    mu_all /= M;
+    const double mu_all =
+        std::accumulate(measurements.begin(), measurements.end(), 0.0) / M;
 
     ewma[0] = measurements[0];
     for (int k = 1; k < M; ++k)

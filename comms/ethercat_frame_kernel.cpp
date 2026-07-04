@@ -183,7 +183,7 @@ PYBIND11_MODULE(_ethercat_frame_kernel, m) {
         std::string s = raw;
         auto dgs = parse_ec_frame(std::vector<uint8_t>(s.begin(), s.end()));
         py::list lst;
-        for (auto& dg : dgs) {
+        for (const auto& dg : dgs) {
             py::dict d;
             d["cmd"]      = dg.cmd;
             d["cmd_name"] = std::string(cmd_name(dg.cmd));

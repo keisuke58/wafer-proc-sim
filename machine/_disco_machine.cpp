@@ -64,13 +64,6 @@ struct MotionState {
     double theta_deg;  // chuck rotation
 };
 
-struct RecipeStepInfo {
-    std::string name;
-    int         idx;
-    double      elapsed_ms;
-    double      progress_pct;
-};
-
 enum class MachineMode : int {
     IDLE    = 0,
     SETUP   = 1,

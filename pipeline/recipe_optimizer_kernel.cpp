@@ -237,12 +237,12 @@ static py::dict process_capability(
     int n = static_cast<int>(measurements.size());
     if (n < 2) return {};
 
-    double mean = 0;
-    for (double v : measurements) mean += v;
-    mean /= n;
+    const double mean =
+        std::accumulate(measurements.begin(), measurements.end(), 0.0) / n;
 
-    double var = 0;
-    for (double v : measurements) var += (v - mean) * (v - mean);
+    const double var = std::accumulate(
+        measurements.begin(), measurements.end(), 0.0,
+        [mean](double acc, double v) { return acc + (v - mean) * (v - mean); });
     double sigma = std::sqrt(var / (n - 1));
 
     double Cp   = (usl - lsl) / (6.0 * sigma);

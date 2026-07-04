@@ -43,9 +43,9 @@ static const WaferMat WAFER_MATS[] = {
 };
 
 static const WaferMat* find_mat(const std::string& name) {
-    for (auto& m : WAFER_MATS)
-        if (m.name == name) return &m;
-    return &WAFER_MATS[0];
+    const auto it = std::find_if(std::begin(WAFER_MATS), std::end(WAFER_MATS),
+                                 [&](const WaferMat& m) { return m.name == name; });
+    return it != std::end(WAFER_MATS) ? &*it : &WAFER_MATS[0];
 }
 
 // ── Stoney equation: warp from residual stress ────────────────────────────────
@@ -62,7 +62,6 @@ static py::dict stoney_warp(
     const WaferMat* m = find_mat(material);
     double h_s = target_thickness_um * 1e-6;   // m
     double h_f = ground_layer_um * 1e-6;       // m
-    double R   = wafer_diam_mm * 1e-3 / 2.0;  // wafer radius [m]
     double L   = wafer_diam_mm * 1e-3;         // diameter
 
     // Residual stress model: σ₀ depends on material hardness, grit
@@ -205,7 +204,7 @@ static py::dict grit_sweep(
 static py::list wafer_warp_demo() {
     py::list results;
     std::vector<std::string> mats = {"Si", "SiC"};
-    for (auto& mat : mats) {
+    for (const auto& mat : mats) {
         auto no_taiko = stoney_warp(mat, 300.0, 25.0, 5.0, 2000.0, 5.0);
         auto with_taiko = taiko_warp_reduction(mat, 300.0, 25.0, 3.5, 775.0, 2000.0, 5.0);
         py::dict r;

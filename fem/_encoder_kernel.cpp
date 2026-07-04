@@ -98,7 +98,7 @@ public:
     int64_t count;
     int     prev_state;
 
-    EncoderSimulator(int ppr_=2500, double jitter_rad_=0.0)
+    explicit EncoderSimulator(int ppr_=2500, double jitter_rad_=0.0)
         : ppr(ppr_), jitter_rad(jitter_rad_), count(0), prev_state(0) {}
 
     // Encode true angular position to A/B signals (with optional quantisation)

@@ -109,7 +109,7 @@ py::dict mpc_optimize(
     double signal_var,
     double u_prev_feed,
     double u_prev_rpm,
-    MPCParams params)
+    const MPCParams& params)
 {
     validate_gp_args(x0, Xtr_quality, alpha_quality,
                      Xtr_wear, alpha_wear, length_scales);
@@ -210,7 +210,7 @@ py::dict mpc_evaluate_action(
     double signal_var,
     double feed_rate,
     double spindle_rpm,
-    MPCParams params)
+    const MPCParams& params)
 {
     validate_gp_args(x0, Xtr_quality, alpha_quality,
                      Xtr_wear, alpha_wear, length_scales);
@@ -280,7 +280,7 @@ py::list mpc_pareto_front(
     arr2d Xtr_wear,    arr1d alpha_wear,
     arr1d length_scales,
     double signal_var,
-    MPCParams params)
+    const MPCParams& params)
 {
     validate_gp_args(x0, Xtr_quality, alpha_quality,
                      Xtr_wear, alpha_wear, length_scales);
