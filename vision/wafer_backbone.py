@@ -148,6 +148,10 @@ def train_classifier(
         loss_fn = nn.CrossEntropyLoss(weight=class_weight)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     history = {"epoch": [], "train_loss": [], "val_metric": []}
+    # Keep the best-validation weights: the last epoch is not necessarily the
+    # best one (val accuracy oscillates on small datasets), so evaluating the
+    # final-epoch model would be a lottery. Standard early-stopping checkpoint.
+    best_val, best_state = -1.0, None
 
     Xtr, ytr = X_train.to(device), y_train.to(device)
     for epoch in range(1, epochs + 1):
@@ -178,9 +182,16 @@ def train_classifier(
         history["epoch"].append(epoch)
         history["train_loss"].append(float(np.mean(losses)))
         history["val_metric"].append(val_metric)
+        if val_metric == val_metric and val_metric > best_val:   # not-NaN improve
+            best_val = val_metric
+            best_state = {k: v.detach().cpu().clone()
+                          for k, v in model.state_dict().items()}
         if verbose:
             print(f"    epoch {epoch:2d}: train_loss={np.mean(losses):.4f} "
                   f"val={val_metric:.3f}")
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        history["best_val"] = best_val
     return history
 
 
