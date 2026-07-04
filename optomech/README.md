@@ -97,3 +97,23 @@ python3 fem/barrel_fem.py    # writes fem/figures/*.png + barrel_fem_results.jso
 ```
 Requires `numpy` + `matplotlib` (`scipy` used for the eigensolver if present).
 
+## Generative design — GNN surrogate + Bayesian search (`ai/generative_design.py`, PyTorch)
+
+The "生成AIを活用した設計改革" piece, on the applicant's own research stack
+(**PyTorch / graph neural networks + Bayesian optimization**):
+
+1. **CAE ground truth** — a zone-varying barrel is meshed into beam elements; a
+   modal + mass + drop-shock evaluation gives the true performance.
+2. **PyTorch GNN surrogate** — each design's FE mesh is a graph; a Graph
+   Convolutional Network learns "design → performance" almost instantly
+   (held-out **R² = 0.99 / 1.00 / 1.00** for first-mode / mass / safety factor).
+3. **Bayesian generative search** — a Gaussian process with Expected Improvement
+   uses the surrogate to *generate* the lightest barrel meeting the stiffness
+   and shock constraints, verified against the real FE solver. The AI generated
+   a **Mg-alloy thin-wall + ribbed** design (9.1 kHz, 17.2 g, SF 36).
+
+```bash
+pip install torch          # + numpy scipy scikit-learn matplotlib
+python3 ai/generative_design.py
+```
+
