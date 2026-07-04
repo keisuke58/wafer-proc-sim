@@ -1,0 +1,208 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="装置システムの知能化ダッシュボード：リアルタイムS字モーション/サーボ追従、デジタルツイン仮想ラインのOEE、先端パッケージングのバンプ検査、ADC自動欠陥分類パイプラインを自作C++ツールの実測値で可視化。">
+<title>wproc — 装置システム（モーション・OEE・パッケージング・ADC）知能化</title>
+<style>
+  :root{
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e;
+    --line:#dde4ec; --grid:#eaeff5; --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+    --open:#e34948; --closed:#2a78d6; --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2;
+    --line:#243139; --grid:#1c2731; --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+    --open:#e66767; --closed:#3987e5; --good:#0ca30c; --warn:#fab219; --critical:#e05555;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5; --open:#e34948; --closed:#2a78d6; --critical:#d03b3b; --warn:#fab219; --good:#0ca30c; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731; --open:#e66767; --closed:#3987e5; --critical:#e05555; --warn:#fab219; --good:#0ca30c; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:36px 20px 72px; }
+  a{ color:var(--disco); } .back{ font-size:13px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:14px 0 6px; }
+  header h1{ font-size:clamp(25px,4.2vw,38px); line-height:1.08; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  header p.lead{ color:var(--muted); font-size:16.5px; margin:0; max-width:66ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:24px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--disco); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-top:22px; }
+  .card h2{ font-size:16px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:22px; } @media (min-width:820px){ .grid2{ grid-template-columns:1fr 1fr; } }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:8px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:22px; height:3px; border-radius:2px; display:inline-block; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+  .axis{ fill:var(--muted); font-size:10px; } .axis-title{ fill:var(--muted); font-size:10.5px; font-weight:600; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  figure{ margin:0; } .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#0b0d10; }
+  .figure img{ width:100%; display:block; image-rendering:pixelated; }
+  figcaption{ color:var(--muted); font-size:12.5px; margin-top:8px; }
+  .bars{ display:grid; gap:9px; margin-top:6px; }
+  .bar-row{ display:grid; grid-template-columns:96px 1fr 58px; align-items:center; gap:10px; font-size:12.5px; }
+  .bar-track{ background:var(--surface-2); border:1px solid var(--line); border-radius:6px; height:16px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px 0 0 6px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.ok{ background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good); }
+  .pill.bad{ background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a>
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>装置システムの知能化 ── モーション・OEE・パッケージング・ADC</h1>
+    <p class="lead">個々の加工・検査ツールを「装置システム」へ束ねる4要素をC++17でゼロから実装：
+      <b>リアルタイムS字モーション＋サーボ追従</b>・<b>デジタルツイン仮想ラインのOEE</b>・
+      <b>先端パッケージングのバンプ検査</b>・<b>ADC自動欠陥分類パイプライン（AI×歩留り）</b>。
+      以下はすべてツール（<code class="inl">systems_demo</code>）自身が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="card">
+    <h2>リアルタイム・モーション制御（S字軌道＋サーボ追従）</h2>
+    <p class="sub">ジャーク制限のS字軌道をXYステージが追従。モデルベース・フィードフォワードで追従誤差を圧縮。</p>
+    <div id="motionChart"></div>
+    <div class="legend">
+      <span class="it"><span class="swatch" style="background:var(--muted)"></span>指令（S字軌道）</span>
+      <span class="it"><span class="swatch" style="background:var(--closed)"></span>追従（FF有）</span>
+      <span class="it"><span class="swatch" style="background:var(--open)"></span>追従（FF無）</span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>デジタルツイン：仮想ラインのOEE</h2>
+      <p class="sub">切る→削る→磨く→検査の直列ライン。ボトルネック・スループット・OEE（設備総合効率）を算出。</p>
+      <div class="bars" id="oeeBars"></div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px">
+        <div><div class="v" id="thru" style="font-size:20px;font-weight:800"></div><div class="k" style="font-size:11px;color:var(--muted)">良品ウェハ/時</div></div>
+        <div><div class="v" id="oee" style="font-size:20px;font-weight:800;color:var(--disco)"></div><div class="k" style="font-size:11px;color:var(--muted)">ラインOEE</div></div>
+        <div><div class="v" id="bn" style="font-size:20px;font-weight:800;color:var(--critical)"></div><div class="k" style="font-size:11px;color:var(--muted)">ボトルネック</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>ADC 自動欠陥分類パイプライン</h2>
+      <p class="sub">欠陥を自作CNNで分類→ダイ毎に集約→分類ウェハマップと歩留り。赤＝致命欠陥で不良。</p>
+      <figure>
+        <div class="figure"><img src="assets/adc_wafermap.png" alt="ADC分類ウェハマップ"></div>
+        <figcaption id="adcCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>ADC 欠陥タイプ Pareto</h2>
+      <p class="sub">検出した欠陥の種類別内訳（CNN分類）。最多タイプを優先対策。</p>
+      <div id="paretoChart"></div>
+    </div>
+    <div class="card">
+      <h2>先端パッケージング：バンプ検査</h2>
+      <p class="sub">バンプ配列を検出し、径・ピッチ・コプラナリティ・欠損を計測。緑＝良、赤＝規格外。</p>
+      <figure>
+        <div class="figure"><img src="assets/pkg_bumps.png" alt="バンプ配列検査"></div>
+        <figcaption id="pkgCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/systems_demo</code> をこのホスト（x86）で実行した実測値。
+    モーションは10mm移動＋整定、ラインは4工程の合成モデル、バンプは6×6配列、ADCは合成欠陥240点を16×16グリッドへ。
+    ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、ctest 全通過。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script id="sys-data" type="application/json">
+{"motion":{"distance_mm":10,"move_time_s":0.45,"ff_max_err":0.0051,"noff_max_err":0.7355},"fab":{"bottleneck":"grind","throughput_wph":73.6,"good_wph":68.9182,"line_yield":0.9364,"line_oee":0.804,"stations":[{"name":"dice","oee":0.8778,"util":0.6456,"bottleneck":false},{"name":"grind","oee":0.8415,"util":1.0,"bottleneck":true},{"name":"polish","oee":0.8293,"util":0.9086,"bottleneck":false},{"name":"inspect","oee":0.985,"util":0.413,"bottleneck":false}]},"pkg":{"count":34,"pitch_um":20.0,"mean_diameter_um":10.1554,"diameter_cv":0.0,"coplanarity":0.8818,"missing":2,"ok":false},"adc":{"available":true,"n":240,"good":60,"chipping":67,"crack":55,"contamination":58,"top":"chipping","yield_pct":51.9231,"center_yield_pct":47.7273,"edge_yield_pct":55.0},"series":{"t":[0.0,0.004,0.008,0.012,0.016,0.02,0.024,0.028,0.032,0.036,0.04,0.044,0.048,0.052,0.056,0.06,0.064,0.068,0.072,0.076,0.08,0.084,0.088,0.092,0.096,0.1,0.104,0.108,0.112,0.116,0.12,0.124,0.128,0.132,0.136,0.14,0.144,0.148,0.152,0.156,0.16,0.164,0.168,0.172,0.176,0.18,0.184,0.188,0.192,0.196,0.2,0.204,0.208,0.212,0.216,0.22,0.224,0.228,0.232,0.236,0.24,0.244,0.248,0.252,0.256,0.26,0.264,0.268,0.272,0.276,0.28,0.284,0.288,0.292,0.296,0.3,0.304,0.308,0.312,0.316,0.32,0.324,0.328,0.332,0.336,0.34,0.344,0.348,0.352,0.356,0.36,0.364,0.368,0.372,0.376,0.38,0.384,0.388,0.392,0.396,0.4,0.404,0.408,0.412,0.416,0.42,0.424,0.428,0.432,0.436,0.44,0.444,0.448,0.452,0.456,0.46,0.464,0.468,0.472,0.476,0.48,0.484,0.488,0.492,0.496,0.5,0.504,0.508,0.512,0.516,0.52,0.524,0.528,0.532,0.536,0.54,0.544,0.548,0.552,0.556,0.56,0.564,0.568,0.572,0.576,0.58,0.584,0.588,0.592,0.596,0.6,0.604,0.608,0.612,0.616,0.62,0.624,0.628,0.632,0.636,0.64,0.644,0.648],"ref":[0.0,0.0,0.0003,0.0012,0.0027,0.0053,0.0092,0.0146,0.0218,0.0311,0.0427,0.0568,0.0737,0.0937,0.1171,0.144,0.1748,0.2096,0.2488,0.2927,0.3413,0.3951,0.4543,0.5191,0.5898,0.6667,0.7498,0.8391,0.9343,1.0351,1.1413,1.2527,1.3688,1.4896,1.6148,1.744,1.8771,2.0137,2.1537,2.2968,2.4427,2.5911,2.7418,2.8946,3.0492,3.2053,3.3627,3.5212,3.6803,3.84,4.0,4.16,4.32,4.48,4.64,4.8,4.96,5.12,5.28,5.44,5.6,5.76,5.92,6.08,6.2399,6.3993,6.5582,6.7161,6.8729,7.0283,7.182,7.3338,7.4834,7.6306,7.7751,7.9167,8.055,8.1899,8.3211,8.4483,8.5713,8.6899,8.8036,8.9124,9.016,9.114,9.2063,9.2925,9.3725,9.4463,9.514,9.576,9.6324,9.6836,9.7299,9.7713,9.8083,9.8411,9.8699,9.895,9.9167,9.9351,9.9506,9.9634,9.9738,9.982,9.9883,9.9929,9.9961,9.9982,9.9993,9.9999,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0],"ff":[0.0,0.0,0.0004,0.0012,0.0028,0.0054,0.0093,0.0148,0.0221,0.0314,0.0431,0.0573,0.0743,0.0944,0.1179,0.1449,0.1758,0.2108,0.2501,0.2941,0.343,0.3969,0.4563,0.5213,0.5922,0.6692,0.7526,0.8421,0.9375,1.0385,1.1449,1.2564,1.3727,1.4937,1.6189,1.7483,1.8815,2.0183,2.1584,2.3015,2.4475,2.596,2.7468,2.8996,3.0543,3.2104,3.3678,3.5263,3.6854,3.8451,4.0051,4.1651,4.325,4.485,4.645,4.8049,4.9649,5.1249,5.2849,5.4448,5.6048,5.7648,5.9247,6.0847,6.2445,6.404,6.5627,6.7206,6.8774,7.0327,7.1863,7.338,7.4876,7.6346,7.779,7.9205,8.0587,8.1935,8.3245,8.4516,8.5744,8.6928,8.8064,8.915,9.0183,9.1162,9.2083,9.2943,9.3741,9.4476,9.5151,9.5769,9.6332,9.6842,9.7302,9.7715,9.8084,9.841,9.8697,9.8947,9.9162,9.9345,9.9499,9.9627,9.973,9.9811,9.9874,9.9919,9.9951,9.9972,9.9983,9.9988,9.999,9.999,9.999,9.999,9.9991,9.9991,9.9991,9.9991,9.9992,9.9992,9.9992,9.9993,9.9993,9.9993,9.9993,9.9994,9.9994,9.9994,9.9994,9.9995,9.9995,9.9995,9.9995,9.9996,9.9996,9.9996,9.9996,9.9996,9.9996,9.9997,9.9997,9.9997,9.9997,9.9997,9.9997,9.9997,9.9998,9.9998,9.9998,9.9998,9.9998,9.9998,9.9998,9.9998,9.9998,9.9998,9.9999,9.9999,9.9999,9.9999,9.9999],"noff":[0.0,0.0,0.0,0.0001,0.0004,0.001,0.0019,0.0035,0.0057,0.009,0.0133,0.019,0.0263,0.0354,0.0466,0.06,0.0759,0.0947,0.1165,0.1416,0.1702,0.2027,0.2393,0.2802,0.3258,0.3763,0.4319,0.4929,0.5595,0.6317,0.7096,0.7932,0.8824,0.9772,1.0775,1.183,1.2937,1.4094,1.5299,1.655,1.7844,1.918,2.0554,2.1965,2.341,2.4886,2.6391,2.7922,2.9477,3.1052,3.2645,3.4253,3.5874,3.7505,3.9145,4.0792,4.2444,4.41,4.576,4.7422,4.9086,5.075,5.2415,5.408,5.5745,5.7408,5.9069,6.0727,6.238,6.4026,6.5665,6.7293,6.8909,7.0512,7.2097,7.3664,7.521,7.6733,7.823,7.9698,8.1136,8.2541,8.3909,8.5239,8.6528,8.7773,8.8972,9.0122,9.122,9.2264,9.3252,9.4183,9.5056,9.5871,9.6629,9.7329,9.7973,9.8563,9.9099,9.9584,10.0019,10.0407,10.0749,10.1048,10.1306,10.1526,10.171,10.186,10.1981,10.2073,10.214,10.2184,10.2209,10.2217,10.2211,10.2192,10.2164,10.2128,10.2085,10.2037,10.1985,10.193,10.1873,10.1814,10.1754,10.1694,10.1634,10.1574,10.1515,10.1457,10.1399,10.1343,10.1289,10.1236,10.1184,10.1134,10.1086,10.1039,10.0994,10.095,10.0908,10.0868,10.0829,10.0792,10.0756,10.0722,10.0689,10.0657,10.0627,10.0598,10.0571,10.0544,10.0519,10.0495,10.0472,10.045,10.0429,10.0409,10.039,10.0372,10.0354,10.0338,10.0322]}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('sys-data').textContent);
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in(a||{}))e.setAttribute(k,a[k]);return e;};
+const fmt=(x,n=2)=>Number(x).toFixed(n);
+
+const tiles=[
+  ['追従誤差(FF)', fmt(D.motion.ff_max_err*1000,1), 'µm', `FF無 ${fmt(D.motion.noff_max_err*1000,0)}µm→`, true],
+  ['ラインOEE', fmt(D.fab.line_oee*100,1), '%', `ボトルネック ${D.fab.bottleneck}`, true],
+  ['良品スループット', fmt(D.fab.good_wph,0), 'wph', `歩留り ${fmt(D.fab.line_yield*100,0)}%`],
+  ['バンプ欠損', String(D.pkg.missing), '個', `コプラナ ${fmt(D.pkg.coplanarity,2)}`],
+  ['ADC歩留り', D.adc.available?fmt(D.adc.yield_pct,0):'—', '%', D.adc.available?`最多 ${D.adc.top}`:'weights無', true],
+  ['ADC欠陥数', D.adc.available?String(D.adc.n):'—', '', D.adc.available?'CNN分類':''],
+];
+const tw=document.getElementById('tiles');
+tiles.forEach(([k,v,u,note,acc])=>{const d=document.createElement('div');d.className='tile';
+  d.innerHTML=`<div class="v${acc?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div>`;tw.appendChild(d);});
+
+// motion chart
+function lineChart(host, opts){
+  const W=640,H=250,m={t:12,r:14,b:34,l:52}; const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  const xs=v=>m.l+(v-opts.xmin)/(opts.xmax-opts.xmin)*iw;
+  const ys=v=>m.t+(opts.ymax-v)/(opts.ymax-opts.ymin)*ih;
+  (opts.yticks||[]).forEach(tk=>{svg.appendChild(el('line',{class:'gridline',x1:m.l,x2:m.l+iw,y1:ys(tk),y2:ys(tk)}));
+    const tx=el('text',{class:'axis',x:m.l-7,y:ys(tk)+3,'text-anchor':'end'});tx.textContent=tk;svg.appendChild(tx);});
+  (opts.xticks||[]).forEach(t=>{const tx=el('text',{class:'axis',x:xs(t),y:m.t+ih+16,'text-anchor':'middle'});tx.textContent=t;svg.appendChild(tx);});
+  opts.series.forEach(s=>{let d='';s.x.forEach((xv,i)=>{const X=xs(xv),Y=ys(s.y[i]);d+=(i?'L':'M')+fmt(X,1)+' '+fmt(Y,1);});
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w||1.8,'stroke-dasharray':s.dash||'','stroke-linejoin':'round'}));});
+  const xt=el('text',{class:'axis-title',x:m.l+iw/2,y:H-4,'text-anchor':'middle'});xt.textContent=opts.xtitle;svg.appendChild(xt);
+  const yt=el('text',{class:'axis-title',x:14,y:m.t+ih/2,'text-anchor':'middle',transform:`rotate(-90 14 ${m.t+ih/2})`});yt.textContent=opts.ytitle;svg.appendChild(yt);
+  host.appendChild(svg);
+}
+const S=D.series, tmax=S.t[S.t.length-1];
+lineChart(document.getElementById('motionChart'),{
+  xmin:0,xmax:tmax,ymin:0,ymax:11,xticks:[0,0.15,0.3,0.45],yticks:[0,5,10],
+  xtitle:'時間 [s]',ytitle:'位置 [mm]',
+  series:[
+    {x:S.t,y:S.ref,color:'var(--muted)',w:2,dash:'5 4'},
+    {x:S.t,y:S.ff,color:'var(--closed)',w:1.8},
+    {x:S.t,y:S.noff,color:'var(--open)',w:1.8},
+  ],
+});
+
+// OEE bars
+const ob=document.getElementById('oeeBars');
+D.fab.stations.forEach(s=>{const r=document.createElement('div');r.className='bar-row';
+  const c=s.bottleneck?'var(--critical)':'var(--s2)';
+  r.innerHTML=`<div>${s.name}${s.bottleneck?' ●':''}</div><div class="bar-track"><div class="bar-fill" style="width:${(s.oee*100).toFixed(0)}%;background:${c}"></div></div><div class="mono" style="text-align:right">${(s.oee*100).toFixed(0)}%</div>`;ob.appendChild(r);});
+document.getElementById('thru').textContent=fmt(D.fab.good_wph,0);
+document.getElementById('oee').textContent=fmt(D.fab.line_oee*100,0)+'%';
+document.getElementById('bn').textContent=D.fab.bottleneck;
+
+// ADC caption + Pareto
+if(D.adc.available){
+  document.getElementById('adcCap').innerHTML=
+    `欠陥 <b>${D.adc.n}</b> 点を分類・ダイ集約 → 歩留り <b>${fmt(D.adc.yield_pct,0)}%</b>（中心 ${fmt(D.adc.center_yield_pct,0)}% / 端 ${fmt(D.adc.edge_yield_pct,0)}%）。`;
+  const cats=[['良品',D.adc.good,'var(--good)'],['チッピング',D.adc.chipping,'var(--s1)'],['クラック',D.adc.crack,'var(--open)'],['汚染',D.adc.contamination,'var(--s3)']];
+  const maxv=Math.max(...cats.map(c=>c[1]));
+  const W=560,H=200,m={t:10,r:14,b:40,l:40},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`});
+  const bw=iw/cats.length*0.6;
+  cats.forEach((c,i)=>{const x=m.l+(i+0.5)*iw/cats.length; const h=c[1]/maxv*ih;
+    svg.appendChild(el('rect',{x:x-bw/2,y:m.t+ih-h,width:bw,height:h,rx:4,fill:c[2]}));
+    const lab=el('text',{class:'axis',x:x,y:m.t+ih+16,'text-anchor':'middle'});lab.textContent=c[0];svg.appendChild(lab);
+    const val=el('text',{x:x,y:m.t+ih-h-5,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'var(--ink)'});val.textContent=c[1];svg.appendChild(val);});
+  document.getElementById('paretoChart').appendChild(svg);
+} else { document.getElementById('paretoChart').innerHTML='<p style="color:var(--muted);font-size:13px">CNN weights が無いため ADC はスキップされました。</p>'; }
+
+document.getElementById('pkgCap').innerHTML=
+  `検出 <b>${D.pkg.count}</b> 個・ピッチ <b>${fmt(D.pkg.pitch_um,0)}</b> µm・径 <b>${fmt(D.pkg.mean_diameter_um,1)}</b> µm・`+
+  `欠損 <b>${D.pkg.missing}</b>・コプラナ <b>${fmt(D.pkg.coplanarity,2)}</b> → `+
+  (D.pkg.ok?'<span class="pill ok">合格</span>':'<span class="pill bad">要確認（欠損/短小）</span>');
+</script>

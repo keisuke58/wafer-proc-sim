@@ -29,6 +29,7 @@ charts use a CVD-validated palette with light/dark themes and hover tooltips.
 - **Grinding / thinning dashboard:** https://keisuke58.github.io/wafer-proc-sim/grind.html
 - **Laser-processing dashboard:** https://keisuke58.github.io/wafer-proc-sim/laser.html
 - **Smart-manufacturing dashboard:** https://keisuke58.github.io/wafer-proc-sim/smart.html
+- **Machine-systems dashboard:** https://keisuke58.github.io/wafer-proc-sim/systems.html
 - **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
 - Source committed at [`docs/landing.html`](docs/landing.html),
   [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
@@ -330,6 +331,35 @@ python3 ml/defect_cnn_train.py     # trains + exports weights for test_cnn
 Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/smart.html> ·
 explainer: <https://keisuke58.github.io/wafer-proc-sim/smart_explained.html>.
 (`cmp`, `spindle`, `align`, `cnn` tests.)
+
+### Machine-systems intelligence (`wproc/motion,fab,pkg,adc`)
+
+Ties the point tools into a machine system — real-time control, line
+optimisation, and automated AI inspection. Pure C++17 with tests:
+
+- **Motion** (`motion.hpp`) — a jerk-limited **S-curve** point-to-point
+  trajectory plus a PID controller with model-based **feedforward** through a
+  second-order stage plant. Feedforward collapses the following error from
+  **735 µm → 5 µm**.
+- **Digital twin / OEE** (`fab.hpp`) — a serial line (dice→grind→polish→inspect)
+  → bottleneck, throughput, and **OEE = Availability × Performance × Quality**
+  per station and for the line (bottleneck = grind, line OEE ≈ 80%).
+- **Advanced-packaging bump inspection** (`pkg.hpp`) — detects a bump/pillar
+  array (threshold + connected components), measures diameter/pitch, a
+  coplanarity proxy, placement RMS, and **missing bumps** vs the inferred grid.
+- **ADC pipeline** (`adc.hpp`) — the capstone: classify defect patches with the
+  CNN, bin per die, and build a **classified wafer map + yield + defect Pareto**
+  (composes `cnn` + `wafer_map`).
+
+Run the demo (writes the bump + classified-wafer figures, prints metrics as JSON):
+
+```bash
+./build/systems_demo --bumps bumps.ppm --wafer wafer.ppm --results ../../results
+```
+
+Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/systems.html> ·
+explainer: <https://keisuke58.github.io/wafer-proc-sim/systems_explained.html>.
+(`motion`, `fab`, `pkg`, `adc` tests.)
 
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
