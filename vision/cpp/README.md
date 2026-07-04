@@ -28,6 +28,7 @@ charts use a CVD-validated palette with light/dark themes and hover tooltips.
 - **Inspection dashboard:** https://keisuke58.github.io/wafer-proc-sim/dashboard.html
 - **Grinding / thinning dashboard:** https://keisuke58.github.io/wafer-proc-sim/grind.html
 - **Laser-processing dashboard:** https://keisuke58.github.io/wafer-proc-sim/laser.html
+- **Smart-manufacturing dashboard:** https://keisuke58.github.io/wafer-proc-sim/smart.html
 - **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
 - Source committed at [`docs/landing.html`](docs/landing.html),
   [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
@@ -296,6 +297,39 @@ Run the end-to-end demo (writes two color figures, prints all metrics as JSON):
 Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/laser.html> ·
 explainer: <https://keisuke58.github.io/wafer-proc-sim/laser_explained.html>.
 (`laser_groove`, `laser_control`, `laser_kabra`, `laser_sd` tests.)
+
+### Smart-manufacturing intelligence (`wproc/cmp,spindle,align,cnn`)
+
+The pieces that make the machine *smart*, beyond the cut/grind/laser physics.
+Pure C++17 with tests (the CNN trains in Python, infers in C++):
+
+- **CMP / polish** (`cmp.hpp`) — completes cut · grind · **polish**: the Preston
+  removal law, a run-to-run polish-time controller (removal RMS **35 nm → 2.3 nm**
+  through pad glazing), dishing/erosion planarity, and friction-trace **endpoint
+  detection**.
+- **Spindle vibration / chatter** (`spindle.hpp`) — an in-house radix-2 **FFT**,
+  vibration power spectrum, and chatter detection (a strong non-harmonic peak vs
+  the spindle order — flags a 3.2 kHz resonance a 500 Hz spindle would not
+  produce).
+- **Street auto-alignment** (`align.hpp`) — **NCC** template matching with a
+  parabolic sub-pixel peak and a two-half tilt estimate; recovers a (15, −8) px
+  offset exactly and street tilt to ~0.1°.
+- **Defect-classification CNN** (`cnn.hpp`) — a **from-scratch C++ inference
+  engine** (conv / ReLU / max-pool / dense / softmax) for 20×20 defect patches
+  (good / chipping / crack / contamination). Weights are trained in NumPy
+  (`ml/defect_cnn_train.py`); the C++ inference reproduces the training accuracy
+  **exactly (97.3%)** — the realistic train-in-Python / infer-in-C++ split.
+
+Run the demo (writes the alignment figure, prints all metrics as JSON):
+
+```bash
+./build/smart_demo --align align.ppm
+python3 ml/defect_cnn_train.py     # trains + exports weights for test_cnn
+```
+
+Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/smart.html> ·
+explainer: <https://keisuke58.github.io/wafer-proc-sim/smart_explained.html>.
+(`cmp`, `spindle`, `align`, `cnn` tests.)
 
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 

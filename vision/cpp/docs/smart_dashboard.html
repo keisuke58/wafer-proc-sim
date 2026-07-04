@@ -1,0 +1,219 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="スマート製造の知能化ダッシュボード：AI欠陥分類(C++自作CNN)、スピンドル振動/チャタ検出(FFT)、CMP研磨のAPC/平坦化/終点検出、ストリート自動整列(NCC)を自作C++ツールの実測値で可視化。">
+<title>wproc — スマート製造（AI検査・振動・CMP・整列）知能化</title>
+<style>
+  :root{
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e;
+    --line:#dde4ec; --grid:#eaeff5; --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+    --open:#e34948; --closed:#2a78d6; --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2;
+    --line:#243139; --grid:#1c2731; --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+    --open:#e66767; --closed:#3987e5; --good:#0ca30c; --warn:#fab219; --critical:#e05555;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5; --open:#e34948; --closed:#2a78d6; --critical:#d03b3b; --warn:#fab219; --good:#0ca30c; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731; --open:#e66767; --closed:#3987e5; --critical:#e05555; --warn:#fab219; --good:#0ca30c; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:36px 20px 72px; }
+  a{ color:var(--disco); } .back{ font-size:13px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:14px 0 6px; }
+  header h1{ font-size:clamp(25px,4.2vw,38px); line-height:1.08; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  header p.lead{ color:var(--muted); font-size:16.5px; margin:0; max-width:66ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:24px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:22px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--disco); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-top:22px; }
+  .card h2{ font-size:16px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:22px; } @media (min-width:820px){ .grid2{ grid-template-columns:1fr 1fr; } }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:8px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:22px; height:3px; border-radius:2px; display:inline-block; }
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+  .axis{ fill:var(--muted); font-size:10px; } .axis-title{ fill:var(--muted); font-size:10.5px; font-weight:600; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  figure{ margin:0; } .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; }
+  .figure img{ width:100%; display:block; }
+  .figure.dark{ background:#0b0d10; } .figure.dark img{ image-rendering:pixelated; }
+  figcaption{ color:var(--muted); font-size:12.5px; margin-top:8px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.ok{ background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good); }
+  .pill.bad{ background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a>
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>スマート製造の知能化 ── AI検査・振動・CMP・整列</h1>
+    <p class="lead">加工の3系統に加えて、装置を賢くする4つの要素をC++17でゼロから実装：
+      <b>AI欠陥分類（自作CNN推論）</b>・<b>スピンドル振動/チャタ検出（自作FFT）</b>・
+      <b>CMP研磨のAPC・平坦化・終点検出（磨く）</b>・<b>ストリート自動整列（NCC）</b>。
+      以下はすべてツール自身（<code class="inl">smart_demo</code> / <code class="inl">test_cnn</code>）が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>AI欠陥分類（C++自作CNN推論）</h2>
+      <p class="sub">20×20パッチを 良品/チッピング/クラック/汚染 に分類。学習はPython、推論は畳み込みからC++で自作。</p>
+      <figure>
+        <div class="figure"><img src="assets/defect_cnn_samples.png" alt="欠陥パッチのクラス例"></div>
+        <figcaption id="cnnCap"></figcaption>
+      </figure>
+    </div>
+    <div class="card">
+      <h2>ストリート自動整列（NCCテンプレートマッチング）</h2>
+      <p class="sub">教示パターンをライブ画像から検出し、サブピクセルのオフセットと微小回転を推定。緑＝一致位置。</p>
+      <figure>
+        <div class="figure dark"><img src="assets/smart_align.png" alt="テンプレートマッチング結果"></div>
+        <figcaption id="alignCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>スピンドル振動スペクトル・チャタ検出（自作FFT）</h2>
+    <p class="sub">エアベアリングスピンドルの振動をFFTで解析。回転次数の高調波に対し、非高調波の強いピーク＝チャタ。対数パワー表示。</p>
+    <div id="fftChart"></div>
+    <div class="legend">
+      <span class="it"><span class="swatch" style="background:var(--closed)"></span>健全（高調波のみ）</span>
+      <span class="it"><span class="swatch" style="background:var(--open)"></span>チャタ発生</span>
+      <span class="it"><span class="swatch" style="background:var(--warn)"></span>チャタ周波数</span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>CMP研磨：目標除去量のAPC（磨く）</h2>
+      <p class="sub">パッドが目減り（glazing）してもRun-to-Run制御で研磨時間を補正し、除去量を目標300nmに維持。</p>
+      <div id="cmpChart"></div>
+      <div class="legend">
+        <span class="it"><span class="swatch" style="background:var(--open)"></span>制御なし</span>
+        <span class="it"><span class="swatch" style="background:var(--closed)"></span>APC制御</span>
+        <span class="it"><span class="swatch" style="background:var(--muted)"></span>目標 300nm</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>CMP終点検出（摩擦トレース）</h2>
+      <p class="sub">研磨中の摩擦（モータ電流）が膜を削り切った瞬間に急落 ── その終点(EPD)を自動検出。</p>
+      <div id="epdChart"></div>
+      <div class="legend">
+        <span class="it"><span class="swatch" style="background:var(--s2)"></span>摩擦信号</span>
+        <span class="it"><span class="swatch" style="background:var(--critical)"></span>検出した終点</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/smart_demo</code>（振動/CMP/整列）と <code class="inl">test_cnn</code>（CNN推論精度）をこのホスト（x86）で実行した実測値。
+    CNNは合成欠陥パッチ480枚のテスト、振動は4096点@20kHz、CMP/整列は合成シナリオ。
+    ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、ctest 全通過。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script id="smart-data" type="application/json">
+{"spindle":{"rpm":30000.0,"spindle_hz":500.0,"healthy_dom_hz":498.0469,"healthy_chatter":false,"chatter_freq_hz":3198.2422,"chatter_ratio":1.0708,"chatter_detected":true},"cmp":{"target_nm":300.0,"open_rms_nm":34.8054,"closed_rms_nm":2.3288,"dishing_nm":25.1792,"erosion_nm":-0.0194,"planarity_ok":true,"endpoint_s":18.0,"endpoint_detected":true},"align":{"dx":15.0,"dy":-8.0,"angle_deg":0.0,"score":1.0,"ok":true},"series":{"freq_hz":[0.0,29.3,58.6,87.9,117.2,146.5,175.8,205.1,234.4,263.7,293.0,322.3,351.6,380.9,410.2,439.5,468.8,498.0,527.3,556.6,585.9,615.2,644.5,673.8,703.1,732.4,761.7,791.0,820.3,849.6,878.9,908.2,937.5,966.8,996.1,1025.4,1054.7,1084.0,1113.3,1142.6,1171.9,1201.2,1230.5,1259.8,1289.1,1318.4,1347.7,1377.0,1406.2,1435.5,1464.8,1494.1,1523.4,1552.7,1582.0,1611.3,1640.6,1669.9,1699.2,1728.5,1757.8,1787.1,1816.4,1845.7,1875.0,1904.3,1933.6,1962.9,1992.2,2021.5,2050.8,2080.1,2109.4,2138.7,2168.0,2197.3,2226.6,2255.9,2285.2,2314.5,2343.8,2373.0,2402.3,2431.6,2460.9,2490.2,2519.5,2548.8,2578.1,2607.4,2636.7,2666.0,2695.3,2724.6,2753.9,2783.2,2812.5,2841.8,2871.1,2900.4,2929.7,2959.0,2988.3,3017.6,3046.9,3076.2,3105.5,3134.8,3164.1,3193.4,3222.7,3252.0,3281.2,3310.5,3339.8,3369.1,3398.4,3427.7,3457.0,3486.3,3515.6,3544.9,3574.2,3603.5,3632.8,3662.1,3691.4,3720.7,3750.0,3779.3,3808.6,3837.9,3867.2,3896.5,3925.8,3955.1,3984.4,4013.7,4043.0,4072.3,4101.6,4130.9,4160.2,4189.5,4218.8,4248.0,4277.3,4306.6,4335.9,4365.2,4394.5,4423.8,4453.1,4482.4,4511.7,4541.0,4570.3,4599.6,4628.9,4658.2,4687.5,4716.8,4746.1,4775.4,4804.7,4834.0,4863.3,4892.6,4921.9,4951.2,4980.5],"psd_healthy":[0.00091,0.01314,0.00054,0.00279,0.00045,0.0038,0.00357,0.00194,0.00224,0.00364,0.0049,0.00315,0.00026,0.0005,0.00645,0.00081,0.00303,1108.45237,0.00064,0.00086,0.00663,0.01481,0.00226,0.00411,0.00234,0.00384,0.0023,0.01855,0.00106,0.00033,0.01393,0.00182,0.00706,0.00105,144.72775,0.00161,0.00497,0.00816,0.01024,0.00081,0.00652,0.01321,0.0075,0.0129,0.00048,0.00556,0.00412,0.00592,0.00317,0.0114,0.0058,15.19503,0.00736,0.00115,0.00049,0.00024,0.00611,0.00222,0.00217,0.00354,0.00228,0.00085,0.00924,0.01025,0.00167,0.00104,0.00071,0.00178,0.00847,0.00057,0.00607,0.00259,0.00345,0.00475,0.0008,0.00139,0.01229,0.00026,0.0086,0.01721,0.00227,0.00904,0.00205,0.00076,0.00942,0.0011,0.00325,0.0163,0.00242,0.00053,0.00112,0.00545,0.00507,0.00323,0.0032,0.00235,0.00203,0.00253,0.0053,0.00127,0.00347,0.00579,0.00572,0.00032,0.00439,0.00053,0.00052,0.00714,0.005,0.00024,0.01157,0.0094,0.00577,1e-05,0.00272,0.00166,0.00178,0.00837,0.00086,0.00273,0.00021,7e-05,0.0006,0.00831,0.00424,0.00025,0.01176,0.00464,0.00097,0.01763,0.00184,0.00528,0.006,0.00092,0.00276,0.00076,0.0087,0.00506,0.00046,0.0233,0.00086,0.00143,0.00247,0.00402,0.01339,0.00089,0.02346,0.0002,0.00659,0.00411,0.00369,0.00127,0.0079,0.00156,0.01843,0.00454,0.00169,0.00866,0.00158,0.00621,0.00286,0.00458,0.00508,0.00782,0.00099,0.01137,0.00493,0.00085,0.0052,0.00311,0.00875],"psd_chatter":[0.00091,0.01314,0.00054,0.00279,0.00045,0.0038,0.00357,0.00194,0.00224,0.00364,0.0049,0.00315,0.00026,0.0005,0.00645,0.00081,0.00303,1108.45237,0.00064,0.00086,0.00663,0.01481,0.00226,0.00411,0.00234,0.00384,0.0023,0.01855,0.00106,0.00033,0.01393,0.00182,0.00706,0.00105,144.72775,0.00161,0.00497,0.00816,0.01024,0.00081,0.00652,0.01321,0.0075,0.0129,0.00048,0.00556,0.00412,0.00592,0.00317,0.0114,0.0058,15.19503,0.00736,0.00115,0.00049,0.00024,0.00611,0.00222,0.00217,0.00354,0.00228,0.00085,0.00924,0.01025,0.00167,0.00104,0.00071,0.00178,0.00847,0.00057,0.00607,0.00259,0.00345,0.00475,0.0008,0.00139,0.0123,0.00026,0.0086,0.01721,0.00227,0.00904,0.00205,0.00076,0.00942,0.0011,0.00325,0.0163,0.00242,0.00053,0.00112,0.00545,0.00507,0.00323,0.0032,0.00235,0.00203,0.00253,0.0053,0.00127,0.00347,0.00578,0.00573,0.00032,0.00439,0.0005,0.00048,0.00794,0.00596,122.17345,0.00282,0.00949,0.00616,1e-05,0.00276,0.00168,0.00178,0.00837,0.00087,0.00274,0.0002,7e-05,0.0006,0.00831,0.00424,0.00025,0.01176,0.00464,0.00097,0.01763,0.00184,0.00528,0.00601,0.00092,0.00277,0.00076,0.0087,0.00506,0.00046,0.0233,0.00086,0.00143,0.00247,0.00402,0.01339,0.00089,0.02346,0.0002,0.00659,0.00411,0.00369,0.00127,0.0079,0.00156,0.01843,0.00454,0.00169,0.00866,0.00158,0.00621,0.00286,0.00458,0.00508,0.00782,0.00099,0.01137,0.00493,0.00085,0.0052,0.00311,0.00875],"cmp_open_nm":[298.5,300.7,299.3,298.7,301.1,293.7,294.8,293.8,297.4,292.7,296.3,293.0,290.9,290.3,291.0,289.6,291.5,293.5,285.3,288.3,289.0,285.8,283.5,285.9,286.1,285.4,287.3,287.1,283.7,281.5,280.6,283.8,277.0,282.2,280.6,283.2,275.2,273.8,276.3,272.1,274.7,275.5,274.3,274.1,268.7,272.3,272.9,272.1,274.9,270.2,267.0,269.2,270.6,267.9,266.2,268.2,265.6,266.1,262.1,265.6,263.7,260.1,261.1,260.9,262.7,263.5,260.8,261.0,261.9,256.0,260.2,257.9,259.2,252.7,256.6,256.0,257.1,254.7,257.0,252.6,248.8,250.7,248.5,249.3,247.4,251.2,250.5,249.2,247.9,244.5,244.9,244.3,241.0,245.8,247.0,242.2,240.2,246.5,243.6,242.1],"cmp_closed_nm":[296.6,302.6,300.4,304.5,296.7,300.7,300.4,298.6,297.8,297.6,296.0,299.7,297.2,301.0,298.1,299.2,300.1,300.0,301.6,299.4,298.9,302.9,297.9,299.0,297.7,297.1,298.8,300.0,297.8,296.0,299.6,300.3,300.4,299.5,295.4,299.8,295.9,298.6,301.3,299.5,297.6,298.6,301.4,299.2,295.8,294.7,296.8,301.9,298.5,300.4,300.3,297.9,298.4,297.3,300.6,297.9,298.4,295.0,297.5,300.5,298.9,296.6,304.7,299.7,295.9,300.1,299.6,295.2,299.6,297.8,302.6,297.8,300.6,298.1,298.9,303.0,298.9,298.3,297.0,298.8,301.5,300.1,301.7,298.7,299.7,298.1,298.8,300.4,302.6,298.5,298.9,297.5,298.9,300.3,300.6,297.1,297.2,300.0,299.7,296.8],"friction":[0.98,1.01,1.02,0.98,0.97,0.96,1.02,0.95,0.96,1.02,1.05,1.0,1.01,1.01,1.06,0.98,0.97,1.03,1.02,1.0,1.01,1.04,1.02,0.99,1.02,0.98,1.01,0.99,0.98,1.07,1.0,1.03,1.04,1.01,0.97,0.99,0.98,1.0,0.98,1.05,0.99,1.0,1.02,0.96,1.01,0.97,1.01,1.03,1.05,0.99,1.01,1.02,0.99,0.97,1.01,0.97,0.98,1.01,1.0,0.96,1.03,1.01,1.04,1.01,1.0,0.99,1.01,1.02,0.98,0.99,1.0,1.02,0.98,1.04,0.91,1.0,1.0,1.04,0.99,1.03,1.01,0.99,1.01,0.97,1.0,0.98,1.0,1.03,1.03,0.99,0.33,0.31,0.26,0.29,0.31,0.31,0.35,0.32,0.26,0.28,0.3,0.33,0.36,0.3,0.24,0.29,0.28,0.26,0.32,0.32,0.29,0.33,0.26,0.35,0.27,0.33,0.35,0.24,0.29,0.25,0.33,0.25,0.33,0.27,0.24,0.28,0.29,0.26,0.28,0.31,0.26,0.34,0.32,0.29,0.32,0.33,0.31,0.27,0.3,0.28,0.25,0.28,0.3,0.32,0.31,0.26,0.28,0.3,0.33,0.31]}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('smart-data').textContent);
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in(a||{}))e.setAttribute(k,a[k]);return e;};
+const fmt=(x,n=2)=>Number(x).toFixed(n);
+
+const CNN_ACC = 97.3;   // from test_cnn (C++ inference on 480 patches)
+const tiles=[
+  ['AI分類精度', fmt(CNN_ACC,1), '%', 'C++自作CNN推論・480枚', true],
+  ['チャタ', D.spindle.chatter_detected?'検出':'なし', '', `${fmt(D.spindle.chatter_freq_hz,0)}Hz・比${fmt(D.spindle.chatter_ratio,2)}`],
+  ['CMP除去 RMS', fmt(D.cmp.closed_rms_nm,1), 'nm', `開ループ${fmt(D.cmp.open_rms_nm,0)}→APC`, true],
+  ['ディッシング', fmt(D.cmp.dishing_nm,0), 'nm', `終点 ${fmt(D.cmp.endpoint_s,0)}s`],
+  ['整列オフセット', `${fmt(D.align.dx,0)},${fmt(D.align.dy,0)}`, 'px', `NCC ${fmt(D.align.score,2)}`, true],
+  ['整列 傾き', fmt(D.align.angle_deg,2), '°', '半分割マッチ推定'],
+];
+const tw=document.getElementById('tiles');
+tiles.forEach(([k,v,u,note,acc])=>{const d=document.createElement('div');d.className='tile';
+  d.innerHTML=`<div class="v${acc?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div>`;tw.appendChild(d);});
+
+document.getElementById('cnnCap').innerHTML =
+  `4クラス（良品・チッピング・クラック・汚染）を分類。C++からの推論テスト精度 <b>${fmt(CNN_ACC,1)}%</b>（Python学習と一致）。`;
+document.getElementById('alignCap').innerHTML =
+  `検出オフセット dx=<b>${fmt(D.align.dx,0)}</b>, dy=<b>${fmt(D.align.dy,0)}</b> px・傾き <b>${fmt(D.align.angle_deg,2)}°</b>・NCC <b>${fmt(D.align.score,2)}</b> → `+
+  `<span class="pill ok">整列OK</span>`;
+
+// generic line chart
+function lineChart(host, opts){
+  const W=640,H=250,m={t:12,r:14,b:34,l:52}; const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  const xs=v=>m.l+(v-opts.xmin)/(opts.xmax-opts.xmin)*iw;
+  const ys=v=>m.t+(opts.ymax-v)/(opts.ymax-opts.ymin)*ih;
+  (opts.yticks||[]).forEach(tk=>{svg.appendChild(el('line',{class:'gridline',x1:m.l,x2:m.l+iw,y1:ys(tk.v),y2:ys(tk.v)}));
+    const tx=el('text',{class:'axis',x:m.l-7,y:ys(tk.v)+3,'text-anchor':'end'});tx.textContent=tk.t!=null?tk.t:tk.v;svg.appendChild(tx);});
+  (opts.xticks||[]).forEach(t=>{const tx=el('text',{class:'axis',x:xs(t),y:m.t+ih+16,'text-anchor':'middle'});tx.textContent=t;svg.appendChild(tx);});
+  (opts.refs||[]).forEach(r=>{const yy=ys(r.y);svg.appendChild(el('line',{x1:m.l,x2:m.l+iw,y1:yy,y2:yy,stroke:r.color,'stroke-width':1.5,'stroke-dasharray':'5 4',opacity:.9}));});
+  (opts.vlines||[]).forEach(r=>{const xx=xs(r.x);svg.appendChild(el('line',{x1:xx,x2:xx,y1:m.t,y2:m.t+ih,stroke:r.color,'stroke-width':1.5,'stroke-dasharray':'4 4',opacity:.9}));});
+  opts.series.forEach(s=>{let d='';s.data.forEach((pt,i)=>{const x=xs(opts.xmap?opts.xmap(i):pt[0]);const y=ys(opts.xmap?pt:pt[1]);d+=(i?'L':'M')+fmt(x,1)+' '+fmt(y,1);});
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w||1.8,'stroke-linejoin':'round'}));});
+  const xt=el('text',{class:'axis-title',x:m.l+iw/2,y:H-4,'text-anchor':'middle'});xt.textContent=opts.xtitle;svg.appendChild(xt);
+  const yt=el('text',{class:'axis-title',x:14,y:m.t+ih/2,'text-anchor':'middle',transform:`rotate(-90 14 ${m.t+ih/2})`});yt.textContent=opts.ytitle;svg.appendChild(yt);
+  host.appendChild(svg);
+}
+
+// FFT spectrum (log power vs frequency)
+const S=D.series;
+const logp = a => a.map(v => Math.log10(Math.max(v,1e-9)));
+const lh=logp(S.psd_healthy), lc=logp(S.psd_chatter);
+const allmin=Math.min(...lh,...lc), allmax=Math.max(...lh,...lc);
+lineChart(document.getElementById('fftChart'),{
+  xmin:0,xmax:5000,ymin:Math.floor(allmin),ymax:Math.ceil(allmax),
+  xticks:[0,1000,2000,3000,4000,5000],
+  yticks:[{v:Math.ceil(allmax)},{v:Math.floor((allmin+allmax)/2)},{v:Math.floor(allmin)}],
+  xtitle:'周波数 [Hz]',ytitle:'log10 パワー',
+  vlines:[{x:D.spindle.chatter_freq_hz,color:'var(--warn)'}],
+  series:[
+    {data:S.freq_hz.map((f,i)=>[f,lc[i]]),color:'var(--open)',w:1.6},
+    {data:S.freq_hz.map((f,i)=>[f,lh[i]]),color:'var(--closed)',w:1.6},
+  ],
+});
+
+// CMP APC convergence
+const Ncmp=S.cmp_open_nm.length;
+lineChart(document.getElementById('cmpChart'),{
+  xmin:1,xmax:Ncmp,ymin:220,ymax:420,
+  xticks:[1,Math.round(Ncmp/2),Ncmp],yticks:[{v:300},{v:350},{v:400}],
+  xtitle:'ウェハ番号',ytitle:'除去量 [nm]',refs:[{y:300,color:'var(--muted)'}],
+  xmap:i=>1+i*(Ncmp-1)/(Ncmp-1),
+  series:[
+    {data:S.cmp_open_nm,color:'var(--open)',w:1.6},
+    {data:S.cmp_closed_nm,color:'var(--closed)',w:1.6},
+  ],
+});
+
+// CMP endpoint (friction trace)
+const Nf=S.friction.length, fs_epd=10.0;
+const epd_i = Math.round(D.cmp.endpoint_s*fs_epd/ (300/Nf));   // index in downsampled series
+lineChart(document.getElementById('epdChart'),{
+  xmin:0,xmax:Nf*(300/Nf)/fs_epd,ymin:0,ymax:1.3,
+  xticks:[0,10,20,30],yticks:[{v:0.3},{v:0.6},{v:1.0}],
+  xtitle:'時間 [s]',ytitle:'摩擦 [a.u.]',
+  vlines:[{x:D.cmp.endpoint_s,color:'var(--critical)'}],
+  xmap:i=>i*(300/Nf)/fs_epd,
+  series:[{data:S.friction,color:'var(--s2)',w:1.6}],
+});
+</script>

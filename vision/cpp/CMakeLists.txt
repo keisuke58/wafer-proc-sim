@@ -38,6 +38,10 @@ add_library(wproc STATIC
   src/laser_control.cpp
   src/laser_kabra.cpp
   src/laser_sd.cpp
+  src/spindle.cpp
+  src/cmp.cpp
+  src/align.cpp
+  src/cnn.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -67,6 +71,9 @@ target_link_libraries(grind_demo PRIVATE wproc)
 
 add_executable(laser_demo apps/laser_demo.cpp)
 target_link_libraries(laser_demo PRIVATE wproc)
+
+add_executable(smart_demo apps/smart_demo.cpp)
+target_link_libraries(smart_demo PRIVATE wproc)
 
 # Tests.
 enable_testing()
@@ -125,6 +132,25 @@ add_test(NAME laser_kabra COMMAND test_laser_kabra)
 add_executable(test_laser_sd tests/test_laser_sd.cpp)
 target_link_libraries(test_laser_sd PRIVATE wproc)
 add_test(NAME laser_sd COMMAND test_laser_sd)
+
+add_executable(test_spindle tests/test_spindle.cpp)
+target_link_libraries(test_spindle PRIVATE wproc)
+add_test(NAME spindle COMMAND test_spindle)
+
+add_executable(test_cmp tests/test_cmp.cpp)
+target_link_libraries(test_cmp PRIVATE wproc)
+add_test(NAME cmp COMMAND test_cmp)
+
+add_executable(test_align tests/test_align.cpp)
+target_link_libraries(test_align PRIVATE wproc)
+add_test(NAME align COMMAND test_align)
+
+# CNN inference test loads the trained weights/testset from the repo results dir.
+set(WPROC_RESULTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../results")
+add_executable(test_cnn tests/test_cnn.cpp)
+target_link_libraries(test_cnn PRIVATE wproc)
+target_compile_definitions(test_cnn PRIVATE WPROC_RESULTS_DIR="${WPROC_RESULTS_DIR}")
+add_test(NAME cnn COMMAND test_cnn "${WPROC_RESULTS_DIR}")
 
 # ── Optional backends ────────────────────────────────────────────────────────
 
