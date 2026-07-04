@@ -225,6 +225,19 @@
     </div>
     <p class="sub" style="margin-top:10px">検証：無収差FE-MTFが閉形式の回折MTFと <b>最大誤差 0.0003</b> で一致（f/2.8・λ=0.55µm・遮断649 lp/mm）。規格 MTF≥0.35 @60 lp/mm に対し、公称 <b>0.88</b>／熱+20℃で <b>0.56</b>（デフォーカス0.25λ、150 lp/mm付近のコントラスト反転も再現）。モンテカルロ合格率 <b>97%</b>（P10=0.50）、規格から導く偏心公差 <b>4.3 µm</b>。</p>
   </div>
+
+  <div class="card">
+    <h2>⑬ 制御系設計 ― OISサーボの周波数整形・外乱抑圧・共振ノッチ補償</h2>
+    <p class="sub">アクチュエータを時間領域で回すC++ ois/cam に対し、<b>周波数領域で閉ループを設計・証明</b>する（メカトロ評価者の言語）。2次アクチュエータに<b>PI＋位相進み補償</b>を巻き、ループ整形でボード線図・<b>位相/ゲイン余裕</b>を確定。感度関数 S=1/(1+L) を手ブレPSDに適用して残留像振れ（stops）と外乱抑圧を評価し、閉ループ・ステップ応答で整定・オーバーシュートを提示。さらに<b>軽減衰の機構共振がゲイン余裕を食う→ノッチフィルタで回復</b>という定番の課題まで実装。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <div class="figure" style="background:#fff"><img src="assets/ois_bode.png" alt="OIS開ループ・ボード線図（位相/ゲイン余裕）"></div>
+        <div class="figure" style="background:#fff"><img src="assets/notch_bode.png" alt="アクチュエータ共振とノッチ補償"></div>
+      </div>
+      <div class="figure" style="background:#fff"><img src="assets/ois_rejection.png" alt="外乱抑圧（感度×手ブレPSD）と閉ループ・ステップ応答"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">設計結果：<b>位相余裕 53°・ゲイン余裕 13 dB・交差 99 Hz</b>、閉ループ整定 <b>20 ms</b>・オーバーシュート 11%。手ブレ抑圧 <b>3.4 stops</b>（RMS 3.8→0.36 µm）。共振補償：軽減衰260 Hz共振でゲイン余裕 <b>−4 dB（不安定）→ ノッチで +5 dB（安定）</b>にサンプル遅延（0.4 ms）込みで回復。</p>
+  </div>
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

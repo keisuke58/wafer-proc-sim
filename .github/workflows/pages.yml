@@ -73,6 +73,9 @@ jobs:
           cp vision/cpp/docs/assets/axisym_mesh.png     _site/assets/ || echo "missing axisym_mesh"
           cp vision/cpp/docs/assets/mtf_curves.png      _site/assets/ || echo "missing mtf_curves"
           cp vision/cpp/docs/assets/mtf_tolerance.png   _site/assets/ || echo "missing mtf_tolerance"
+          cp vision/cpp/docs/assets/ois_bode.png        _site/assets/ || echo "missing ois_bode"
+          cp vision/cpp/docs/assets/ois_rejection.png   _site/assets/ || echo "missing ois_rejection"
+          cp vision/cpp/docs/assets/notch_bode.png      _site/assets/ || echo "missing notch_bode"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

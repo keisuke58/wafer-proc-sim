@@ -59,6 +59,7 @@ tests/              one ctest per module
 docs/               self-contained GitHub Pages dashboard + assets
 fem/                Python FE — beam model + axisymmetric solid model
 optics/             Python wave-optics — MTF from mechanical error
+control/            Python control — OIS servo Bode / margins / notch
 ai/                 PyTorch GNN surrogate + Bayesian generative design
 ```
 
@@ -146,6 +147,27 @@ optical KPI — the **mechanics → wavefront → MTF** map that a barrel design
 python3 optics/mtf_wavefront.py  # writes optics/figures/*.png + mtf_wavefront_results.json
 ```
 Pure `numpy` + `matplotlib`.
+
+## Servo control design — Bode / margins / notch (`control/servo_analysis.py`, Python)
+
+The C++ `ois` and `cam` modules run the actuators in the *time* domain; this is
+the control engineer's companion analysis in the *frequency* domain — the way a
+mechatronics reviewer reasons about a closed loop:
+
+- **Loop shaping + margins** — a PI-lead controller wraps the 2nd-order actuator
+  plant (with a realistic 0.4 ms gyro/DSP transport delay); the open-loop Bode
+  gives **PM 53°, GM 13 dB, crossover 99 Hz**.
+- **Disturbance rejection** — the sensitivity `S = 1/(1+L)` is applied to a
+  hand-tremor motion PSD → **3.4 stops** of stabilisation (RMS 3.8 → 0.36 µm),
+  and the closed-loop step settles in **20 ms** at 11 % overshoot.
+- **Resonance notch compensation** — a lightly damped 260 Hz actuator resonance
+  drags the gain margin to **−4 dB (unstable)**; a notch filter tuned to the
+  resonance restores **+5 dB (stable)** without giving up loop bandwidth.
+
+```bash
+python3 control/servo_analysis.py  # writes control/figures/*.png + servo_analysis_results.json
+```
+Requires `numpy` + `scipy` + `matplotlib`.
 
 ## Generative design — GNN surrogate + Bayesian search (`ai/generative_design.py`, PyTorch)
 
