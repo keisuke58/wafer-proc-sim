@@ -56,6 +56,9 @@
     <a class="navcard" href="laser.html">
       <div class="ic">⚡</div><b>レーザー加工ダッシュボード</b>
       <span>アブレーション溝検査・ステルスSD層/HAZ・パルスAPC・光学系寿命・KABRAスライス</span></a>
+    <a class="navcard" href="smart.html">
+      <div class="ic">🧠</div><b>スマート製造ダッシュボード</b>
+      <span>AI欠陥分類(自作CNN)・スピンドル振動/チャタ(FFT)・CMP研磨APC・ストリート整列(NCC)</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -69,6 +72,9 @@
 
   <h2 class="sec">レーザー加工（ステルス/アブレーション/KABRA）<a href="laser.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="laser_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
   <div class="gal" id="g-laser"></div>
+
+  <h2 class="sec">スマート製造（AI検査・振動・CMP・整列）<a href="smart.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="smart_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
+  <div class="gal" id="g-smart"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -97,6 +103,10 @@ const GAL = {
   'g-laser': [
     ['laser_groove.png','アブレーション溝検査','溝幅・深さ・HAZ帯・デブリの自動計測'],
     ['laser_sd.png','ステルスSD層・HAZ','IR断面の多層SD検出とHAZ/クラック評価'],
+  ],
+  'g-smart': [
+    ['defect_cnn_samples.png','AI欠陥分類（自作CNN）','良品/チッピング/クラック/汚染をC++推論で分類（97%）'],
+    ['smart_align.png','ストリート自動整列（NCC）','教示パターンのサブピクセル位置合わせ'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

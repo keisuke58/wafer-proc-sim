@@ -1,0 +1,135 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="装置を賢くする4要素（AI欠陥分類・スピンドル振動チャタ検出・CMP研磨/終点検出・ストリート自動整列）を大学生でも分かるように図解。学習はPython、推論はC++で自作。">
+<title>スマート製造（AI検査・振動・CMP・整列）— 注釈つき解説</title>
+<style>
+  :root{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674;
+    --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6;
+    --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.08); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5;
+    --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);} }
+  :root[data-theme="light"]{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674; --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6; }
+  :root[data-theme="dark"]{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5; --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:40px 20px 72px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  a{ color:var(--accent); } .back{ font-size:13px; }
+  header{ margin:14px 0 8px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; color:var(--accent); margin:0 0 8px; }
+  h1{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:64ch; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:24px; }
+  .card > h2{ font-size:19px; margin:0 0 4px; letter-spacing:-.01em; }
+  .card > .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  p{ margin:10px 0; }
+  .analogy{ background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:14.5px; margin:14px 0; }
+  .analogy b{ color:var(--accent); }
+  .figbox{ position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; line-height:0; }
+  .figbox.dark{ background:#0b0d10; } .figbox.dark img{ image-rendering:pixelated; }
+  .figbox img{ width:100%; display:block; }
+  .cap{ color:var(--muted); font-size:13px; margin-top:9px; line-height:1.6; }
+  .pin{ position:absolute; width:24px; height:24px; border-radius:50%; color:#fff; font-size:13px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.5); transform:translate(-50%,-50%); }
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .verdict{ font-weight:800; } .ok{ color:var(--good); } .ng{ color:var(--bad); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="smart.html">スマート製造ダッシュボードを開く →</a>
+
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>装置を「賢くする」4つの技術 — 注釈つき解説</h1>
+    <p class="lead">加工そのもの（切る・削る・磨く）に加えて、装置の目・耳・手・頭を賢くする4要素を、
+      大学生でも分かるように図解します。学習はPython、<b>推論・信号処理はすべてC++でゼロから</b>実装しています。</p>
+  </header>
+
+  <div class="card">
+    <h2>① AI欠陥分類 ― 画像を見て種類を当てる（自作CNN）</h2>
+    <p class="sub">20×20の小さな画像を「良品・チッピング・クラック・汚染」に自動仕分け。</p>
+    <div class="figbox">
+      <img src="assets/defect_cnn_samples.png" alt="欠陥パッチの4クラス例">
+    </div>
+    <p>CNN（畳み込みニューラルネット）は、画像に小さなフィルタを滑らせて「特徴」を抽出し、
+      それをもとに種類を判定するAIです。ここでは<b>チッピング（欠け）・クラック（ひび）・汚染（異物）</b>と
+      良品を見分けます。ポイントは、<b>学習はPythonでやっても、実際の推論（判定）は畳み込みから
+      C++で自作</b>していること ── 装置に組み込む「現場のAI」の作り方そのものです。</p>
+    <div class="analogy">
+      🧠 <b>たとえるなら：</b>健康診断の画像診断AI。大量の例で「これは欠け、これはひび」と学び、
+      新しい画像を見て一瞬で分類する。合成データ480枚で <b>テスト精度97%</b>、しかもC++推論はPython学習と一致。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② スピンドル振動・チャタ検出 ― 装置の「異音」を聴く（自作FFT）</h2>
+    <p class="sub">高速回転する主軸の振動を周波数に分解し、悪い振動（チャタ）を見つける。</p>
+    <p>回転する刃（スピンドル）は、正常なら<b>回転数の整数倍（高調波）</b>にだけ振動が出ます。
+      ところが切削中に構造が共振すると、回転数と無関係な周波数に<b>鋭いピーク＝チャタ（びびり振動）</b>が現れ、
+      切断面を荒らします。振動波形を<b>FFT（高速フーリエ変換）</b>で周波数ごとの強さに分解すると、
+      この異常ピークが一目で分かります。</p>
+    <div class="analogy">
+      🎧 <b>たとえるなら：</b>エンジンの異音を「音の高さ」で聞き分ける整備士。
+      本来の回転音（500Hzとその倍）に混じった<b>3200Hzの甲高い音</b>を機械が検出 → チャタと判定。FFTはC++で自作。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ CMP研磨 ＝「磨く」 ― 削る量を制御し、削り終わりを知る</h2>
+    <p class="sub">研磨（Chemical-Mechanical Polishing）で表面を平らに磨き上げる工程の知能化。</p>
+    <p>研磨の減り方は <b>Preston則（除去 ∝ 圧力 × 速度 × 時間）</b>に従います。研磨パッドは使うほど
+      目詰まり（glazing）して削れ味が落ちるので、1枚ごとに<b>研磨時間を自動補正</b>して除去量を目標に維持します
+      （制御なし RMS 35nm → APC 2.3nm）。さらに、研磨中の<b>摩擦（モータ電流）が急落する瞬間＝削り終わり(終点)</b>を
+      自動検出して、削りすぎを防ぎます。</p>
+    <table>
+      <tr><th>項目</th><th>結果</th></tr>
+      <tr><td>除去量ばらつき（制御なし→APC）</td><td class="n">35 → <b>2.3</b> nm</td></tr>
+      <tr><td>ディッシング（Cu配線の凹み）</td><td class="n">25 nm</td></tr>
+      <tr><td>終点検出</td><td class="n">18 s で自動検出</td></tr>
+    </table>
+    <div class="analogy">
+      🪞 <b>たとえるなら：</b>すり減る紙やすりで板を鏡面に磨くとき、削れ具合を見て力と時間を調整し、
+      「もう十分」の瞬間を手応え（摩擦）で察知する。DISCOの「磨く」に対応します。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>④ ストリート自動整列 ― カメラで「位置合わせ」（NCC）</h2>
+    <p class="sub">教えておいたパターンをライブ画像から探し、ズレと傾きを測る。</p>
+    <div class="figbox dark">
+      <img src="assets/smart_align.png" alt="テンプレートマッチングの結果">
+      <span class="pin" style="left:52%; top:47%; background:var(--good)">1</span>
+    </div>
+    <p>切る前に、ウェハの<b>切断ライン（ストリート）が今どこにあるか</b>を正確に知る必要があります。
+      あらかじめ教示した基準パターン（テンプレート）を、<b>正規化相互相関(NCC)</b>で画像中から探し、
+      見つけた位置から<b>ズレ(dx,dy)</b>と<b>微小な傾き</b>をサブピクセル精度で求めます（緑枠＝一致位置）。</p>
+    <div class="analogy">
+      🔍 <b>たとえるなら：</b>間違い探しで「この形」をページから探す作業を、明るさが変わっても
+      ブレないように数値化したもの。この例では ズレ (15, −8) px を正確に復元。C++で自作。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ まとめ ― なぜDISCO受けするのか</h2>
+    <p>加工（切る・削る・磨く）を支えるのは、装置を賢くする<b>目（AI検査）・耳（振動診断）・
+      頭（制御）・手（整列）</b>です。この解説で見た4要素は、いずれもDISCOの装置が高精度・高歩留りを
+      出すための中核技術。しかも<b>推論エンジン・FFT・相関・制御をすべてC++17でゼロから実装し、
+      テストで検証</b>しました（ctest全通過・警告ゼロ）。
+      「C/C++での画像処理システム開発経験」を、AIから信号処理まで含めて実物で示せます。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/smart_demo</code> と <code class="inl">test_cnn</code> の実測出力。
+    図は自作C++／学習スクリプトが生成。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+    インタラクティブ版は <a href="smart.html">スマート製造ダッシュボード</a>へ。
+  </footer>
+</div>
