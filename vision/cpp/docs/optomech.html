@@ -206,6 +206,15 @@
     </div>
     <p class="sub" style="margin-top:10px">生成された最適設計：<b>Mg合金＋薄肉＋7リブ</b> → 1次モード <b>9.1kHz</b>・質量 <b>17.2g</b>・安全率 <b>36</b>（代理予測が実FEと一致）。CAEと生成AIを結ぶ"設計改革"を実装（PyTorch）。</p>
   </div>
+
+  <div class="card">
+    <h2>⑪ 軸対称ソリッドFE ― 実メッシュによる熱変形・応力場</h2>
+    <p class="sub">梁要素では捉えられない断面内の応力分布を解くため、鏡筒壁の (r,z) 断面を <b>4節点 軸対称ソリッド(Q4)要素</b>でメッシュ化し、真の2次元弾性場を有限要素で解く。均一昇温での熱膨張場を求め、軸方向の伸び（＝バックフォーカス・ドリフト）を αLΔT と照合。マウント面拘束による熱応力の集中も可視化——CAEエンジニアが実際に回す解析と可視化そのもの。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div class="figure" style="background:#fff"><img src="assets/axisym_mesh.png" alt="軸対称メッシュと熱変形・von Mises応力場"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：160要素・205節点のQ4メッシュ。ΔT=10℃で軸方向伸び <b>9.68 µm</b>（解析解 αLΔT=9.44µm と <b>2.5%</b> 一致、0.97µm/℃）／半径膨張 3.65µm。マウント面（z=0）の径方向拘束が最大 <b>21 MPa</b> の熱応力を生む様子をメッシュ変形＋von Mises等値図で可視化。</p>
+  </div>
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

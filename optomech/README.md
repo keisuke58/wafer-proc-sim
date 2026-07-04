@@ -57,6 +57,8 @@ src/                implementations
 apps/optm_demo.cpp  runs all modules, writes JSON + figures
 tests/              one ctest per module
 docs/               self-contained GitHub Pages dashboard + assets
+fem/                Python FE — beam model + axisymmetric solid model
+ai/                 PyTorch GNN surrogate + Bayesian generative design
 ```
 
 ## Notes on the physics
@@ -96,6 +98,29 @@ designer actually performs:
 python3 fem/barrel_fem.py    # writes fem/figures/*.png + barrel_fem_results.json
 ```
 Requires `numpy` + `matplotlib` (`scipy` used for the eigensolver if present).
+
+## Axisymmetric solid FE (`fem/barrel_axisym.py`, Python)
+
+Where the beam model gives bending modes, this one resolves the **stress field
+inside the wall**. The barrel-wall cross-section is meshed in the (r, z) plane
+with **4-node axisymmetric solid (Q4) elements**, and the true 2-D elasticity
+problem is assembled (rr/zz/θθ/rz strains, axisymmetric 2πr·detJ weighting) and
+solved — exactly the analysis a CAE engineer runs for thermal growth and stress,
+with a real, visualizable mesh.
+
+- **Thermal expansion** — a uniform temperature rise imposes an axisymmetric
+  thermal strain; the FE axial growth (**9.68 µm** at ΔT=10 °C) matches the
+  closed-form `α·L·ΔT` (9.44 µm) within **2.5%**, i.e. the back-focal drift.
+- **Constraint-driven stress** — the mount face (z=0) is radially constrained,
+  so the FE develops a real thermal-stress field peaking at **21 MPa** at the
+  base — a stress concentration the closed-form estimate cannot show.
+- **Mesh + deformed-shape / von-Mises visualization** (`figures/axisym_mesh.png`):
+  undeformed mesh alongside the scaled deformation coloured by von Mises stress.
+
+```bash
+python3 fem/barrel_axisym.py  # writes fem/figures/axisym_mesh.png + barrel_axisym_results.json
+```
+Pure `numpy` + `matplotlib`.
 
 ## Generative design — GNN surrogate + Bayesian search (`ai/generative_design.py`, PyTorch)
 
