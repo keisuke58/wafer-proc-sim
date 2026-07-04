@@ -1,0 +1,28 @@
+{
+  "sets": {
+    "NEU_SDI": {
+      "pairs": 20,
+      "fixed |I-mean|": 0.807,
+      "adaptive z (k=31)": 0.789,
+      "multi-scale z": 0.963
+    },
+    "NEU_Oil": {
+      "pairs": 16,
+      "fixed |I-mean|": 0.724,
+      "adaptive z (k=31)": 0.658,
+      "multi-scale z": 0.871
+    },
+    "NEU_SPDI": {
+      "pairs": 15,
+      "fixed |I-mean|": 0.73,
+      "adaptive z (k=31)": 0.656,
+      "multi-scale z": 0.893
+    }
+  },
+  "overall_pixel_auroc": {
+    "fixed |I-mean|": 0.758,
+    "adaptive z (k=31)": 0.709,
+    "multi-scale z": 0.914
+  },
+  "n_pairs_total": 51
+}
