@@ -15,6 +15,8 @@
 //      the unsaturated wings carry the sub-pixel information)
 //
 // Build:  g++ -O3 -march=native -std=c++17 -Wall -Wextra -o lj_fast lj_fast.cpp
+//         (optionally add  -DBENCH_CPU_NAME="\"<cpu model>\""  to stamp the
+//          measurement host into the JSON output)
 // Run:    ./lj_fast            (prints a JSON block)
 //
 // Reproducibility: the INPUT is deterministic (fixed-seed synthesis), so the
@@ -172,6 +174,9 @@ int main() {
     const double cols_per_s = 1e9 / ns_per_col;
     const double profiles_per_s_3200 = cols_per_s / 3200.0;  // LJ-X class width
 
+#ifdef BENCH_CPU_NAME
+    std::printf("  \"cpu\": \"%s\",\n", BENCH_CPU_NAME);
+#endif
     std::printf("  \"columns_timed\": %d,\n", kCols);
     std::printf("  \"ns_per_column\": %.1f,\n", ns_per_col);
     std::printf("  \"megacolumns_per_s\": %.2f,\n", cols_per_s / 1e6);
