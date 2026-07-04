@@ -1,0 +1,127 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="装置を「システム」にする4要素（リアルタイムモーション制御・デジタルツインOEE・先端パッケージング検査・ADC自動欠陥分類）を大学生でも分かるように図解。すべてC++17でゼロから実装。">
+<title>装置システム（モーション・OEE・パッケージング・ADC）— 注釈つき解説</title>
+<style>
+  :root{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674;
+    --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6;
+    --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.08); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5;
+    --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);} }
+  :root[data-theme="light"]{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674; --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6; }
+  :root[data-theme="dark"]{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5; --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:40px 20px 72px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  a{ color:var(--accent); } .back{ font-size:13px; }
+  header{ margin:14px 0 8px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; color:var(--accent); margin:0 0 8px; }
+  h1{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:64ch; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:24px; }
+  .card > h2{ font-size:19px; margin:0 0 4px; letter-spacing:-.01em; }
+  .card > .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  p{ margin:10px 0; }
+  .analogy{ background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:14.5px; margin:14px 0; }
+  .analogy b{ color:var(--accent); }
+  .figbox{ position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b0d10; line-height:0; }
+  .figbox img{ width:100%; display:block; image-rendering:pixelated; }
+  .cap{ color:var(--muted); font-size:13px; margin-top:9px; line-height:1.6; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .verdict{ font-weight:800; } .ok{ color:var(--good); } .ng{ color:var(--bad); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="systems.html">装置システムダッシュボードを開く →</a>
+
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>装置を「システム」にする4つの技術 — 注釈つき解説</h1>
+    <p class="lead">個々の加工・検査ツールを、実際に動く「装置システム」へ束ねる4要素を、
+      大学生でも分かるように図解します。すべてC++17でゼロから実装しています。</p>
+  </header>
+
+  <div class="card">
+    <h2>① リアルタイム・モーション制御 ― ステージを「なめらかに速く」動かす</h2>
+    <p class="sub">ウェハを載せたXYステージを、振動を出さずに目標位置へ運ぶ。</p>
+    <p>加工位置を変えるたびにステージを動かしますが、急発進・急停止すると<b>装置が揺れて切断がブレます</b>。
+      そこで加速度の変化率（<b>ジャーク</b>）を制限した<b>S字カーブ軌道</b>で、なめらかに加減速します。
+      さらに、目標の速度・加速度を先読みして力を加える<b>フィードフォワード制御</b>を足すと、
+      追従の遅れ（誤差）がほぼ消えます。</p>
+    <table>
+      <tr><th>制御</th><th>追従誤差(最大)</th></tr>
+      <tr><td>フィードバックのみ</td><td class="n">735 µm</td></tr>
+      <tr><td>＋フィードフォワード</td><td class="n verdict ok">5 µm</td></tr>
+    </table>
+    <div class="analogy">
+      🚄 <b>たとえるなら：</b>満員電車を「ガタン」と揺らさず発進・停止させる運転。
+      次にどれだけ加速するか分かっていれば、あらかじめ力加減できる ── それがフィードフォワード。約<b>140倍</b>精度向上。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② デジタルツイン ＆ OEE ― ライン全体を数字で見る</h2>
+    <p class="sub">切る→削る→磨く→検査の全工程を仮想ラインとして、生産性を丸ごと評価。</p>
+    <p>装置が1台速くても、ライン全体の速さは<b>一番遅い工程（ボトルネック）</b>で決まります。各工程の
+      サイクルタイム・稼働率・良品率から、ボトルネック・スループット・そして<b>OEE（設備総合効率
+      ＝稼働率×性能×品質）</b>を計算します。この例ではボトルネックは<b>研削</b>、ラインOEEは<b>80%</b>。
+      「どこを直せば一番効くか」が一目で分かります。</p>
+    <div class="analogy">
+      🏭 <b>たとえるなら：</b>リレー走で一番遅い走者がチームのタイムを決めるのと同じ。
+      その走者（ボトルネック）を鍛えるのが最優先 ── デジタルツインはそれを数値で示します。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ ADC 自動欠陥分類パイプライン ― AIで「検査を最後までやり切る」</h2>
+    <p class="sub">欠陥を見つける→種類を当てる→ダイ毎に集約→歩留りマップ、を全自動で。</p>
+    <div class="figbox">
+      <img src="assets/adc_wafermap.png" alt="ADC分類ウェハマップ">
+    </div>
+    <p>検査は「欠陥を見つける」だけでは終わりません。見つけた欠陥を<b>自作CNNで種類分け</b>し、
+      <b>ダイ（チップ）ごとに集約</b>して、致命欠陥があるダイを不良として<b>ウェハ地図（歩留りマップ）</b>に
+      落とし込みます（緑＝良品ダイ、赤＝不良ダイ）。さらに欠陥タイプの<b>Pareto（内訳）</b>を出して、
+      一番多い不良を優先対策できます。これがADC（自動欠陥分類）。</p>
+    <div class="analogy">
+      🧠 <b>たとえるなら：</b>健康診断で「異常あり」を見つけるだけでなく、病名を分類し、
+      患者ごとにカルテへまとめ、多い病気から対策する ── 検出から意思決定までの一気通貫。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>④ 先端パッケージング検査 ― 積層前の「バンプ」を測る</h2>
+    <p class="sub">チップを積み重ねる前の、微小な電極（バンプ）配列の良否を判定。</p>
+    <p>ダイシング・研削の後、チップは積層（3D-IC/ハイブリッドボンディング）へ進みます。その前に、
+      チップ表面の<b>バンプ（はんだ電極）の配列</b>を検査します。各バンプの<b>径・ピッチ・欠損・
+      コプラナリティ（高さの揃い）</b>を自動計測し、欠けや短小バンプを弾きます（緑＝良、赤＝規格外）。</p>
+    <div class="analogy">
+      🔬 <b>たとえるなら：</b>レゴを積む前に、全ポッチが同じ高さで揃い、欠けが無いか確かめる作業。
+      1つでも低い・欠けていると、積んだとき接触不良になります。DISCOのダイシング/研削が供給する成長領域。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ まとめ ― なぜDISCO受けするのか</h2>
+    <p>点の道具（加工・検査）を、<b>リアルタイム制御・ライン最適化・AI検査の自動化・後工程検査</b>という
+      「システム」に束ねる力は、装置メーカーの中核そのものです。しかもこれらを
+      <b>制御・信号処理・AI・画像処理までC++17でゼロから実装し、テストで検証</b>しました
+      （ctest全通過・警告ゼロ）。「C/C++での画像処理システム開発経験」を、
+      単体アルゴリズムから装置システムまで、実物で示せます。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/systems_demo</code> の実測出力。
+    図は自作C++ツールが生成。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+    インタラクティブ版は <a href="systems.html">装置システムダッシュボード</a>へ。
+  </footer>
+</div>

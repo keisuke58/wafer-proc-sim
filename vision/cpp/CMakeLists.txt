@@ -42,6 +42,10 @@ add_library(wproc STATIC
   src/cmp.cpp
   src/align.cpp
   src/cnn.cpp
+  src/motion.cpp
+  src/fab.cpp
+  src/pkg.cpp
+  src/adc.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -74,6 +78,9 @@ target_link_libraries(laser_demo PRIVATE wproc)
 
 add_executable(smart_demo apps/smart_demo.cpp)
 target_link_libraries(smart_demo PRIVATE wproc)
+
+add_executable(systems_demo apps/systems_demo.cpp)
+target_link_libraries(systems_demo PRIVATE wproc)
 
 # Tests.
 enable_testing()
@@ -151,6 +158,23 @@ add_executable(test_cnn tests/test_cnn.cpp)
 target_link_libraries(test_cnn PRIVATE wproc)
 target_compile_definitions(test_cnn PRIVATE WPROC_RESULTS_DIR="${WPROC_RESULTS_DIR}")
 add_test(NAME cnn COMMAND test_cnn "${WPROC_RESULTS_DIR}")
+
+add_executable(test_motion tests/test_motion.cpp)
+target_link_libraries(test_motion PRIVATE wproc)
+add_test(NAME motion COMMAND test_motion)
+
+add_executable(test_fab tests/test_fab.cpp)
+target_link_libraries(test_fab PRIVATE wproc)
+add_test(NAME fab COMMAND test_fab)
+
+add_executable(test_pkg tests/test_pkg.cpp)
+target_link_libraries(test_pkg PRIVATE wproc)
+add_test(NAME pkg COMMAND test_pkg)
+
+add_executable(test_adc tests/test_adc.cpp)
+target_link_libraries(test_adc PRIVATE wproc)
+target_compile_definitions(test_adc PRIVATE WPROC_RESULTS_DIR="${WPROC_RESULTS_DIR}")
+add_test(NAME adc COMMAND test_adc "${WPROC_RESULTS_DIR}")
 
 # ── Optional backends ────────────────────────────────────────────────────────
 
