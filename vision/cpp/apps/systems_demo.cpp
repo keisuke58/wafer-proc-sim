@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -86,8 +87,9 @@ int main(int argc, char** argv) {
     const std::string bumps_out = wproc_cli::arg_str(argc, argv, "--bumps", "");
     const std::string wafer_out = wproc_cli::arg_str(argc, argv, "--wafer", "");
     const std::string results = wproc_cli::arg_str(argc, argv, "--results", "results");
-    const unsigned seed =
-        static_cast<unsigned>(wproc_cli::arg_double(argc, argv, "--seed", 2027));
+    // Clamp before the double->unsigned cast: a negative seed would be UB.
+    const double seed_arg = wproc_cli::arg_double(argc, argv, "--seed", 2027);
+    const unsigned seed = static_cast<unsigned>(seed_arg < 0.0 ? 0.0 : seed_arg);
 
     // ── Motion: S-curve + servo tracking (FF vs no-FF) ──────────────────────
     motion::Limits lim; lim.vmax = 40.0; lim.amax = 400.0; lim.jmax = 4000.0;
@@ -127,14 +129,19 @@ int main(int argc, char** argv) {
             tf.read(reinterpret_cast<char*>(&n), 4);
             tf.read(reinterpret_cast<char*>(&h), 4);
             tf.read(reinterpret_cast<char*>(&w), 4);
-            std::vector<float> pix(static_cast<std::size_t>(n) * h * w);
+            if (!tf || n <= 0 || h <= 0 || w <= 0)
+                throw std::runtime_error("invalid or truncated testset header");
+            // Only the first M patches are used, so size the buffer to M — not to
+            // the full (untrusted) n — and verify the payload read succeeded.
+            const int M = std::min<int>(n, 240);
+            std::vector<float> pix(static_cast<std::size_t>(M) * h * w);
             tf.read(reinterpret_cast<char*>(pix.data()),
                     static_cast<std::streamsize>(pix.size() * sizeof(float)));
+            if (!tf) throw std::runtime_error("truncated testset payload");
             adc::Params ap; ap.cols = 16; ap.rows = 16;
             std::vector<adc::Observation> obs;
             std::mt19937 gen(seed + 5);
             std::uniform_int_distribution<int> uc(0, ap.cols - 1), urr(0, ap.rows - 1);
-            const int M = std::min<int>(n, 240);
             for (int i = 0; i < M; ++i) {
                 Image p(w, h);
                 const float* q = &pix[static_cast<std::size_t>(i) * h * w];

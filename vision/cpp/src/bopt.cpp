@@ -10,8 +10,10 @@
 namespace wproc::bopt {
 namespace {
 
+constexpr double kPi = 3.14159265358979323846;  // M_PI is a POSIX, not ISO C++, symbol
+
 // Standard normal pdf/cdf (cdf via erfc).
-double norm_pdf(double z) { return std::exp(-0.5 * z * z) / std::sqrt(2.0 * M_PI); }
+double norm_pdf(double z) { return std::exp(-0.5 * z * z) / std::sqrt(2.0 * kPi); }
 double norm_cdf(double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); }
 
 // In-place Cholesky: A = L L^T (lower). Returns false if not SPD.

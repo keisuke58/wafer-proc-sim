@@ -95,9 +95,14 @@ Schedule evaluate(const std::vector<Station>& st, const std::vector<Job>& jobs,
     Schedule s;
     s.order = order;
     Station cur = home;
+    const int ns = static_cast<int>(st.size()), nj = static_cast<int>(jobs.size());
     for (int j : order) {
-        const Station& pick = st[jobs[j].pick];
-        const Station& place = st[jobs[j].place];
+        if (j < 0 || j >= nj) continue;                        // guard: bad job index
+        const Job& job = jobs[j];
+        if (job.pick < 0 || job.pick >= ns || job.place < 0 || job.place >= ns)
+            continue;                                          // guard: bad station index
+        const Station& pick = st[job.pick];
+        const Station& place = st[job.place];
         s.travel += dist(cur, pick) + dist(pick, place);
         cur = place;
     }
@@ -154,7 +159,11 @@ Schedule optimize(const std::vector<Station>& st, const std::vector<Job>& jobs,
             }
         }
     }
-    return evaluate(st, jobs, order, home, p);
+    // The nearest-neighbour + 2-opt result is a local optimum; on some layouts
+    // it can be worse than the input order, so never return worse than FIFO.
+    const Schedule opt = evaluate(st, jobs, order, home, p);
+    const Schedule fifo = plan_fifo(st, jobs, home, p);
+    return fifo.travel < opt.travel ? fifo : opt;
 }
 
 ColorImage render_path(const Grid& g, const Path& path, int cell_px) {

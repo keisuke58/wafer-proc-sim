@@ -105,7 +105,10 @@ void undistort_point(const Distortion& d, double px, double py,
 GageResult gage_rr(const GageStudy& s) {
     GageResult g;
     const int O = s.operators, P = s.parts, T = s.trials;
-    if (O < 2 || P < 2 || T < 2 ||
+    // The AIAG average-and-range constants below are only tabulated for
+    // 2-3 operators, 2-3 trials and 2-10 parts; reject studies outside that
+    // range rather than silently substituting an approximate constant.
+    if (O < 2 || O > 3 || T < 2 || T > 3 || P < 2 || P > 10 ||
         static_cast<int>(s.values.size()) != O)
         return g;
 
@@ -171,7 +174,7 @@ ColorImage render_residuals(const std::vector<Correspondence>& pts,
                             const CalibResult& cal, int w, int h, double mag) {
     Image bg(w, h, 245.0f);
     ColorImage out = to_color(bg);
-    if (!cal.ok) return out;
+    if (!cal.ok || pts.empty()) return out;
 
     // Map stage coordinates into the canvas: fit a display scale from the
     // stage-coordinate bounding box with a margin.

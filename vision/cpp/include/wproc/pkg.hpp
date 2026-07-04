@@ -32,6 +32,7 @@ struct BumpSpec {
 struct Bump {
     double x = 0.0, y = 0.0;       // centroid [px]
     double diameter_um = 0.0;
+    double diameter_px = 0.0;      // pixel-space diameter (for overlay rendering)
     double brightness = 0.0;       // mean intensity (coplanarity proxy)
     bool ok = false;               // within the diameter tolerance
 };

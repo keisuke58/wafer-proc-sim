@@ -32,7 +32,12 @@ std::tuple<double, double, double> accel_phase(double vp, double amax,
 Trajectory scurve(double distance, const Limits& lim, double dt) {
     Trajectory tr;
     tr.dt = dt;
-    if (distance <= 0.0 || dt <= 0.0) return tr;
+    // Guard the kinematic limits too: a non-positive vmax/amax/jmax would divide
+    // by zero in accel_phase and feed inf/NaN into the later static_cast<int>,
+    // which is undefined behaviour.
+    if (distance <= 0.0 || dt <= 0.0 ||
+        lim.vmax <= 0.0 || lim.amax <= 0.0 || lim.jmax <= 0.0)
+        return tr;
 
     const double jmax = lim.jmax, amax = lim.amax;
     double vp = lim.vmax;

@@ -24,16 +24,17 @@ int next_pow2(int n) {
 // 2-D FFT (in place, row-major, size W*H both powers of two) via 1-D FFTs over
 // rows then columns using the spindle radix-2 transform.
 void fft2(std::vector<Cplx>& a, int W, int H, bool inverse) {
-    std::vector<Cplx> line;
-    line.resize(static_cast<std::size_t>(std::max(W, H)));
+    // Reuse one row buffer and one column buffer across all lines: phase
+    // correlation is on the per-registration hot path, so avoid H+W throwaway
+    // allocations.
+    std::vector<Cplx> row(static_cast<std::size_t>(W));
     for (int y = 0; y < H; ++y) {
-        for (int x = 0; x < W; ++x) line[x] = a[static_cast<std::size_t>(y) * W + x];
-        std::vector<Cplx> row(line.begin(), line.begin() + W);
+        for (int x = 0; x < W; ++x) row[x] = a[static_cast<std::size_t>(y) * W + x];
         spindle::fft(row, inverse);
         for (int x = 0; x < W; ++x) a[static_cast<std::size_t>(y) * W + x] = row[x];
     }
+    std::vector<Cplx> col(static_cast<std::size_t>(H));
     for (int x = 0; x < W; ++x) {
-        std::vector<Cplx> col(static_cast<std::size_t>(H));
         for (int y = 0; y < H; ++y) col[y] = a[static_cast<std::size_t>(y) * W + x];
         spindle::fft(col, inverse);
         for (int y = 0; y < H; ++y) a[static_cast<std::size_t>(y) * W + x] = col[y];

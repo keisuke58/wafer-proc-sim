@@ -21,6 +21,10 @@ LineResult analyze_line(const std::vector<Station>& stations) {
             throw std::invalid_argument("analyze_line: cycle_s must be > 0");
         if (!(s.availability > 0.0 && s.availability <= 1.0))
             throw std::invalid_argument("analyze_line: availability in (0,1]");
+        if (!(s.quality > 0.0 && s.quality <= 1.0))
+            throw std::invalid_argument("analyze_line: quality in (0,1]");
+        // ideal_cycle_s above cycle_s just saturates performance at 1.0 (handled
+        // by the std::min below), so it needs no separate guard.
         const double ideal = s.ideal_cycle_s > 0.0 ? s.ideal_cycle_s : s.cycle_s;
         const double eff = s.cycle_s / s.availability;
         if (eff > max_eff) { max_eff = eff; r.bottleneck = static_cast<int>(r.stations.size()); }
