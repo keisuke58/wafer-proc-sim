@@ -76,37 +76,43 @@ float extract_robust(const float* col) {
     for (int r = 0; r < kNPix; ++r) cmax = std::max(cmax, col[r]);
     const float thr = 0.3f * cmax;
 
-    // Pass 1: find lobes, track each lobe's energy and the strongest energy.
-    struct Lobe { int lo, hi; float sum; };
-    Lobe lobes[16]; int nl = 0;
+    // Two passes over the column, no lobe storage — immune to any lobe count
+    // (a bounded candidate array could truncate before the true lobe when the
+    // detector carries many hot/glare blobs).
+    // Pass 1: strongest lobe energy over ALL lobes.
     float smax = 0.0f;
-    int r = 0;
-    while (r < kNPix && nl < 16) {
+    for (int r = 0; r < kNPix; ) {
         if (col[r] > thr) {
-            int lo = r; float sum = 0.0f;
+            float sum = 0.0f;
             while (r < kNPix && col[r] > thr) { sum += col[r]; ++r; }
-            lobes[nl++] = {lo, r - 1, sum};
             smax = std::max(smax, sum);
         } else {
             ++r;
         }
     }
-    if (nl == 0) return NAN;
+    if (smax <= 0.0f) return NAN;
 
-    // Pass 2: earliest credible lobe = shortest optical path (multipath physics).
-    // The strongest lobe always satisfies sum >= 0.3*smax, so a credible lobe
-    // always exists; default to lobe 0 to make that invariant explicit.
-    const Lobe* best = &lobes[0];
-    for (int i = 0; i < nl; ++i)
-        if (lobes[i].sum >= 0.3f * smax) { best = &lobes[i]; break; }
-
-    // Thresholded centroid of the chosen lobe.
-    float wsum = 0.0f, xsum = 0.0f;
-    for (int k = best->lo; k <= best->hi; ++k) {
-        float w = col[k] - thr;
-        wsum += w; xsum += static_cast<float>(k) * w;
+    // Pass 2: the EARLIEST credible lobe (>= 30 % of smax) is the shortest
+    // optical path — multipath always lands at longer path. The strongest lobe
+    // is always credible, so this always terminates with a lobe.
+    for (int r = 0; r < kNPix; ) {
+        if (col[r] > thr) {
+            const int lo = r;
+            float sum = 0.0f;
+            while (r < kNPix && col[r] > thr) { sum += col[r]; ++r; }
+            if (sum >= 0.3f * smax) {
+                float wsum = 0.0f, xsum = 0.0f;
+                for (int k = lo; k < r; ++k) {
+                    const float w = col[k] - thr;
+                    wsum += w; xsum += static_cast<float>(k) * w;
+                }
+                return (xsum / wsum - kNPix / 2.0f) * kUmPerPix;
+            }
+        } else {
+            ++r;
+        }
     }
-    return (xsum / wsum - kNPix / 2.0f) * kUmPerPix;
+    return NAN;  // unreachable: the strongest lobe always passes the test
 }
 
 double rms(const std::vector<float>& v) {
