@@ -76,6 +76,8 @@ jobs:
           cp vision/cpp/docs/assets/ois_bode.png        _site/assets/ || echo "missing ois_bode"
           cp vision/cpp/docs/assets/ois_rejection.png   _site/assets/ || echo "missing ois_rejection"
           cp vision/cpp/docs/assets/notch_bode.png      _site/assets/ || echo "missing notch_bode"
+          cp vision/cpp/docs/assets/barrel_3d.png       _site/assets/ || echo "missing barrel_3d"
+          cp vision/cpp/docs/assets/barrel_gdt.png      _site/assets/ || echo "missing barrel_gdt"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

@@ -60,6 +60,7 @@ docs/               self-contained GitHub Pages dashboard + assets
 fem/                Python FE — beam model + axisymmetric solid model
 optics/             Python wave-optics — MTF from mechanical error
 control/            Python control — OIS servo Bode / margins / notch
+cad/                Python CAD — parametric barrel STL + GD&T drawing (DXF)
 ai/                 PyTorch GNN surrogate + Bayesian generative design
 ```
 
@@ -168,6 +169,29 @@ mechatronics reviewer reasons about a closed loop:
 python3 control/servo_analysis.py  # writes control/figures/*.png + servo_analysis_results.json
 ```
 Requires `numpy` + `scipy` + `matplotlib`.
+
+## Parametric CAD + GD&T drawing (`cad/barrel_cad.py`, Python)
+
+The design deliverable itself — the 2D/3D CAD a barrel engineer draws — driven
+entirely from named dimensions:
+
+- **Dimension-driven 3-D solid** — the barrel cross-section (outer wall, Ø40
+  mount flange, four internal lens seats) is revolved into a **watertight solid**
+  (10.3 cm³, 27.9 g in Al 6061) and exported as **STL** (`out/lens_barrel.stl`)
+  for any CAD/CAM.
+- **GD&T engineering drawing** — a full-section drawing with datums A (mount
+  face) / B (bore axis), feature control frames (flatness 0.008, coaxiality
+  ⌀0.02 to B, seat circular runout 0.005 to B), an H7 slip-fit seat, and a title
+  block — rendered to PNG **and** a real **DXF** (`out/lens_barrel_drawing.dxf`).
+- **Tolerances are derived, not decorative** — each geometric tolerance is tied
+  back to the optical/thermal budget it protects (bore coaxiality → decenter →
+  boresight; seat runout → tilt → coma; mount flatness → focus), consistent with
+  the `tolerance`/`talloc` budget modules.
+
+```bash
+python3 cad/barrel_cad.py  # writes cad/figures/*.png, cad/out/*.stl+*.dxf, barrel_cad_results.json
+```
+Requires `numpy` + `trimesh` (STL) + `ezdxf` (DXF) + `matplotlib`.
 
 ## Generative design — GNN surrogate + Bayesian search (`ai/generative_design.py`, PyTorch)
 
