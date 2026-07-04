@@ -62,6 +62,12 @@
     <a class="navcard" href="systems.html">
       <div class="ic">🏭</div><b>装置システムダッシュボード</b>
       <span>S字モーション/サーボ・デジタルツインOEE・バンプ検査・ADC自動欠陥分類パイプライン</span></a>
+    <a class="navcard" href="metro.html">
+      <div class="ic">🎯</div><b>計測・最適化ダッシュボード</b>
+      <span>カメラ校正+Gage R&amp;R・ダイ間位置合わせ/差分検査・ベイズ最適化レシピ・搬送経路最適化</span></a>
+    <a class="navcard" href="optomech.html">
+      <div class="ic">📷</div><b>レンズ鏡筒メカ設計（Sony向け）</b>
+      <span>公差スタックアップ+光学感度・AF機構+VCM制御・鏡筒FEA(熱/落下/モード)・手ブレ補正(OIS)</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -81,6 +87,12 @@
 
   <h2 class="sec">装置システム（モーション・OEE・パッケージング・ADC）<a href="systems.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="systems_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
   <div class="gal" id="g-systems"></div>
+
+  <h2 class="sec">計測・最適化（校正/Gage・位置合わせ・ベイズ最適化・経路）<a href="metro.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a><a href="metro_explained.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ やさしい解説</a></h2>
+  <div class="gal" id="g-metro"></div>
+
+  <h2 class="sec">レンズ鏡筒メカ設計 ― optomech（Sony向け）<a href="optomech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-optomech"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -117,6 +129,16 @@ const GAL = {
   'g-systems': [
     ['adc_wafermap.png','ADC分類ウェハマップ','欠陥をCNN分類→ダイ集約した歩留りマップ'],
     ['pkg_bumps.png','バンプ配列検査','径・ピッチ・コプラナ・欠損の自動計測'],
+  ],
+  'g-metro': [
+    ['regi_diff.png','ダイ間差分検査','位相相関で位置合わせ→差分から欠陥抽出（赤枠）'],
+    ['route_path.png','搬送経路（A*）','チャンバを避ける衝突回避パス＋ジョブ順最適化'],
+    ['vcal_residuals.png','カメラ校正 残差','画素→ステージmmのアフィン較正の残差（Gage R&R）'],
+  ],
+  'g-optomech': [
+    ['tol_hist.png','鏡筒公差スタックアップ','偏心/傾き/間隔公差→像面ボアサイト誤差（モンテカルロ）'],
+    ['cam_step.png','AF機構＋VCM制御','ボイスコイルのPID+FFステップ応答（整定3.9ms）'],
+    ['ois_trace.png','手ブレ補正（OIS）','ジャイロ検出→アクチュエータで像を安定化（3.2 stops）'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

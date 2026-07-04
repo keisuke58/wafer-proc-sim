@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="optomech-lens-sim — C++17 optomechanical simulation toolkit for camera lens-barrel design: tolerance stack-up + optical sensitivity, cam/VCM autofocus control, barrel FEA (thermal/shock/modal), and optical image stabilization (OIS). All results computed by the toolkit itself.">
+<title>optomech-lens-sim — カメラレンズ鏡筒メカ設計シミュレーション</title>
+<style>
+  :root{
+    --acc:#0b63c5; --bg:#eef1f5; --surface:#fff; --surface-2:#f5f8fb; --ink:#12181f; --muted:#586472;
+    --line:#dbe2ea; --grid:#e9eef4; --good:#12a150; --warn:#c98a00; --bad:#d23b3b;
+    --s1:#2a78d6; --s2:#e0873a;
+    --shadow:0 1px 2px rgba(18,24,31,.06),0 10px 30px rgba(18,24,31,.08);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --acc:#5aa0ff; --bg:#0c1116; --surface:#151d26; --surface-2:#111922; --ink:#e9eff6; --muted:#93a3b4;
+    --line:#26313d; --grid:#1b242e; --good:#3ecb7f; --warn:#e6b84d; --bad:#ef6a6a; --s1:#5aa0ff; --s2:#eb9a52;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --acc:#0b63c5; --bg:#eef1f5; --surface:#fff; --surface-2:#f5f8fb; --ink:#12181f; --muted:#586472; --line:#dbe2ea; --grid:#e9eef4; --good:#12a150; --warn:#c98a00; --bad:#d23b3b; --s1:#2a78d6; --s2:#e0873a; }
+  :root[data-theme="dark"]{ --acc:#5aa0ff; --bg:#0c1116; --surface:#151d26; --surface-2:#111922; --ink:#e9eff6; --muted:#93a3b4; --line:#26313d; --grid:#1b242e; --good:#3ecb7f; --warn:#e6b84d; --bad:#ef6a6a; --s1:#5aa0ff; --s2:#eb9a52; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .mono{ font-variant-numeric:tabular-nums; font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .wrap{ max-width:1040px; margin:0 auto; padding:40px 20px 72px; }
+  a{ color:var(--acc); }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.15em; font-size:12px; font-weight:700; color:var(--acc); margin:0 0 8px; }
+  h1{ font-size:clamp(25px,4.4vw,38px); line-height:1.1; margin:0 0 12px; letter-spacing:-.02em; text-wrap:balance; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:70ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:26px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--acc); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:22px; }
+  .card h2{ font-size:18px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:20px; } @media (min-width:820px){ .grid2{ grid-template-columns:1.05fr .95fr; align-items:center; } }
+  .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; }
+  .figure img{ width:100%; display:block; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th,td{ text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .bars{ display:grid; gap:8px; margin-top:6px; }
+  .bar-row{ display:grid; grid-template-columns:120px 1fr 46px; align-items:center; gap:10px; font-size:12.5px; }
+  .bar-track{ background:var(--surface-2); border:1px solid var(--line); border-radius:6px; height:15px; overflow:hidden; }
+  .bar-fill{ height:100%; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.ok{ background:color-mix(in srgb,var(--good) 16%,transparent); color:var(--good); }
+  .pill.bad{ background:color-mix(in srgb,var(--bad) 16%,transparent); color:var(--bad); }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:10px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .sw{ width:20px; height:3px; border-radius:2px; display:inline-block; }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">レンズ鏡筒メカ設計　×　シミュレーション</p>
+    <h1>optomech-lens-sim — カメラレンズ鏡筒のメカ設計シミュレーション</h1>
+    <p class="lead">交換レンズ／組込レンズの<b>鏡筒メカ設計</b>を、C++17でゼロから実装した8つの物理シミュレーションで検証するツール群です。
+      <b>公差スタックアップ（光学感度）</b>・<b>オートフォーカス機構＋VCM制御</b>・<b>鏡筒の構造FEA（熱・落下衝撃・モード）</b>・
+      <b>手ブレ補正（OIS）制御</b>・<b>公差配分の最適化</b>・<b>アクティブアライメント</b>・<b>筐体の材料選定/軽量化</b>・<b>athermalization＋ランダム振動</b>。以下はすべてツール（<code class="inl">optm_demo</code>）自身が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="card">
+    <h2>① 鏡筒公差スタックアップ ＆ 光学感度</h2>
+    <p class="sub">各レンズの偏心・傾き・間隔の製造公差を、モンテカルロ＋RSSで像面のボアサイト誤差へ伝搬。支配的な「クリティカル公差」を特定。</p>
+    <div class="grid2">
+      <div class="figure"><img src="assets/tol_hist.png" alt="像面ボアサイト誤差のモンテカルロ分布"></div>
+      <div>
+        <p style="margin:0 0 8px" id="tolSummary"></p>
+        <div class="bars" id="tolBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② オートフォーカス機構 ＆ VCM制御</h2>
+    <p class="sub">サイクロイド・カム曲線でフォーカス群を滑らかに駆動し、ボイスコイルモータ（VCM）をPID＋フィードフォワードで整定。</p>
+    <div class="grid2">
+      <div class="figure"><img src="assets/cam_step.png" alt="VCMオートフォーカスのステップ応答"></div>
+      <div>
+        <table>
+          <tr><th>制御</th><th>整定時間</th><th>定常誤差</th></tr>
+          <tr><td>フィードフォワード有</td><td class="n" id="afSettle"></td><td class="n" id="afFf"></td></tr>
+          <tr><td>フィードフォワード無</td><td class="n">—</td><td class="n" id="afNoff"></td></tr>
+        </table>
+        <div class="legend">
+          <span class="it"><span class="sw" style="background:var(--muted)"></span>指令（目標）</span>
+          <span class="it"><span class="sw" style="background:var(--s1)"></span>FF有</span>
+          <span class="it"><span class="sw" style="background:var(--s2)"></span>FF無</span>
+        </div>
+        <p class="sub" style="margin-top:10px">モデルベースFFがバネ負荷を打ち消し、<b id="afGain"></b>のフォーカス誤差を解消。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ 鏡筒の構造FEA ― 熱ドリフト・落下衝撃・剛性</h2>
+    <p class="sub">アルミ鏡筒（片持ち円筒＋先端レンズ質量）の熱膨張ピント移動、1次曲げモード、落下衝撃の応答スペクトル（DAF）と安全率。</p>
+    <table>
+      <tr><th>項目</th><th>値</th><th>意味</th></tr>
+      <tr><td>熱ピントドリフト</td><td class="n" id="feaThermal"></td><td>温度1℃あたりの像面移動</td></tr>
+      <tr><td>1次曲げ共振</td><td class="n" id="feaMode"></td><td>外乱帯域より十分高い</td></tr>
+      <tr><td>落下衝撃（1m）</td><td class="n" id="feaShock"></td><td>半正弦パルス＋SRS（DAF <span id="feaDaf"></span>）</td></tr>
+      <tr><td>曲げ応力 / 安全率</td><td class="n" id="feaStress"></td><td id="feaVerdict"></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>④ 手ブレ補正（OIS）制御</h2>
+    <p class="sub">多周波の手ブレ角をジャイロで検出し、2次アクチュエータで像を安定化。残留像ブレを写真の「段（stops）」で評価。</p>
+    <div class="grid2">
+      <div class="figure"><img src="assets/ois_trace.png" alt="OISオン/オフの像面移動トレース"></div>
+      <div>
+        <table>
+          <tr><th>OIS</th><th>像面RMS</th></tr>
+          <tr><td>オフ</td><td class="n" id="oisOff"></td></tr>
+          <tr><td>オン</td><td class="n" id="oisOn"></td></tr>
+        </table>
+        <p class="sub" style="margin-top:10px">安定化 <b id="oisStops"></b>（RMS比 <span id="oisRatio"></span>倍）。</p>
+        <div class="legend">
+          <span class="it"><span class="sw" style="background:var(--s2)"></span>手ブレ（補正前）</span>
+          <span class="it"><span class="sw" style="background:var(--s1)"></span>残留（補正後）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>⑤ 公差配分の最適化 ― コスト最小で「確実に予算内」</h2>
+    <p class="sub">目標の像面予算を必ず満たしつつ、製造コスト（きつい公差ほど高い）を最小化するよう各素子へ公差を最適配分。感度ベースのラグランジュ閉形式解。</p>
+    <p id="tallocSummary" style="margin:0 0 10px"></p>
+    <div class="bars" id="tallocBars"></div>
+  </div>
+
+  <div class="card">
+    <h2>⑥ アクティブアライメント（AA）</h2>
+    <p class="sub">1素子を動かしながらスポットを最小化する現代のレンズ組立。ここでは偏心x/y＋フォーカスの3自由度をNelder-Mead（滑降シンプレックス）で探索。</p>
+    <table>
+      <tr><th>状態</th><th>スポット指標</th></tr>
+      <tr><td>組立直後</td><td class="n" id="aaBefore"></td></tr>
+      <tr><td>AA後</td><td class="n" id="aaAfter"></td></tr>
+    </table>
+    <p class="sub" style="margin-top:10px"><b id="aaIters"></b> 回の反復で補正量 <span id="aaAdj" class="mono"></span> を印加。残差はこの3自由度では消せない<b>傾き成分</b>（＝AAの原理限界）。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑦ 筐体：材料選定 ＆ 剛性×軽量化（強度とデザイン性）</h2>
+    <p class="sub">軽く硬い構造の指標 Ashby <span class="mono">E<sup>1/2</sup>/ρ</span> で材料を順位付け。薄肉＋軸リブで「スリムでも高比剛性」を狙う。</p>
+    <div class="grid2">
+      <div><div class="bars" id="matBars"></div></div>
+      <div>
+        <p style="margin:0" id="housingSummary"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑧ パッシブathermalization ＆ ランダム振動</h2>
+    <p class="sub">高CTEスペーサで熱ピントドリフトを相殺（受動補償）。ランダム振動はMiles式で1次モード応答を求め、3σ応力を疲労限度と比較。</p>
+    <table>
+      <tr><th>項目</th><th>値</th><th>意味</th></tr>
+      <tr><td>熱ドリフト（補償前→後）</td><td class="n" id="atDrift"></td><td>スペーサ長 <span id="atLen"></span> で相殺</td></tr>
+      <tr><td>ランダム振動 応答</td><td class="n" id="atGrms"></td><td>Miles式・3σ <span id="at3s"></span></td></tr>
+      <tr><td>3σ応力 / 疲労余裕</td><td class="n" id="atStress"></td><td id="atVerdict"></td></tr>
+    </table>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
+    単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。
+  </footer>
+</div>
+
+<script id="data" type="application/json">
+{"tolerance":{"efl_mm":33.295,"lateral_rss_um":7.13,"lateral_mc_rms_um":7.107,"lateral_p99_um":15.3296,"focus_rss_um":4.6809,"budget_um":20.0,"ok":true,"ranking":[{"element":1,"source":"tilt","sigma_um":2.9441,"pct":34.1007},{"element":0,"source":"tilt","sigma_um":2.8716,"pct":32.4412},{"element":2,"source":"tilt","sigma_um":1.936,"pct":14.7457},{"element":3,"source":"tilt","sigma_um":1.26,"pct":6.2459}]},"autofocus":{"cam_peak_accel":0.0039,"ff_settle_ms":3.9,"ff_ss_um":0.0,"noff_ss_um":23.0769,"ff_overshoot_pct":0.0},"fea":{"thermal_um_per_C":0.944,"first_mode_hz":10624.0759,"axial_stiffness_N_per_um":303.038,"shock_g":1418.7456,"daf":1.1025,"shock_stress_MPa":4.2488,"safety_factor":64.9597,"ok":true},"ois":{"focal_mm":35.0,"off_rms_um":83.3813,"on_rms_um":8.8859,"ratio":9.3835,"stops":3.2301},"talloc":{"budget_um":20.0,"opt_cost":23.2986,"equal_cost":35.553,"savings_pct":34.468,"alloc":[{"element":0,"kind":"tilt","sigma":0.2554},{"element":1,"kind":"tilt","sigma":0.2836},{"element":2,"kind":"tilt","sigma":0.2862},{"element":3,"kind":"tilt","sigma":0.3487}]},"aa":{"merit_before_um":27.4619,"merit_after_um":0.0,"iterations":98,"adj_x_um":-31.75,"adj_y_um":20.0,"adj_focus_um":-15.0},"housing":{"best_material":"CFRP (quasi-iso)","gain_pct":3.3965,"solid_area_mm2":215.9845,"ribbed_area_mm2":148.2894,"solid_I_mm4":20586.0222,"ribbed_I_mm4":14613.89,"materials":[{"name":"CFRP (quasi-iso)","ashby":165.3595},{"name":"Mg AZ31","ashby":119.8486},{"name":"Al 6061","ashby":97.2178},{"name":"Ti-6Al-4V","ashby":76.2164},{"name":"Glass-filled PC","ashby":58.5077},{"name":"Stainless 304","ashby":54.9147},{"name":"Polycarbonate","ashby":40.8248}]},"athermal":{"uncomp_um_per_C":0.944,"comp_um_per_C":0.001,"comp_len_mm":13.5,"grms":129.183,"accel_3sigma_g":387.5491,"rand_stress_MPa":1.0527,"fatigue_margin":91.192,"ok":true}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const f = (x,n=1)=>Number(x).toFixed(n);
+const el = id => document.getElementById(id);
+
+const tiles = [
+  ['EFL', f(D.tolerance.efl_mm,1), 'mm', '4群レンズ系', true],
+  ['ボアサイトP99', f(D.tolerance.lateral_p99_um,1), 'µm', `予算 ${D.tolerance.budget_um}µm ${D.tolerance.ok?'✓':'✗'}`, true],
+  ['AF整定', f(D.autofocus.ff_settle_ms,1), 'ms', 'FF有・誤差~0', true],
+  ['1次モード', f(D.fea.first_mode_hz/1000,1), 'kHz', '鏡筒曲げ共振', false],
+  ['落下安全率', f(D.fea.safety_factor,0), '×', '1m落下・SF', true],
+  ['OIS安定化', f(D.ois.stops,1), 'stops', `RMS ${f(D.ois.ratio,1)}×`, true],
+];
+el('tiles').innerHTML = tiles.map(([k,v,u,note,acc])=>
+  `<div class="tile"><div class="v${acc?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div></div>`).join('');
+
+// Tolerance
+const t = D.tolerance;
+el('tolSummary').innerHTML = `モンテカルロP99 <b>${f(t.lateral_p99_um,1)}</b> µm（RSS ${f(t.lateral_rss_um,1)} µm）／予算 ${t.budget_um} µm → `+
+  (t.ok?'<span class="pill ok">合格</span>':'<span class="pill bad">要改善</span>')+
+  `　デフォーカスRSS ${f(t.focus_rss_um,1)} µm。`;
+const maxpct = Math.max(...t.ranking.map(r=>r.pct));
+el('tolBars').innerHTML = t.ranking.map((r,i)=>{
+  const label = `素子${r.element+1} ${r.source==='tilt'?'傾き':'偏心'}`;
+  const col = i===0 ? 'var(--bad)' : 'var(--s1)';
+  return `<div class="bar-row"><div>${label}</div><div class="bar-track"><div class="bar-fill" style="width:${(r.pct/maxpct*100).toFixed(0)}%;background:${col}"></div></div><div class="mono" style="text-align:right">${f(r.pct,0)}%</div></div>`;
+}).join('');
+
+// Autofocus
+el('afSettle').textContent = f(D.autofocus.ff_settle_ms,1)+' ms';
+el('afFf').textContent = f(D.autofocus.ff_ss_um,1)+' µm';
+el('afNoff').textContent = f(D.autofocus.noff_ss_um,1)+' µm';
+el('afGain').textContent = f(D.autofocus.noff_ss_um,0)+' µm';
+
+// FEA
+el('feaThermal').textContent = f(D.fea.thermal_um_per_C,2)+' µm/℃';
+el('feaMode').textContent = f(D.fea.first_mode_hz,0)+' Hz';
+el('feaShock').textContent = f(D.fea.shock_g,0)+' g';
+el('feaDaf').textContent = f(D.fea.daf,2);
+el('feaStress').textContent = f(D.fea.shock_stress_MPa,1)+' MPa / SF '+f(D.fea.safety_factor,0);
+el('feaVerdict').innerHTML = D.fea.ok?'<span class="pill ok">合格（SF≥2）</span>':'<span class="pill bad">要改善</span>';
+
+// OIS
+el('oisOff').textContent = f(D.ois.off_rms_um,1)+' µm';
+el('oisOn').textContent = f(D.ois.on_rms_um,1)+' µm';
+el('oisStops').textContent = f(D.ois.stops,1)+' stops';
+el('oisRatio').textContent = f(D.ois.ratio,1);
+
+// Tolerance allocation
+const ta = D.talloc;
+el('tallocSummary').innerHTML = `最適配分の総コスト <b>${f(ta.opt_cost,1)}</b>（均等配分 ${f(ta.equal_cost,1)}）→ 同じ予算 ${ta.budget_um} µm を満たしつつ <b>${f(ta.savings_pct,0)}% コスト削減</b>。`;
+const cmax = Math.max(ta.opt_cost, ta.equal_cost);
+el('tallocBars').innerHTML =
+  `<div class="bar-row"><div>均等配分</div><div class="bar-track"><div class="bar-fill" style="width:${(ta.equal_cost/cmax*100).toFixed(0)}%;background:var(--s2)"></div></div><div class="mono" style="text-align:right">${f(ta.equal_cost,1)}</div></div>`+
+  `<div class="bar-row"><div>最適配分</div><div class="bar-track"><div class="bar-fill" style="width:${(ta.opt_cost/cmax*100).toFixed(0)}%;background:var(--good)"></div></div><div class="mono" style="text-align:right">${f(ta.opt_cost,1)}</div></div>`;
+
+// Active alignment
+el('aaBefore').textContent = f(D.aa.merit_before_um,1)+' µm';
+el('aaAfter').textContent = f(D.aa.merit_after_um,2)+' µm';
+el('aaIters').textContent = D.aa.iterations;
+el('aaAdj').textContent = `(${f(D.aa.adj_x_um,1)}, ${f(D.aa.adj_y_um,1)}, ${f(D.aa.adj_focus_um,1)}) µm`;
+
+// Housing
+const hm = D.housing;
+const amax2 = Math.max(...hm.materials.map(m=>m.ashby));
+el('matBars').innerHTML = hm.materials.map((m,i)=>{
+  const col = i===0 ? 'var(--good)' : (m.name.indexOf('Al')>=0 ? 'var(--acc)' : 'var(--s1)');
+  return `<div class="bar-row"><div style="font-size:11.5px">${m.name}</div><div class="bar-track"><div class="bar-fill" style="width:${(m.ashby/amax2*100).toFixed(0)}%;background:${col}"></div></div><div class="mono" style="text-align:right">${f(m.ashby,0)}</div></div>`;
+}).join('');
+const lighter = (1 - hm.ribbed_area_mm2/hm.solid_area_mm2)*100;
+el('housingSummary').innerHTML =
+  `最軽量-高剛性材料 = <b>${hm.best_material}</b>（Ashby指数最大）。<br><br>`+
+  `薄肉＋リブの断面は中実肉厚に対し <b>${f(lighter,0)}% 軽量</b>（比剛性 I/A は同等〜+${f(hm.gain_pct,0)}%）。`+
+  `スリムな外観と剛性を両立。`;
+
+// Athermalization + random vibration
+const at = D.athermal;
+el('atDrift').textContent = `${f(at.uncomp_um_per_C,2)} → ${f(at.comp_um_per_C,3)} µm/℃`;
+el('atLen').textContent = f(at.comp_len_mm,1)+' mm';
+el('atGrms').textContent = f(at.grms,0)+' g rms';
+el('at3s').textContent = f(at.accel_3sigma_g,0)+' g';
+el('atStress').textContent = `${f(at.rand_stress_MPa,1)} MPa / SF ${f(at.fatigue_margin,0)}`;
+el('atVerdict').innerHTML = at.ok?'<span class="pill ok">合格（相殺＋余裕）</span>':'<span class="pill bad">要改善</span>';
+
+</script>
+</body>
+</html>

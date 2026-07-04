@@ -1,0 +1,140 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="装置の「測る・合わせる・決める・運ぶ」を支える4技術（カメラ校正＋Gage R&R・ダイ間位置合わせ/差分検査・ベイズ最適化レシピ探索・搬送経路最適化）を大学生でも分かるように図解。すべてC++17でゼロから実装。">
+<title>計測・最適化（校正/Gage・位置合わせ・ベイズ最適化・経路）— 注釈つき解説</title>
+<style>
+  :root{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674;
+    --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6;
+    --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.08); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5;
+    --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);} }
+  :root[data-theme="light"]{ --bg:#eef2f6; --surface:#fff; --surface-2:#f5f8fb; --ink:#16202b; --muted:#566674; --line:#d7e0e8; --accent:#0e7c86; --good:#1a9e57; --warn:#b98900; --bad:#d23b3b; --blue:#2a6fd6; }
+  :root[data-theme="dark"]{ --bg:#0d1319; --surface:#141d26; --surface-2:#101922; --ink:#e7eef5; --muted:#93a4b5; --line:#243240; --accent:#34c2cf; --good:#3ecb7f; --warn:#e8c34a; --bad:#ef6a6a; --blue:#5b9bf0; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:40px 20px 72px; }
+  .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  a{ color:var(--accent); } .back{ font-size:13px; }
+  header{ margin:14px 0 8px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; color:var(--accent); margin:0 0 8px; }
+  h1{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  .lead{ color:var(--muted); font-size:17px; margin:0; max-width:64ch; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; margin-top:24px; }
+  .card > h2{ font-size:19px; margin:0 0 4px; letter-spacing:-.01em; }
+  .card > .sub{ color:var(--muted); font-size:13.5px; margin:0 0 14px; }
+  p{ margin:10px 0; }
+  .analogy{ background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:14.5px; margin:14px 0; }
+  .analogy b{ color:var(--accent); }
+  .figbox{ position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b0d10; line-height:0; }
+  .figbox img{ width:100%; display:block; image-rendering:pixelated; }
+  .cap{ color:var(--muted); font-size:13px; margin-top:9px; line-height:1.6; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .verdict{ font-weight:800; } .ok{ color:var(--good); } .ng{ color:var(--bad); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:30px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="metro.html">計測・最適化ダッシュボードを開く →</a>
+
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>装置の「測る・合わせる・決める・運ぶ」4技術 — 注釈つき解説</h1>
+    <p class="lead">加工そのものの前後を支える、地味だが決定的な4つの技術を、
+      大学生でも分かるように図解します。すべてC++17でゼロから実装しています。</p>
+  </header>
+
+  <div class="card">
+    <h2>① カメラ校正 ＆ Gage R&amp;R ― 「測れる」ことを証明する</h2>
+    <p class="sub">画素をステージのmmに変換し、その測定が信頼できるかを統計で保証する。</p>
+    <p>カメラが見るのは<b>画素</b>ですが、装置が動かすのは<b>ミリメートル</b>です。まず、既知の格子点
+      （フィデューシャル）を使って<b>画素→ステージmmの変換（アフィン較正）</b>を最小二乗で求めます。
+      次に大事なのが「その測定は信頼できるか？」。同じ場所を何度測っても値がばらつく装置では意味がありません。
+      そこで<b>Gage R&amp;R</b>で、測定のばらつきを<b>装置(EV)・作業者(AV)・部品ばらつき(PV)</b>に分解し、
+      <b>%GRR</b>と<b>ndc（区別できる段階数）</b>で良否を判定します（自動車業界標準のAIAG法）。</p>
+    <table>
+      <tr><th>指標</th><th>この例</th><th>基準</th></tr>
+      <tr><td>校正残差 RMS</td><td class="n">0.94 µm</td><td class="n">小さいほど良</td></tr>
+      <tr><td>%GRR</td><td class="n verdict ok">8.8 %</td><td class="n">&lt; 30 %</td></tr>
+      <tr><td>ndc</td><td class="n verdict ok">16</td><td class="n">≥ 5</td></tr>
+    </table>
+    <div class="analogy">
+      📏 <b>たとえるなら：</b>体重計を買ったら、まず「kg表示が正しいか（校正）」を確かめ、
+      次に「同じ人が10回乗って毎回同じ値か（再現性）」を確かめる。後者がGage R&amp;R。
+      測定器そのものを検査する、検査の検査です。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② ダイ間位置合わせ ＆ 差分検査 ― 「隣と比べて」欠陥を見つける</h2>
+    <p class="sub">同一設計の隣り合うチップは瓜二つ。ズレを消してから引き算すれば、違い＝欠陥。</p>
+    <div class="figbox">
+      <img src="assets/regi_diff.png" alt="ダイ間差分検査">
+    </div>
+    <p>ウェハ上のチップ（ダイ）は同じ設計が並んでいるので、<b>隣のダイと比べれば違い＝欠陥</b>です。
+      ただし撮影位置は毎回わずかにズレます。そこで<b>位相相関</b>という手法で、2枚の画像の
+      <b>ズレ量をサブピクセル精度で求め</b>（自作FFTで計算）、ピタリと重ねてから引き算します。
+      残った差だけを閾値処理・ノイズ除去し、<b>連結成分</b>で欠陥のかたまりを数えます（赤枠）。
+      これは自動欠陥分類（ADC）の「欠陥を切り出す」前段そのものです。</p>
+    <div class="analogy">
+      🔍 <b>たとえるなら：</b>間違い探し。2枚の絵を<b>きっちり重ねて</b>から見比べれば違いが浮かびます。
+      ズレたまま重ねると全部が「違い」に見えてしまう ── だから先に位置合わせが要るのです。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ ベイズ最適化 ― 少ない実験で「良いレシピ」を当てる</h2>
+    <p class="sub">1枚ごとに実ウェハを消費する加工条件探しを、賢い1点選びで最小手数に。</p>
+    <p>「送り速度」「荷重」などの加工レシピを最適化したいが、1条件試すたびに<b>本物のウェハを1枚消費</b>します。
+      総当たり（グリッド探索）は高くつく。<b>ベイズ最適化</b>は、これまでの結果から目的関数の<b>予測とその不確かさ</b>を
+      表す確率モデル（<b>ガウス過程</b>）を作り、<b>「今いちばん有望な次の1点」</b>だけを選びます
+      （期待改善＝EI）。良さそうな所を攻めつつ、未知の所も適度に探る ── その按配を数式で決めます。</p>
+    <table>
+      <tr><th>探索方式</th><th>必要な試行（ウェハ）</th></tr>
+      <tr><td>グリッド探索（0.05刻み）</td><td class="n">441</td></tr>
+      <tr><td>ベイズ最適化</td><td class="n verdict ok">30（約15分の1）</td></tr>
+    </table>
+    <div class="analogy">
+      🎯 <b>たとえるなら：</b>宝探しで、やみくもに全マスを掘る（グリッド）のではなく、
+      掘った深さの手応えから「次はここが怪しい」と1点ずつ賢く掘る。少ない穴で宝に当たります。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>④ 搬送経路の最適化 ― ロボットを「ぶつけず・最短で」動かす</h2>
+    <p class="sub">クラスタツール内のウェハ搬送を、衝突回避＋順番最適化でスループットへ。</p>
+    <div class="figbox" style="background:#e8eef4">
+      <img src="assets/route_path.png" alt="A*搬送経路">
+    </div>
+    <p>装置内ではロボットがウェハをチャンバ間で運びます。まず<b>1回の移動</b>を、障害物（チャンバ）を避けて
+      最短で結ぶ ── これが<b>A*（エースター）探索</b>です（上図：青＝出発、赤＝目標、緑＝経路）。
+      次に<b>複数の搬送ジョブの順番</b>。適当な順（FIFO）だと無駄に往復します。近い所から辿る貪欲法に
+      <b>2-opt</b>改善を重ね、<b>総移動距離を短縮</b>してスループット（ウェハ/時）を上げます。</p>
+    <div class="analogy">
+      🚕 <b>たとえるなら：</b>配達。1軒への行き方は「壁を避けた最短路」（A*）、
+      複数軒の回り方は「賢い巡回順」（2-opt）。両方そろって初めて時間が縮みます。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ まとめ ― なぜDISCO受けするのか</h2>
+    <p>加工の前後には、<b>測定を信頼できる形にし（校正/Gage）、位置を合わせて欠陥を見つけ（位置合わせ/差分）、
+      条件を賢く決め（ベイズ最適化）、装置内をぶつけず運ぶ（経路）</b>という、地味だが装置性能を左右する仕事が並びます。
+      これらを<b>線形代数・FFT・確率モデル・グラフ探索までC++17でゼロから実装し、テストで検証</b>しました
+      （ctest全通過・警告ゼロ・cppcheckクリーン）。「C/C++での画像処理システム開発経験」を、
+      検査アルゴリズムから最適化・装置制御の周辺まで、実物で示せます。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/metro_demo</code> の実測出力。
+    図は自作C++ツールが生成。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+    インタラクティブ版は <a href="metro.html">計測・最適化ダッシュボード</a>へ。
+  </footer>
+</div>

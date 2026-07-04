@@ -1,0 +1,6 @@
+{
+  "vcal": {"rms_um": 0.9395, "max_um": 2.3432, "um_per_px": 4.9999, "rotation_deg": 1.5028, "gage": {"pct_grr": 8.7508, "pct_ev": 6.8282, "pct_av": 5.4729, "pct_pv": 99.6164, "ndc": 16, "acceptable": true}},
+  "regi": {"dx": 3.5383, "dy": -2.0603, "response": 0.1182, "threshold": 72.2201, "residual_rms": 17.5923, "defect_count": 2, "defect_area": 72},
+  "bopt": {"best_feed": 0.3609, "best_load": 0.6705, "best_chipping": 0.0349, "evaluations": 30, "grid_equiv": 441, "series": {"eval": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30], "best": [1.0101,0.0461,0.0461,0.0461,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349]}},
+  "route": {"fifo_travel": 3001.7143, "opt_travel": 2784.0116, "improve_pct": 7.2526, "fifo_makespan_s": 18.0034, "opt_makespan_s": 17.5680, "jobs": 8, "astar_length": 40.7990, "astar_expanded": 245, "astar_found": true}
+}

@@ -46,6 +46,10 @@ add_library(wproc STATIC
   src/fab.cpp
   src/pkg.cpp
   src/adc.cpp
+  src/vcal.cpp
+  src/regi.cpp
+  src/bopt.cpp
+  src/route.cpp
 )
 target_include_directories(wproc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -81,6 +85,9 @@ target_link_libraries(smart_demo PRIVATE wproc)
 
 add_executable(systems_demo apps/systems_demo.cpp)
 target_link_libraries(systems_demo PRIVATE wproc)
+
+add_executable(metro_demo apps/metro_demo.cpp)
+target_link_libraries(metro_demo PRIVATE wproc)
 
 # Tests.
 enable_testing()
@@ -175,6 +182,22 @@ add_executable(test_adc tests/test_adc.cpp)
 target_link_libraries(test_adc PRIVATE wproc)
 target_compile_definitions(test_adc PRIVATE WPROC_RESULTS_DIR="${WPROC_RESULTS_DIR}")
 add_test(NAME adc COMMAND test_adc "${WPROC_RESULTS_DIR}")
+
+add_executable(test_vcal tests/test_vcal.cpp)
+target_link_libraries(test_vcal PRIVATE wproc)
+add_test(NAME vcal COMMAND test_vcal)
+
+add_executable(test_regi tests/test_regi.cpp)
+target_link_libraries(test_regi PRIVATE wproc)
+add_test(NAME regi COMMAND test_regi)
+
+add_executable(test_bopt tests/test_bopt.cpp)
+target_link_libraries(test_bopt PRIVATE wproc)
+add_test(NAME bopt COMMAND test_bopt)
+
+add_executable(test_route tests/test_route.cpp)
+target_link_libraries(test_route PRIVATE wproc)
+add_test(NAME route COMMAND test_route)
 
 # ── Optional backends ────────────────────────────────────────────────────────
 

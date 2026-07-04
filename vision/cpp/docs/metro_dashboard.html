@@ -1,0 +1,200 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="計測・最適化ダッシュボード：カメラ校正＋Gage R&R（測定システム能力）、ダイ間位置合わせ（位相相関）と差分検査、GPベイズ最適化によるレシピ探索、ウェハ搬送のA*経路＋ジョブ順最適化を、自作C++ツールの実測値で可視化。">
+<title>wproc — 計測・最適化（校正/Gage・位置合わせ・ベイズ最適化・経路）</title>
+<style>
+  :root{
+    --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e;
+    --line:#dde4ec; --grid:#eaeff5; --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100;
+    --open:#e34948; --closed:#2a78d6; --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 10px 30px rgba(15,23,32,.07);
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2;
+    --line:#243139; --grid:#1c2731; --s1:#3987e5; --s2:#199e70; --s3:#c98500;
+    --open:#e66767; --closed:#3987e5; --good:#0ca30c; --warn:#fab219; --critical:#e05555;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.5);} }
+  :root[data-theme="light"]{ --disco:#0b57b8; --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#0f1720; --muted:#56616e; --line:#dde4ec; --grid:#eaeff5; --open:#e34948; --closed:#2a78d6; --critical:#d03b3b; --warn:#fab219; --good:#0ca30c; }
+  :root[data-theme="dark"]{ --disco:#4d97ff; --bg:#0c1116; --surface:#141b22; --surface-2:#10161c; --ink:#eaf1f8; --muted:#97a4b2; --line:#243139; --grid:#1c2731; --open:#e66767; --closed:#3987e5; --critical:#e05555; --warn:#fab219; --good:#0ca30c; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:36px 20px 72px; }
+  a{ color:var(--disco); } .back{ font-size:13px; }
+  header .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:700; color:var(--disco); margin:14px 0 6px; }
+  header h1{ font-size:clamp(25px,4.2vw,38px); line-height:1.08; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  header p.lead{ color:var(--muted); font-size:16.5px; margin:0; max-width:66ch; }
+  .tiles{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:24px; }
+  @media (min-width:680px){ .tiles{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:980px){ .tiles{ grid-template-columns:repeat(6,1fr); } }
+  .tile{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .tile .v small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .tile .k{ font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }
+  .tile .accent{ color:var(--disco); }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-top:22px; }
+  .card h2{ font-size:16px; margin:0 0 3px; letter-spacing:-.01em; }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  .grid2{ display:grid; gap:22px; } @media (min-width:820px){ .grid2{ grid-template-columns:1fr 1fr; } }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); margin-top:8px; }
+  .legend .it{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:22px; height:3px; border-radius:2px; display:inline-block; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  svg{ display:block; width:100%; height:auto; overflow:visible; }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+  .axis{ fill:var(--muted); font-size:10px; } .axis-title{ fill:var(--muted); font-size:10.5px; font-weight:600; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  figure{ margin:0; } .figure{ border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#0b0d10; }
+  .figure img{ width:100%; display:block; image-rendering:pixelated; }
+  figcaption{ color:var(--muted); font-size:12.5px; margin-top:8px; }
+  .bars{ display:grid; gap:9px; margin-top:6px; }
+  .bar-row{ display:grid; grid-template-columns:104px 1fr 58px; align-items:center; gap:10px; font-size:12.5px; }
+  .bar-track{ background:var(--surface-2); border:1px solid var(--line); border-radius:6px; height:16px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px 0 0 6px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .pill.ok{ background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good); }
+  .pill.bad{ background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical); }
+  footer{ color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  code.inl{ font-family:ui-monospace,monospace; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+
+<div class="wrap">
+  <a class="back" href="./">← ポートフォリオ トップ</a> ・
+  <a class="back" href="metro_explained.html">やさしい解説を開く →</a>
+  <header>
+    <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
+    <h1>計測・最適化 ── 校正/Gage・位置合わせ・ベイズ最適化・搬送経路</h1>
+    <p class="lead">装置の「測る・合わせる・決める・運ぶ」を支える4技術をC++17でゼロから実装：
+      <b>カメラ校正＋Gage R&amp;R（測定システム能力）</b>・<b>ダイ間位置合わせ（位相相関）と差分検査</b>・
+      <b>GPベイズ最適化によるレシピ探索</b>・<b>ウェハ搬送のA*経路＋ジョブ順最適化</b>。
+      以下はすべてツール（<code class="inl">metro_demo</code>）自身が出力した実測値です。</p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="card">
+    <h2>ベイズ最適化：レシピ探索の収束</h2>
+    <p class="sub">チッピングを最小化する加工レシピ（送り・荷重）をGP代理モデル＋期待改善で探索。1点ずつ最良値がどう下がるか。</p>
+    <div id="boChart"></div>
+    <div class="legend">
+      <span class="it"><span class="swatch" style="background:var(--closed)"></span>これまでの最良チッピング</span>
+      <span class="it"><span class="swatch" style="background:var(--muted);height:0;border-top:2px dashed var(--muted)"></span>グリッド探索の等価試行数（参考）</span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Gage R&amp;R：アライメント測定システムの能力</h2>
+      <p class="sub">位置合わせ測定の変動を、装置(EV)・作業者(AV)・部品(PV)へ分解。%GRRとndcで良否判定（AIAG）。</p>
+      <div class="bars" id="gageBars"></div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px">
+        <div><div class="v" id="grr" style="font-size:20px;font-weight:800;color:var(--disco)"></div><div class="k" style="font-size:11px;color:var(--muted)">%GRR（&lt;30合格）</div></div>
+        <div><div class="v" id="ndc" style="font-size:20px;font-weight:800"></div><div class="k" style="font-size:11px;color:var(--muted)">ndc（≥5）</div></div>
+        <div><div class="v" id="verdict" style="font-size:20px;font-weight:800"></div><div class="k" style="font-size:11px;color:var(--muted)">判定</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>カメラ校正：画素 → ステージ mm</h2>
+      <p class="sub">格子フィデューシャルから最小二乗でアフィン較正。残差ベクトル（拡大表示）が小さいほど良い校正。</p>
+      <figure>
+        <div class="figure" style="background:#f2f5f8"><img src="assets/vcal_residuals.png" alt="校正残差クイバー"></div>
+        <figcaption id="calCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>ダイ間位置合わせ＋差分検査</h2>
+      <p class="sub">位相相関で参照ダイと被検ダイをサブピクセル位置合わせ→差分から欠陥抽出。赤枠＝検出欠陥。</p>
+      <figure>
+        <div class="figure"><img src="assets/regi_diff.png" alt="ダイ間差分検査"></div>
+        <figcaption id="regiCap"></figcaption>
+      </figure>
+    </div>
+    <div class="card">
+      <h2>搬送経路：衝突回避A* ＋ ジョブ順最適化</h2>
+      <p class="sub">チャンバ障害物を避けるA*パス（下図）と、搬送ジョブ順の2-opt最適化で総移動を短縮。</p>
+      <figure>
+        <div class="figure" style="background:#e8eef4"><img src="assets/route_path.png" alt="A*搬送経路"></div>
+        <figcaption id="routeCap"></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">vision/cpp/apps/metro_demo</code> をこのホスト（x86）で実行した実測値。
+    校正は5×5フィデューシャル＋サブピクセル雑音、Gageは5部品×3作業者×3反復、位置合わせは128×128ダイ、
+    ベイズ最適化は2次元レシピ空間を30試行、経路は40×30グリッド＋8搬送ジョブ。
+    ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、cppcheck クリーン、ctest 全通過。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a>。
+  </footer>
+</div>
+
+<script id="metro-data" type="application/json">
+{"vcal":{"rms_um":0.9395,"max_um":2.3432,"um_per_px":4.9999,"rotation_deg":1.5028,"gage":{"pct_grr":8.7508,"pct_ev":6.8282,"pct_av":5.4729,"pct_pv":99.6164,"ndc":16,"acceptable":true}},"regi":{"dx":3.5383,"dy":-2.0603,"response":0.1182,"threshold":72.2201,"residual_rms":17.5923,"defect_count":2,"defect_area":72},"bopt":{"best_feed":0.3609,"best_load":0.6705,"best_chipping":0.0349,"evaluations":30,"grid_equiv":441,"series":{"eval":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"best":[1.0101,0.0461,0.0461,0.0461,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0357,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349,0.0349]}},"route":{"fifo_travel":3001.7143,"opt_travel":2784.0116,"improve_pct":7.2526,"fifo_makespan_s":18.0034,"opt_makespan_s":17.568,"jobs":8,"astar_length":40.799,"astar_expanded":245,"astar_found":true}}
+</script>
+<script>
+const D = JSON.parse(document.getElementById('metro-data').textContent);
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in(a||{}))e.setAttribute(k,a[k]);return e;};
+const fmt=(x,n=2)=>Number(x).toFixed(n);
+
+const tiles=[
+  ['校正残差 RMS', fmt(D.vcal.rms_um,2), 'µm', `最大 ${fmt(D.vcal.max_um,1)}µm｜${fmt(D.vcal.um_per_px,1)}µm/px`, true],
+  ['Gage %GRR', fmt(D.vcal.gage.pct_grr,1), '%', D.vcal.gage.acceptable?'合格（<30）':'要改善', true],
+  ['位置合わせ残差', fmt(D.regi.dx,2)+'/'+fmt(D.regi.dy,2), 'px', `検出欠陥 ${D.regi.defect_count} 件`],
+  ['BO 最良チッピング', fmt(D.bopt.best_chipping,3), '', `送り ${fmt(D.bopt.best_feed,2)} / 荷重 ${fmt(D.bopt.best_load,2)}`, true],
+  ['BO 試行数', String(D.bopt.evaluations), '回', `グリッド等価 ${D.bopt.grid_equiv}回 → ${fmt(D.bopt.grid_equiv/D.bopt.evaluations,0)}×省`, true],
+  ['経路短縮', fmt(D.route.improve_pct,1), '%', `A* 展開 ${D.route.astar_expanded} ノード`],
+];
+const tw=document.getElementById('tiles');
+tiles.forEach(([k,v,u,note,acc])=>{const d=document.createElement('div');d.className='tile';
+  d.innerHTML=`<div class="v${acc?' accent':''}">${v}<small> ${u}</small></div><div class="k">${k}｜${note}</div>`;tw.appendChild(d);});
+
+// BO convergence (log-y feel via clamped) line chart
+function lineChart(host, opts){
+  const W=640,H=250,m={t:12,r:14,b:34,l:56}; const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  const xs=v=>m.l+(v-opts.xmin)/(opts.xmax-opts.xmin)*iw;
+  const ys=v=>m.t+(opts.ymax-v)/(opts.ymax-opts.ymin)*ih;
+  (opts.yticks||[]).forEach(tk=>{svg.appendChild(el('line',{class:'gridline',x1:m.l,x2:m.l+iw,y1:ys(tk),y2:ys(tk)}));
+    const tx=el('text',{class:'axis',x:m.l-7,y:ys(tk)+3,'text-anchor':'end'});tx.textContent=tk;svg.appendChild(tx);});
+  (opts.xticks||[]).forEach(t=>{const tx=el('text',{class:'axis',x:xs(t),y:m.t+ih+16,'text-anchor':'middle'});tx.textContent=t;svg.appendChild(tx);});
+  opts.series.forEach(s=>{let d='';s.x.forEach((xv,i)=>{const X=xs(xv),Y=ys(s.y[i]);d+=(i?'L':'M')+fmt(X,1)+' '+fmt(Y,1);});
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w||1.8,'stroke-dasharray':s.dash||'','stroke-linejoin':'round'}));
+    if(s.dots) s.x.forEach((xv,i)=>{svg.appendChild(el('circle',{cx:xs(xv),cy:ys(s.y[i]),r:2.4,fill:s.color}));});});
+  const xt=el('text',{class:'axis-title',x:m.l+iw/2,y:H-4,'text-anchor':'middle'});xt.textContent=opts.xtitle;svg.appendChild(xt);
+  const yt=el('text',{class:'axis-title',x:14,y:m.t+ih/2,'text-anchor':'middle',transform:`rotate(-90 14 ${m.t+ih/2})`});yt.textContent=opts.ytitle;svg.appendChild(yt);
+  host.appendChild(svg);
+}
+const B=D.bopt.series;
+lineChart(document.getElementById('boChart'),{
+  xmin:1,xmax:D.bopt.evaluations,ymin:0,ymax:1.05,xticks:[1,5,10,15,20,25,30],yticks:[0,0.25,0.5,0.75,1.0],
+  xtitle:'試行回数（ウェハ）',ytitle:'最良チッピング（目的関数）',
+  series:[{x:B.eval,y:B.best,color:'var(--closed)',w:2,dots:true}],
+});
+
+// Gage bars
+const gb=document.getElementById('gageBars');
+const gcomp=[['装置 EV',D.vcal.gage.pct_ev,'var(--s1)'],['作業者 AV',D.vcal.gage.pct_av,'var(--s3)'],
+  ['GR&R 合計',D.vcal.gage.pct_grr,'var(--critical)'],['部品 PV',D.vcal.gage.pct_pv,'var(--s2)']];
+gcomp.forEach(([k,v,c])=>{const r=document.createElement('div');r.className='bar-row';
+  r.innerHTML=`<div>${k}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,v).toFixed(0)}%;background:${c}"></div></div><div class="mono" style="text-align:right">${fmt(v,1)}%</div>`;gb.appendChild(r);});
+document.getElementById('grr').textContent=fmt(D.vcal.gage.pct_grr,1)+'%';
+document.getElementById('ndc').textContent=String(D.vcal.gage.ndc);
+const vd=document.getElementById('verdict');
+vd.innerHTML=D.vcal.gage.acceptable?'<span class="pill ok">合格</span>':'<span class="pill bad">要改善</span>';
+
+document.getElementById('calCap').innerHTML=
+  `画素→ステージ校正：残差 RMS <b>${fmt(D.vcal.rms_um,2)}</b> µm・画素ピッチ <b>${fmt(D.vcal.um_per_px,2)}</b> µm/px・`+
+  `回転 <b>${fmt(D.vcal.rotation_deg,2)}</b>°。緑＝残差小、赤＝残差大（&gt;3µm）。`;
+document.getElementById('regiCap').innerHTML=
+  `位相相関でシフト（<b>${fmt(D.regi.dx,2)}, ${fmt(D.regi.dy,2)}</b>）px を復元し位置合わせ → 差分から欠陥 `+
+  `<b>${D.regi.defect_count}</b> 件（計 ${D.regi.defect_area}px）を検出。`;
+document.getElementById('routeCap').innerHTML=
+  `A* 経路長 <b>${fmt(D.route.astar_length,1)}</b> セル（展開 ${D.route.astar_expanded} ノード）。`+
+  `ジョブ順最適化で総移動 <b>${fmt(D.route.fifo_travel,0)}→${fmt(D.route.opt_travel,0)}</b>（<b>${fmt(D.route.improve_pct,1)}%</b> 短縮）。`;
+</script>

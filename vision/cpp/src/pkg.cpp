@@ -46,7 +46,7 @@ BumpResult inspect_bumps(const Image& gray, const BumpSpec& spec) {
     std::vector<double> diam_um, xs, ys, bright;
     for (const Component& c : comps) {
         const double d_px = 2.0 * std::sqrt(static_cast<double>(c.area) / kPi);
-        r.bumps.push_back(Bump{c.cx, c.cy, d_px * spec.um_per_px,
+        r.bumps.push_back(Bump{c.cx, c.cy, d_px * spec.um_per_px, d_px,
                                bump_brightness(gray, c, thr), false});
         diam_um.push_back(d_px * spec.um_per_px);
         xs.push_back(c.cx);
@@ -116,7 +116,11 @@ BumpResult inspect_bumps(const Image& gray, const BumpSpec& spec) {
         r.missing = std::max(0, ncol * nrow - r.count);
     }
 
+    // A uniformly over/under-sized array has a low CV, so also require the mean
+    // diameter itself to sit within the target tolerance — otherwise every bump
+    // being the wrong size would still pass.
     r.ok = r.diameter_cv <= spec.max_diameter_cv &&
+           std::fabs(r.mean_diameter_um - spec.target_diameter_um) <= spec.diameter_tol_um &&
            r.coplanarity >= spec.min_coplanarity &&
            r.missing <= spec.max_missing;
     return r;
@@ -134,7 +138,7 @@ ColorImage annotate_bumps(const Image& gray, const BumpResult& r) {
     for (const Bump& b : r.bumps) {
         const Rgb c = b.ok ? Rgb{40, 200, 90} : Rgb{230, 60, 60};
         const int cx = static_cast<int>(std::lround(b.x)), cy = static_cast<int>(std::lround(b.y));
-        const int rad = std::max(3, static_cast<int>(std::lround(b.diameter_um / 2.0)));
+        const int rad = std::max(3, static_cast<int>(std::lround(b.diameter_px / 2.0)));
         for (int t = -rad; t <= rad; ++t) {
             out.set(cx + t, cy - rad, c); out.set(cx + t, cy + rad, c);
             out.set(cx - rad, cy + t, c); out.set(cx + rad, cy + t, c);

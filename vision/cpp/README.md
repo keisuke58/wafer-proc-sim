@@ -30,6 +30,7 @@ charts use a CVD-validated palette with light/dark themes and hover tooltips.
 - **Laser-processing dashboard:** https://keisuke58.github.io/wafer-proc-sim/laser.html
 - **Smart-manufacturing dashboard:** https://keisuke58.github.io/wafer-proc-sim/smart.html
 - **Machine-systems dashboard:** https://keisuke58.github.io/wafer-proc-sim/systems.html
+- **Metrology & optimisation dashboard:** https://keisuke58.github.io/wafer-proc-sim/metro.html
 - **Kerf explainer page:** https://keisuke58.github.io/wafer-proc-sim/kerf_annotated.html
 - Source committed at [`docs/landing.html`](docs/landing.html),
   [`docs/wproc_dashboard.html`](docs/wproc_dashboard.html), and
@@ -360,6 +361,39 @@ Run the demo (writes the bump + classified-wafer figures, prints metrics as JSON
 Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/systems.html> ·
 explainer: <https://keisuke58.github.io/wafer-proc-sim/systems_explained.html>.
 (`motion`, `fab`, `pkg`, `adc` tests.)
+
+### Metrology & optimisation (`wproc/vcal,regi,bopt,route`)
+
+The measure/align/decide/transport layer that surrounds the actual processing —
+the unglamorous work that governs whether a machine can be trusted. Pure C++17
+with tests (the linear algebra, FFT, GP and graph search are all hand-written):
+
+- **Vision calibration + Gage R&R** (`vcal.hpp`) — a least-squares **pixel→stage
+  affine** calibration (+ Brown radial undistortion), then an AIAG **Gage R&R**
+  that decomposes an alignment measurement into equipment/appraiser/part
+  variation and reports **%GRR** and **ndc** (here 0.94 µm residual, %GRR ≈ 8.8%,
+  ndc 16 → a capable measurement system).
+- **Die-to-die registration + diff** (`regi.hpp`) — sub-pixel **phase
+  correlation** (reusing the spindle FFT over rows/cols) aligns a test die to a
+  reference, then subtracts and labels the residual defects — the front end of an
+  ADC pipeline. Recovers a (3.5, −2.0) px shift and finds the injected defects.
+- **Bayesian recipe optimisation** (`bopt.hpp`) — a **Gaussian process** (RBF
+  kernel, Cholesky solve) with **Expected-Improvement / LCB** acquisition and a
+  `minimize()` loop. Finds a 2-D process optimum in **30 trials vs ~441** for a
+  grid (~15× fewer wafers).
+- **Transport routing** (`route.hpp`) — **A\*** collision-free path planning on a
+  chamber occupancy grid (octile heuristic, no corner-cutting) plus **2-opt** job
+  sequencing that cuts total end-effector travel vs FIFO.
+
+Run the demo (writes the calibration, diff and route figures, prints metrics as JSON):
+
+```bash
+./build/metro_demo --resid resid.ppm --diff diff.ppm --route route.ppm
+```
+
+Live dashboard: <https://keisuke58.github.io/wafer-proc-sim/metro.html> ·
+explainer: <https://keisuke58.github.io/wafer-proc-sim/metro_explained.html>.
+(`vcal`, `regi`, `bopt`, `route` tests.)
 
 ### FPGA — streaming 3×3 Sobel (`fpga/`)
 
