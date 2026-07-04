@@ -88,8 +88,8 @@
   </div>
 
   <div class="card">
-    <h2>⑤ C++ リアルタイム実装 — 毎秒495プロファイルの実測</h2>
-    <p class="sub">アルゴリズムはPythonで証明し、<strong>製品にはC++で載せる</strong>。ロバスト抽出器をC++17に移植（アロケーションなし・1パスのローブ走査）し、<strong>精度パリティを確認</strong>（bright 0.71µm／dark+多重反射 1.12µm RMS＝Python版と一致）した上で、200万列で実測：<strong>632 ns/列 → 毎秒158万列 → 3200点プロファイルで毎秒495本</strong>。シングルコア・<code class="inl">-O3</code>のみ（SIMD組込み・マルチコア未使用）なので、コア数分の線形スケールとFPGA/SIMD化の伸び代を残した"正直な下限値"。<code class="inl">-Wall -Wextra</code> 警告ゼロ。</p>
+    <h2>⑤ C++ リアルタイム実装 — 毎秒511プロファイルの実測</h2>
+    <p class="sub">アルゴリズムはPythonで証明し、<strong>製品にはC++で載せる</strong>。ロバスト抽出器をC++17に移植（アロケーションなし・1パスのローブ走査）し、<strong>精度パリティを確認</strong>（bright 0.71µm／dark+多重反射 1.12µm RMS＝Python版と一致）した上で、200万列で実測：<strong>612.1 ns/列 → 1.63M列/秒 → 3200点プロファイルで毎秒511本</strong>。シングルコア・<code class="inl">-O3</code>のみ（SIMD組込み・マルチコア未使用）なので、コア数分の線形スケールとFPGA/SIMD化の伸び代を残した"正直な下限値"。数値は <code class="inl">lj_fast_results.json</code> の実測そのまま（計測ホスト: 、タイミングはホスト依存・入力は固定シードで決定的）。<code class="inl">-Wall -Wextra</code> 警告ゼロ。</p>
     <p class="sub">出所：<code class="inl">keyence/lj_fast.cpp</code>（g++ -O3 -march=native、実測値は <code class="inl">lj_fast_results.json</code>）。</p>
   </div>
 

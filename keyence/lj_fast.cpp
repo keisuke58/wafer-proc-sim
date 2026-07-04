@@ -16,6 +16,11 @@
 //
 // Build:  g++ -O3 -march=native -std=c++17 -Wall -Wextra -o lj_fast lj_fast.cpp
 // Run:    ./lj_fast            (prints a JSON block)
+//
+// Reproducibility: the INPUT is deterministic (fixed-seed synthesis), so the
+// accuracy numbers reproduce anywhere. The TIMING is host-dependent (and
+// -march=native ISA-dependent); the committed lj_fast_results.json numbers
+// were measured on the host recorded in that file's "cpu" field.
 #include <algorithm>
 #include <chrono>
 #include <numeric>
@@ -145,7 +150,7 @@ int main() {
     std::printf("},\n");
 
     // ── throughput: synthesize once, time extraction alone ─────────────────
-    constexpr int kCols = 2'000'000;
+    constexpr int kCols = 500'000;   // ~0.5 GB bank — CI/laptop friendly
     std::vector<float> bank(static_cast<size_t>(kCols) * kNPix);
     {
         Rng rng(7);
