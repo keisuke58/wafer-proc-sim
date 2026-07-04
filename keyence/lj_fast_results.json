@@ -1,0 +1,9 @@
+{
+  "accuracy_rms_um": {"bright_clean": 0.707, "dark_multipath": 1.116},
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "columns_timed": 500000,
+  "ns_per_column": 636.4,
+  "megacolumns_per_s": 1.57,
+  "profiles_per_s_at_3200pt": 491,
+  "checksum": 101946.562
+}

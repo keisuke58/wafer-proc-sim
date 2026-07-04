@@ -87,8 +87,32 @@
     <div class="figure" style="max-width:720px"><img src="assets/lj_capability.png" alt="直線性残差と計測能力サマリ"></div>
   </div>
 
+  <div class="card">
+    <h2>⑤ C++ リアルタイム実装 — 毎秒491プロファイルの実測</h2>
+    <p class="sub">アルゴリズムはPythonで証明し、<strong>製品にはC++で載せる</strong>。ロバスト抽出器をC++17に移植（アロケーションなし・1パスのローブ走査）し、<strong>精度パリティを確認</strong>（bright 0.71µm／dark+多重反射 1.12µm RMS＝Python版と一致）した上で、200万列で実測：<strong>636.4 ns/列 → 1.57M列/秒 → 3200点プロファイルで毎秒491本</strong>。シングルコア・<code class="inl">-O3</code>のみ（SIMD組込み・マルチコア未使用）なので、コア数分の線形スケールとFPGA/SIMD化の伸び代を残した"正直な下限値"。数値は <code class="inl">lj_fast_results.json</code> の実測そのまま（計測ホスト: Intel(R) Xeon(R) Processor @ 2.80GHz、タイミングはホスト依存・入力は固定シードで決定的）。<code class="inl">-Wall -Wextra</code> 警告ゼロ。</p>
+    <p class="sub">出所：<code class="inl">keyence/lj_fast.cpp</code>（g++ -O3 -march=native、実測値は <code class="inl">lj_fast_results.json</code>）。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ ファイバ/光電センサ — 同期検波（ロックイン）とヒステリシス設計</h2>
+    <p class="sub">受光には<strong>信号の100倍の外乱光</strong>（直流＋100Hzフリッカ＋インパルス）が乗る。LED を100kHzで変調し、<strong>参照信号と掛けて低域通過（同期検波）</strong>することで外乱を帯域外へ追い出す——光電センサが太陽光の下で動く理由そのもの。検出余裕は単純LPFの <span class="pill bad">0.09</span> から <span class="pill ok">1.1</span>（6σ単位）へ。さらに<strong>ヒステリシス幅をノイズ6σより広く設計</strong>し、しきい値チャタを 261回 → <strong>3回</strong>に。</p>
+    <div class="figure" style="max-width:760px"><img src="assets/ps_lockin.png" alt="同期検波による外乱光除去とヒステリシス"></div>
+  </div>
+
+  <div class="card">
+    <h2>⑦ レーザーマーカー — ガルバノ2軸の軌道生成</h2>
+    <p class="sub">帯域1.2kHzのガルバノで文字を2000mm/sでマーキング。等速コマンドではコーナーで実軌跡が膨らみ、<strong>マーキング中（レーザーON）最大誤差 421µm</strong>。<strong>コーナー減速（区間S字）＋トラッキング遅延補正</strong>で <strong>116µm</strong> へ——タクトはほぼ同一（19.4→19.1ms）。ジャンプ（レーザーOFF）区間は評価から除外し、品質×タクトの実務指標で比較。</p>
+    <div class="figure" style="max-width:760px"><img src="assets/md_galvo.png" alt="ガルバノ軌道生成：無補償 vs コーナー減速+遅延補正"></div>
+  </div>
+
+  <div class="card">
+    <h2>⑧ デジタルマイクロスコープ — 深度合成（focus stacking）</h2>
+    <p class="sub">被写界深度12µmに対し高低差200µmのシーンを<strong>21枚のフォーカススイープ</strong>で撮像し、画素ごとに最鋭フレームを選択（局所ラプラシアン鮮鋭度）→<strong>全焦点画像</strong>を合成。さらに鮮鋭度ピークの放物線フィットでサブステップの<strong>深度マップ（3D計測）</strong>を推定——RMSE <span class="pill ok">8.48µm</span>。VHXの看板機能「リアルタイム深度合成＋3D測定」の中身。</p>
+    <div class="figure"><img src="assets/vhx_stack.png" alt="深度合成：単焦点 vs 全焦点合成 vs 深度マップ"></div>
+  </div>
+
   <footer>
-    数値の出所：<code class="inl">keyence/lj_signal_chain.py</code> の実測出力（合成データ・全アルゴリズム自作、numpy/scipy）。
+    数値の出所：<code class="inl">keyence/lj_signal_chain.py</code>・<code class="inl">keyence/product_suite.py</code> の実測出力（合成データ・全アルゴリズム自作、numpy/scipy）。
     センサ諸元は公開情報に基づく一般的な三角測量構成であり、特定製品の内部実装ではありません。
     関連：<code class="inl">market_analysis/keyence_lj_profiler.py</code>（幾何分解能・応用スキャン）・<code class="inl">keyence_iv3_vision.py</code>（インライン検査）・<code class="inl">pipeline/keyence_apc.py</code>（EnKF計測フィードバック）。
     ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/keyence">keisuke58/wafer-proc-sim/keyence</a> ／ <a href="./">← ダッシュボード一覧</a>

@@ -1,0 +1,22 @@
+{
+  "fiber_sensor_lockin": {
+    "margin_naive_6sigma": 0.09,
+    "margin_lockin_6sigma": 1.1,
+    "chatter_single_threshold": 261,
+    "chatter_with_hysteresis": 3
+  },
+  "laser_marker_galvo": {
+    "galvo_bandwidth_hz": 1200.0,
+    "mark_speed_mm_s": 2000.0,
+    "max_error_naive_um": 421.0,
+    "max_error_planned_um": 115.9,
+    "mark_time_naive_ms": 19.38,
+    "mark_time_planned_ms": 19.15
+  },
+  "microscope_focus_stack": {
+    "stack_frames": 21,
+    "z_range_um": 200.0,
+    "depth_of_field_um": 12.0,
+    "depth_rmse_um": 8.48
+  }
+}
