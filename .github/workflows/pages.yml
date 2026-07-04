@@ -91,6 +91,9 @@ jobs:
           cp vision/cpp/docs/assets/lj_bench.png        _site/assets/ || echo "missing lj_bench"
           cp vision/cpp/docs/assets/lj_profile.png      _site/assets/ || echo "missing lj_profile"
           cp vision/cpp/docs/assets/lj_capability.png   _site/assets/ || echo "missing lj_capability"
+          cp vision/cpp/docs/assets/ps_lockin.png       _site/assets/ || echo "missing ps_lockin"
+          cp vision/cpp/docs/assets/md_galvo.png        _site/assets/ || echo "missing md_galvo"
+          cp vision/cpp/docs/assets/vhx_stack.png       _site/assets/ || echo "missing vhx_stack"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \
