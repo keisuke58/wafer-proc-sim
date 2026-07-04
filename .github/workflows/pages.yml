@@ -9,6 +9,9 @@ on:
     paths:
       - "vision/cpp/docs/**"
       - ".github/workflows/pages.yml"
+      # Gallery figures are pulled from these dirs, so publish when they change.
+      - "results/**"
+      - "notebooks/**"
   workflow_dispatch:
 
 permissions:
