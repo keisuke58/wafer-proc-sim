@@ -1,0 +1,26 @@
+{
+  "dies": 20,
+  "die_px": [
+    88,
+    88
+  ],
+  "amplitude_defects": 6,
+  "phase_defects": 2,
+  "capture_at_0p5_nuisance": {
+    "fixed threshold": 0.375,
+    "adaptive (MAD z)": 0.25,
+    "DL autoencoder": 0.25,
+    "fused (amp+phase)": 0.5
+  },
+  "capture_at_2_nuisance": {
+    "fixed threshold": 0.375,
+    "adaptive (MAD z)": 0.625,
+    "DL autoencoder": 0.75,
+    "fused (amp+phase)": 0.625
+  },
+  "amplitude_only_ceiling": 0.75,
+  "phase_defect_capture_at_0p5_nuisance": {
+    "amplitude_adaptive": 0.0,
+    "phase_channel": 1.0
+  }
+}
