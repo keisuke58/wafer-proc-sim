@@ -93,7 +93,9 @@ float extract_robust(const float* col) {
     if (nl == 0) return NAN;
 
     // Pass 2: earliest credible lobe = shortest optical path (multipath physics).
-    const Lobe* best = nullptr;
+    // The strongest lobe always satisfies sum >= 0.3*smax, so a credible lobe
+    // always exists; default to lobe 0 to make that invariant explicit.
+    const Lobe* best = &lobes[0];
     for (int i = 0; i < nl; ++i)
         if (lobes[i].sum >= 0.3f * smax) { best = &lobes[i]; break; }
 

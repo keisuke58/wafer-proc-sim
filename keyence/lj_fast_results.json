@@ -1,8 +1,8 @@
 {
   "accuracy_rms_um": {"bright_clean": 0.707, "dark_multipath": 1.116},
   "columns_timed": 2000000,
-  "ns_per_column": 551.0,
-  "megacolumns_per_s": 1.81,
-  "profiles_per_s_at_3200pt": 567,
+  "ns_per_column": 554.5,
+  "megacolumns_per_s": 1.80,
+  "profiles_per_s_at_3200pt": 564,
   "checksum": 227046.016
 }
