@@ -13,6 +13,33 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 ---
 
+## 📂 Portfolio — start here
+
+> An engineering portfolio by **Keisuke Nishioka (西岡 佳祐)**: computational mechanics turned into design decisions — FEA & material mechanics, optimization & uncertainty quantification, and CAE-surrogate / generative design. Every module is written from scratch (no black-box solvers) and validated against a closed-form or analytic reference.
+
+**▶ Live dashboards:** **https://keisuke58.github.io/wafer-proc-sim/**
+
+Two project families live in this repo:
+
+### 1 · Semiconductor process — DISCO-class digital twin & metrology (`vision/`, `machine/`, this suite)
+Dicing, back-grinding, laser processing, CMP, machine-systems and a metrology/optimization layer — the measure → process → decide loop.
+- **Dicing / grind / laser / CMP** — kerf detection, TTV·BOW·SSD, ablation & stealth-dicing, Preston removal + EPD
+- **Machine systems** — real-time S-curve motion + servo, digital-twin OEE, bump inspection, ADC (CNN → yield map)
+- **Metrology & optimization** — Gage R&R calibration, phase-correlation registration, Bayesian recipe search (GP + EI), A\* + 2-opt transport
+- Dashboards: [processing](https://keisuke58.github.io/wafer-proc-sim/dashboard.html) · [grinding](https://keisuke58.github.io/wafer-proc-sim/grind.html) · [laser](https://keisuke58.github.io/wafer-proc-sim/laser.html) · [systems](https://keisuke58.github.io/wafer-proc-sim/systems.html) · [metrology](https://keisuke58.github.io/wafer-proc-sim/metro.html)
+
+### 2 · Optomechanics — camera lens-barrel design & simulation ([`optomech/`](optomech/))
+The optics ⇄ mechanics boundary: tolerance stack-up, mechanism/control, structural·thermal FEA, wave-optics image quality, generative design, and parametric CAD. **Dashboard → [optomech.html](https://keisuke58.github.io/wafer-proc-sim/optomech.html) (14 cards).**
+- **CAE** — beam + **axisymmetric-solid FE** (1st mode 10.6 kHz within 0.14 %; thermal growth matches αLΔT within 2.5 %), drop-shock (Newmark-β)
+- **Wave-optics MTF** — mechanical error → wavefront → MTF (matches diffraction limit to 0.0003); MTF-based tolerancing
+- **Control** — OIS servo loop shaping (PM 53° / GM 13 dB), disturbance rejection (3.4 stops), resonance notch (−4 → +5 dB)
+- **Generative design** — PyTorch **GNN surrogate** (R² 0.99) + **Bayesian** search → lightest barrel meeting constraints
+- **CAD** — dimension-driven revolved solid (**STL**) + **GD&T** drawing (**DXF**), tolerances derived from the boresight budget
+
+**Research:** *Frontiers in Materials* (2025) — FEA × GNN for defect identification in perforated CFRP · GPU-accelerated Bayesian inference in JAX (Leibniz Universität Hannover).
+
+---
+
 ## Architecture
 
 ### System overview
