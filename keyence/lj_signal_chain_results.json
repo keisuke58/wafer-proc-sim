@@ -1,0 +1,59 @@
+{
+  "extractor_rms_um": {
+    "bright, clean": {
+      "peak (no subpix)": 10.486123458682409,
+      "centroid": 0.7212427063824776,
+      "gauss fit": 8.628968586733627,
+      "robust": 0.7277166189915719
+    },
+    "dark surface": {
+      "peak (no subpix)": 4.06471542030873,
+      "centroid": 1.0663057534855829,
+      "gauss fit": 3.6571999862540157,
+      "robust": 1.1284084609962675
+    },
+    "shiny + multipath": {
+      "peak (no subpix)": 10.45530025969301,
+      "centroid": 35.179147171321134,
+      "gauss fit": 8.601488182383376,
+      "robust": 5.541589498067114
+    },
+    "dark + multipath": {
+      "peak (no subpix)": 4.009888989480063,
+      "centroid": 13.494883249120793,
+      "gauss fit": 3.727972854213168,
+      "robust": 1.0789924987149666
+    }
+  },
+  "profile_rms_um": 1.55,
+  "dimensions": {
+    "step_height_um": {
+      "value": 120.14,
+      "nominal": 120.0,
+      "tol": 5.0,
+      "ok": true
+    },
+    "groove_width_mm": {
+      "value": 0.777,
+      "nominal": 0.8,
+      "tol": 0.05,
+      "ok": true
+    },
+    "shoulder_angle_deg": {
+      "value": 28.84,
+      "nominal": null,
+      "tol": null
+    },
+    "flatness_um": {
+      "value": 5.35,
+      "nominal": 0.0,
+      "tol": 25.0,
+      "ok": true
+    }
+  },
+  "repeatability_sigma_um": 0.807,
+  "linearity_max_um": 0.404,
+  "grr_pct_tol30um_single": 16.1,
+  "repeatability_sigma_um_avg4": 0.388,
+  "grr_pct_tol30um_avg4": 7.8
+}
