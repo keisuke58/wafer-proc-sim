@@ -18,6 +18,7 @@
 // Run:    ./lj_fast            (prints a JSON block)
 #include <algorithm>
 #include <chrono>
+#include <numeric>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -109,8 +110,8 @@ float extract_robust(const float* col) {
 }
 
 double rms(const std::vector<float>& v) {
-    double s = 0.0;
-    for (float x : v) s += static_cast<double>(x) * x;
+    const double s = std::accumulate(v.begin(), v.end(), 0.0,
+        [](double acc, float x) { return acc + static_cast<double>(x) * x; });
     return std::sqrt(s / static_cast<double>(v.size()));
 }
 
