@@ -44,6 +44,10 @@ DATA = os.path.join(HERE, "..", "data", "external")
 SETS = ["NEU_SDI", "NEU_Oil", "NEU_SPDI"]
 
 
+DOWN = 2      # 2x downsample: 640x480 -> 320x240 (keeps defects >> 1 px,
+              # cuts the median-filter cost ~4x per scale)
+
+
 def load_pairs(setname):
     """Return list of (gray float [0,1], mask bool) for one NEU set."""
     pairs = []
@@ -51,8 +55,13 @@ def load_pairs(setname):
         mp = jp[:-4] + ".png"
         if not os.path.exists(mp):
             continue
-        img = np.asarray(Image.open(jp).convert("L"), float) / 255.0
-        msk = np.asarray(Image.open(mp).convert("L"), float) > 127
+        im = Image.open(jp).convert("L")
+        mk = Image.open(mp).convert("L")
+        if DOWN > 1:
+            im = im.resize((im.width // DOWN, im.height // DOWN), Image.BILINEAR)
+            mk = mk.resize((mk.width // DOWN, mk.height // DOWN), Image.NEAREST)
+        img = np.asarray(im, float) / 255.0
+        msk = np.asarray(mk, float) > 127
         pairs.append((img, msk))
     return pairs
 
@@ -67,20 +76,19 @@ def _adaptive_z(img, k):
     """|I - median_k| in units of the local MAD — one background scale."""
     med = ndi.median_filter(img, size=k)
     resid = img - med
-    mad = ndi.median_filter(np.abs(resid - ndi.median_filter(resid, size=k)),
-                            size=k) + 1e-4
+    mad = ndi.median_filter(np.abs(resid), size=k) + 1e-4
     return np.abs(resid) / (1.4826 * mad)
 
 
-def score_adaptive(img, k=31):
+def score_adaptive(img, k=15):
     """Single-scale adaptive statistical detector (as in defect_inspect)."""
     return _adaptive_z(img, k)
 
 
 def score_multiscale(img):
     """Multi-scale adaptive z: max over coarse+fine background models, smoothed."""
-    z = np.maximum(_adaptive_z(img, 15), _adaptive_z(img, 61))
-    return ndi.gaussian_filter(z, 2.0)
+    z = np.maximum(_adaptive_z(img, 9), _adaptive_z(img, 31))
+    return ndi.gaussian_filter(z, 1.5)
 
 
 DETECTORS = [
