@@ -4,7 +4,7 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-279%20passing-brightgreen)](#quick-start)
+[![Tests](https://img.shields.io/badge/tests-602%20passing-brightgreen)](#quick-start)
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20C%2B%2B%20%7C%20CUDA%20%7C%20Rust%20%7C%20Go%20%7C%20IEC%2061131--3-blue)](#language-coverage)
 
 Physics-accurate simulation of a DISCO DFL7160-class dicing saw.
@@ -139,7 +139,7 @@ The optics ⇄ mechanics boundary: tolerance stack-up, mechanism/control, struct
 | `plc/` | IEC 61131-3 | `SpindleFB`, `InterlockFB`, `RecipeSeqFB`, `DicingController` |
 | `rust/` | Rust / PyO3 | `SpindleKernel`, `nondominated_sort`, `rbf_kernel_matrix` — memory-safe, IEC 61508 compatible |
 | `telemetry/` | Go | HTTP + WebSocket server streaming `DiscoMachine` state in real time |
-| `tests/` | Python | **279 tests** — physics invariants + C++/Python parity + integration |
+| `tests/` | Python | **602 tests** — physics invariants + C++/Python parity + integration |
 
 ---
 
@@ -226,7 +226,7 @@ bash build_all_kernels.sh        # builds all 15 C++ kernels
 ### Run tests
 
 ```bash
-python -m pytest tests/ -q       # 279 tests, ~60 s
+python -m pytest tests/ -q       # 602 tests, ~75 s
 ```
 
 ### Run digital twin
