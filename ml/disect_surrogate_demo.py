@@ -218,17 +218,34 @@ def plot_tmcmc(result: dict, out_dir: str = RESULTS_DIR):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
     ax = axes[0]
-    ax.scatter(samples, np.zeros_like(samples),
-               c=weights, cmap="plasma", s=20, alpha=0.7)
-    ax.axvline(result["mean_vel"], color="lime", lw=2,
+    # Smooth weighted posterior density (KDE) with a weight-coloured rug of the
+    # actual TMCMC samples underneath — far more legible than a 1-D strip plot.
+    w = np.asarray(weights, dtype=float)
+    w = w / w.sum() if w.sum() > 0 else np.ones_like(w) / len(w)
+    lo, hi = samples.min(), samples.max()
+    pad = 0.08 * (hi - lo + 1e-9)
+    xs = np.linspace(lo - pad, hi + pad, 200)
+    try:
+        from scipy.stats import gaussian_kde
+        dens = gaussian_kde(samples, weights=w)(xs)
+    except Exception:                       # weightless fallback
+        from scipy.stats import gaussian_kde
+        dens = gaussian_kde(samples)(xs)
+    dmax = float(dens.max()) if dens.max() > 0 else 1.0
+    ax.fill_between(xs, dens, color="#762a83", alpha=0.22)
+    ax.plot(xs, dens, color="#762a83", lw=2, label="Posterior KDE")
+    ax.scatter(samples, np.full_like(samples, -0.05 * dmax),
+               c=weights, cmap="plasma", s=16, alpha=0.75, marker="|")
+    ax.axvline(result["mean_vel"], color="#1a9e57", lw=2,
                label=f"Posterior mean = {result['mean_vel']:.1f} mm/s")
-    ax.axvline(result["map_vel"],  color="cyan", lw=1.5, ls="--",
+    ax.axvline(result["map_vel"],  color="#0e7c86", lw=1.6, ls="--",
                label=f"MAP = {result['map_vel']:.1f} mm/s")
     ax.set_xlabel("Cutting Velocity [mm/s]", fontsize=11)
+    ax.set_ylabel("Posterior density", fontsize=11)
+    ax.set_ylim(-0.12 * dmax, 1.15 * dmax)
     ax.set_title(f"TMCMC Posterior\n({result['geometry'].capitalize()}, "
                  f"observed F = {result['observed_N']:.0f} N)", fontsize=11)
     ax.legend(fontsize=9)
-    ax.set_yticks([])
     ax.grid(alpha=0.25)
 
     ax = axes[1]
