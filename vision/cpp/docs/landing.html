@@ -71,6 +71,9 @@
     <a class="navcard" href="inspection.html">
       <div class="ic">🛰️</div><b>マスク/ウェハ欠陥検査（Lasertec向け）</b>
       <span>サブピクセルDie-to-Die・適応統計検出（nuisance抑制）・位相欠陥チャネル・DL異常検出</span></a>
+    <a class="navcard" href="keyence.html">
+      <div class="ic">📏</div><b>レーザー変位計 信号処理（Keyence向け）</b>
+      <span>三角測量の撮像シミュレーション・サブピクセル抽出対決・寸法GO/NG・%GRR計測能力</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -96,6 +99,9 @@
 
   <h2 class="sec">レンズ鏡筒メカ設計 ― optomech（Sony向け）<a href="optomech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-optomech"></div>
+
+  <h2 class="sec">レーザー変位計 信号処理 ― keyence（Keyence向け）<a href="keyence.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-keyence"></div>
 
   <h2 class="sec">マスク/ウェハ欠陥検査 ― inspection（Lasertec向け）<a href="inspection.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-inspection"></div>
@@ -145,6 +151,11 @@ const GAL = {
     ['tol_hist.png','鏡筒公差スタックアップ','偏心/傾き/間隔公差→像面ボアサイト誤差（モンテカルロ）'],
     ['cam_step.png','AF機構＋VCM制御','ボイスコイルのPID+FFステップ応答（整定3.9ms）'],
     ['ois_trace.png','手ブレ補正（OIS）','ジャイロ検出→アクチュエータで像を安定化（3.2 stops）'],
+  ],
+  'g-keyence': [
+    ['lj_bench.png','サブピクセル抽出対決','多重反射でも最悪5.5µm（重心35µm）のロバスト抽出'],
+    ['lj_profile.png','プロファイル→寸法GO/NG','段差/溝幅/平面度を公差判定（RMS 1.55µm）'],
+    ['lj_capability.png','計測能力','繰返しσ・直線性・%GRR 7.8%（4平均, AIAG合格）'],
   ],
   'g-inspection': [
     ['insp_phase.png','位相欠陥の検出','振幅像で不可視の位相欠陥をthrough-focus（∇²φ）で暴く'],
