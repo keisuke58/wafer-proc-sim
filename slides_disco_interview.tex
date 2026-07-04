@@ -1377,6 +1377,53 @@
     inspection --- all in C/C++.}}
 \end{frame}
 
+\begin{frame}[shrink=10]{Software --- C++ Metrology \& Optimisation (measure $\cdot$ align $\cdot$ decide $\cdot$ transport)}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{The layer around the processing}\\
+      {\footnotesize Calibration/Gage $\cdot$ registration $\cdot$ Bayesian opt $\cdot$ routing}
+
+      \vspace{0.4em}
+      \begin{tikzpicture}[font=\tiny,
+          st/.style={draw=discoblue, fill=discolight, rounded corners=2pt,
+                     minimum width=1.7cm, minimum height=0.55cm, align=center},
+          arr/.style={-{Stealth[length=4pt]}, discoblue}]
+        \node[st] (a) at (0,0)     {calib +\\Gage R\&R};
+        \node[st] (b) at (2.5,0)   {phase-corr\\registration};
+        \node[st] (c) at (5.0,0)   {die-to-die\\diff};
+        \node[st,fill=discoorange!30] (d) at (2.5,-1.2){GP Bayes-opt\\+ A* routing};
+        \draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c) to[out=-90,in=0] (d);
+      \end{tikzpicture}
+
+      \vspace{0.4em}
+      \textbf{All hand-written C++17 (LA/FFT/GP/graph), with tests:}
+      \begin{itemize}\footnotesize
+        \item Pixel$\to$stage affine calibration + AIAG \textbf{Gage R\&R}
+        \item Sub-pixel \textbf{phase-correlation} registration + diff inspection
+        \item \textbf{Gaussian-process} Bayesian recipe search (EI/LCB)
+        \item \textbf{A*} collision-free routing + 2-opt job sequencing
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \includegraphics[width=\textwidth]{vision/cpp/docs/assets/route_path.png}\\
+      {\scriptsize\centering A* transport path around chamber obstacles\par}
+
+      \vspace{0.3em}
+      \begin{block}{}
+        \footnotesize
+        Calibration residual \textcolor{discoblue}{\textbf{0.94}}\,$\mu$m,
+          \%GRR \textbf{8.8}\%, ndc 16 (capable)\\
+        Bayes-opt: optimum in \textbf{30} trials vs $\sim$441 grid\\
+        Registration recovers $(3.5,-2.0)$\,px $\to$ finds defects
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.2em}
+  {\footnotesize\textcolor{discogray}{The unglamorous layer that decides whether a
+    machine can be \textbf{trusted}: measure it, prove the measurement, align, and
+    move --- all in C/C++.}}
+\end{frame}
+
 % ── 11. RESULTS SUMMARY TABLE ────────────────────────────────────────────────
 \begin{frame}[shrink=10]{Results Summary --- Five Modules / Five Roles}
   \centering
