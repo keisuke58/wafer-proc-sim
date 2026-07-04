@@ -1,0 +1,33 @@
+{
+  "framework": "PyTorch 2.12.1+cu130",
+  "surrogate": "PyTorch GCN (2 graph-conv layers + mean-pool + MLP head)",
+  "n_designs": 300,
+  "n_train": 240,
+  "n_test": 60,
+  "gnn_r2": {
+    "first mode [kHz]": 0.985,
+    "mass [g]": 0.999,
+    "safety factor": 0.999
+  },
+  "final_train_mse": 0.0045,
+  "bo_iterations": 31,
+  "generated_design": {
+    "wall_z1_z2_z3_mm": [
+      1.97,
+      1.01,
+      1.16
+    ],
+    "n_ribs": 7,
+    "material": "Mg AZ31"
+  },
+  "generated_perf_true_FEA": {
+    "first_mode_kHz": 9.05,
+    "mass_g": 17.22,
+    "safety_factor": 35.7
+  },
+  "generated_perf_GNN_surrogate": {
+    "first_mode_kHz": 9.31,
+    "mass_g": 17.02,
+    "safety_factor": 35.8
+  }
+}

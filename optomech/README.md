@@ -57,6 +57,11 @@ src/                implementations
 apps/optm_demo.cpp  runs all modules, writes JSON + figures
 tests/              one ctest per module
 docs/               self-contained GitHub Pages dashboard + assets
+fem/                Python FE — beam model + axisymmetric solid model
+optics/             Python wave-optics — MTF from mechanical error
+control/            Python control — OIS servo Bode / margins / notch
+cad/                Python CAD — parametric barrel STL + GD&T drawing (DXF)
+ai/                 PyTorch GNN surrogate + Bayesian generative design
 ```
 
 ## Notes on the physics
@@ -74,3 +79,137 @@ docs/               self-contained GitHub Pages dashboard + assets
   numerically.
 - **OIS** — the actuator is a 2nd-order servo whose finite bandwidth sets how much
   high-frequency tremor leaks through.
+
+## Finite-element barrel model (`fem/barrel_fem.py`, Python)
+
+A genuine mesh-based **Euler-Bernoulli beam FE** model of the barrel (2 DOF/node),
+complementing the closed-form C++ `fea` module. It assembles element
+stiffness/consistent-mass matrices and runs three analyses a lens-barrel
+designer actually performs:
+
+- **Modal** — generalized eigenproblem for natural frequencies + mode shapes;
+  the first mode (**10,639 Hz**) matches the closed-form cantilever within
+  **0.14%**.
+- **Thermal-structural coupling** — a radial temperature gradient imposes a
+  thermal curvature; the FE tip deflection equals the analytic uniform-curvature
+  result (**3.15 µm** per 5 °C gradient).
+- **Drop-shock transient** — Newmark-β time integration under a half-sine base
+  pulse → peak root bending stress and **safety factor 30.6** (a more realistic,
+  transient answer than the closed-form estimate).
+
+```bash
+python3 fem/barrel_fem.py    # writes fem/figures/*.png + barrel_fem_results.json
+```
+Requires `numpy` + `matplotlib` (`scipy` used for the eigensolver if present).
+
+## Axisymmetric solid FE (`fem/barrel_axisym.py`, Python)
+
+Where the beam model gives bending modes, this one resolves the **stress field
+inside the wall**. The barrel-wall cross-section is meshed in the (r, z) plane
+with **4-node axisymmetric solid (Q4) elements**, and the true 2-D elasticity
+problem is assembled (rr/zz/θθ/rz strains, axisymmetric 2πr·detJ weighting) and
+solved — exactly the analysis a CAE engineer runs for thermal growth and stress,
+with a real, visualizable mesh.
+
+- **Thermal expansion** — a uniform temperature rise imposes an axisymmetric
+  thermal strain; the FE axial growth (**9.68 µm** at ΔT=10 °C) matches the
+  closed-form `α·L·ΔT` (9.44 µm) within **2.5%**, i.e. the back-focal drift.
+- **Constraint-driven stress** — the mount face (z=0) is radially constrained,
+  so the FE develops a real thermal-stress field peaking at **21 MPa** at the
+  base — a stress concentration the closed-form estimate cannot show.
+- **Mesh + deformed-shape / von-Mises visualization** (`figures/axisym_mesh.png`):
+  undeformed mesh alongside the scaled deformation coloured by von Mises stress.
+
+```bash
+python3 fem/barrel_axisym.py  # writes fem/figures/axisym_mesh.png + barrel_axisym_results.json
+```
+Pure `numpy` + `matplotlib`.
+
+## Wave-optics MTF from mechanical error (`optics/mtf_wavefront.py`, Python)
+
+The C++ `tolerance` module scores a barrel by geometric boresight spot [µm], but
+a camera lens is actually accepted on **MTF** (contrast at a spatial frequency),
+which is set by the *wavefront*. This module is the mechanical designer's real
+optical KPI — the **mechanics → wavefront → MTF** map that a barrel designer owns
+(not the optical prescription itself):
+
+- **Wave-optics core** — a Zernike wavefront is placed on the pupil, PSF = |FFT(P)|²,
+  MTF = |autocorr(P)|. The aberration-free MTF matches the closed-form circular-
+  aperture diffraction MTF to **< 0.0003** (validation).
+- **Mechanics → aberration** — element decenter/tilt → coma/astigmatism; thermal
+  focus drift (barrel CTE + lens `dn/dT`) → defocus. At +20 °C the MTF at 60 lp/mm
+  falls from **0.88 → 0.56** and the model reproduces the defocus contrast-reversal.
+- **MTF-based tolerancing** — Monte Carlo over decenter/tilt/temperature gives the
+  MTF@spec distribution (**97 %** pass, P10 = 0.50) and back-solves the decenter
+  tolerance that holds the spec (**4.3 µm**) — upgrading the tolerance KPI from spot
+  to MTF.
+
+```bash
+python3 optics/mtf_wavefront.py  # writes optics/figures/*.png + mtf_wavefront_results.json
+```
+Pure `numpy` + `matplotlib`.
+
+## Servo control design — Bode / margins / notch (`control/servo_analysis.py`, Python)
+
+The C++ `ois` and `cam` modules run the actuators in the *time* domain; this is
+the control engineer's companion analysis in the *frequency* domain — the way a
+mechatronics reviewer reasons about a closed loop:
+
+- **Loop shaping + margins** — a PI-lead controller wraps the 2nd-order actuator
+  plant (with a realistic 0.4 ms gyro/DSP transport delay); the open-loop Bode
+  gives **PM 53°, GM 13 dB, crossover 99 Hz**.
+- **Disturbance rejection** — the sensitivity `S = 1/(1+L)` is applied to a
+  hand-tremor motion PSD → **3.4 stops** of stabilisation (RMS 3.8 → 0.36 µm),
+  and the closed-loop step settles in **20 ms** at 11 % overshoot.
+- **Resonance notch compensation** — a lightly damped 260 Hz actuator resonance
+  drags the gain margin to **−4 dB (unstable)**; a notch filter tuned to the
+  resonance restores **+5 dB (stable)** without giving up loop bandwidth.
+
+```bash
+python3 control/servo_analysis.py  # writes control/figures/*.png + servo_analysis_results.json
+```
+Requires `numpy` + `scipy` + `matplotlib`.
+
+## Parametric CAD + GD&T drawing (`cad/barrel_cad.py`, Python)
+
+The design deliverable itself — the 2D/3D CAD a barrel engineer draws — driven
+entirely from named dimensions:
+
+- **Dimension-driven 3-D solid** — the barrel cross-section (outer wall, Ø40
+  mount flange, four internal lens seats) is revolved into a **watertight solid**
+  (10.3 cm³, 27.9 g in Al 6061) and exported as **STL** (`out/lens_barrel.stl`)
+  for any CAD/CAM.
+- **GD&T engineering drawing** — a full-section drawing with datums A (mount
+  face) / B (bore axis), feature control frames (flatness 0.008, coaxiality
+  ⌀0.02 to B, seat circular runout 0.005 to B), an H7 slip-fit seat, and a title
+  block — rendered to PNG **and** a real **DXF** (`out/lens_barrel_drawing.dxf`).
+- **Tolerances are derived, not decorative** — each geometric tolerance is tied
+  back to the optical/thermal budget it protects (bore coaxiality → decenter →
+  boresight; seat runout → tilt → coma; mount flatness → focus), consistent with
+  the `tolerance`/`talloc` budget modules.
+
+```bash
+python3 cad/barrel_cad.py  # writes cad/figures/*.png, cad/out/*.stl+*.dxf, barrel_cad_results.json
+```
+Requires `numpy` + `trimesh` (STL) + `ezdxf` (DXF) + `matplotlib`.
+
+## Generative design — GNN surrogate + Bayesian search (`ai/generative_design.py`, PyTorch)
+
+The "生成AIを活用した設計改革" piece, on the applicant's own research stack
+(**PyTorch / graph neural networks + Bayesian optimization**):
+
+1. **CAE ground truth** — a zone-varying barrel is meshed into beam elements; a
+   modal + mass + drop-shock evaluation gives the true performance.
+2. **PyTorch GNN surrogate** — each design's FE mesh is a graph; a Graph
+   Convolutional Network learns "design → performance" almost instantly
+   (held-out **R² = 0.99 / 1.00 / 1.00** for first-mode / mass / safety factor).
+3. **Bayesian generative search** — a Gaussian process with Expected Improvement
+   uses the surrogate to *generate* the lightest barrel meeting the stiffness
+   and shock constraints, verified against the real FE solver. The AI generated
+   a **Mg-alloy thin-wall + ribbed** design (9.1 kHz, 17.2 g, SF 36).
+
+```bash
+pip install torch          # + numpy scipy scikit-learn matplotlib
+python3 ai/generative_design.py
+```
+

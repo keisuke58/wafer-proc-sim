@@ -1,0 +1,65 @@
+{
+  "dimensions_mm": {
+    "length": 40.0,
+    "outer_dia": 30.0,
+    "flange_dia": 40.0,
+    "flange_thk": 4.0,
+    "wall_nom": 2.0,
+    "bolt_circle_dia": 34.0,
+    "bolt_hole_dia": 3.4,
+    "n_bolts": 3,
+    "rear_bore_dia": 26.0
+  },
+  "n_lens_seats": 4,
+  "solid_watertight": true,
+  "volume_cm3": 10.32,
+  "mass_g": 27.9,
+  "material": "Al 6061-T6",
+  "stl_file": "out/lens_barrel.stl",
+  "dxf_file": "out/lens_barrel_drawing.dxf",
+  "gdt_schedule": [
+    {
+      "feature": "Mount face",
+      "characteristic": "flatness",
+      "tol_mm": 0.008,
+      "datum": "—",
+      "rationale": "Datum A seating; tilts the whole stack → focus/keystone"
+    },
+    {
+      "feature": "Bore axis",
+      "characteristic": "datum",
+      "tol_mm": null,
+      "datum": "B",
+      "rationale": "Datum B: the optical axis reference for all seats"
+    },
+    {
+      "feature": "Barrel OD",
+      "characteristic": "coaxiality",
+      "tol_mm": 0.02,
+      "datum": "B",
+      "rationale": "Body concentric to bore → even wall, balanced thermal growth"
+    },
+    {
+      "feature": "Lens seats (×4)",
+      "characteristic": "circular runout",
+      "tol_mm": 0.005,
+      "datum": "B",
+      "rationale": "Seat wobble → element tilt → coma; drives the boresight budget"
+    },
+    {
+      "feature": "Seat bores",
+      "characteristic": "cylindricity",
+      "tol_mm": 0.004,
+      "datum": "—",
+      "rationale": "Seat form → element decenter → boresight (H7 slip fit)"
+    },
+    {
+      "feature": "Front seat face",
+      "characteristic": "perpendicularity",
+      "tol_mm": 0.006,
+      "datum": "B",
+      "rationale": "Axial reference for element 1 → despace/defocus"
+    }
+  ],
+  "general_tolerance": "±0.05 (linear), ±0.5° (angular) unless noted"
+}

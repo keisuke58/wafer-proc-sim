@@ -1,0 +1,11 @@
+{
+  "elements": 160,
+  "nodes": 205,
+  "dT_C": 10.0,
+  "axial_growth_um": 9.68,
+  "axial_growth_um_per_C": 0.968,
+  "analytic_axial_um": 9.44,
+  "axial_fe_vs_analytic_pct": 2.54,
+  "radial_expansion_um": 3.648,
+  "max_von_mises_MPa": 21.273
+}

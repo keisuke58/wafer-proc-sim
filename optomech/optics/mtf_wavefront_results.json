@@ -1,0 +1,15 @@
+{
+  "wavelength_um": 0.55,
+  "f_number": 2.8,
+  "cutoff_lpmm": 649.4,
+  "spec_lpmm": 60.0,
+  "mtf_spec": 0.35,
+  "validation_max_abs_err_vs_diffraction": 0.0003,
+  "mtf_nominal_at_spec": 0.883,
+  "focus_drift_um_per_C": 1.52,
+  "defocus_waves_at_20C": 0.2544,
+  "mtf_at_spec_20C": 0.557,
+  "mc_mtf_p10_at_spec": 0.502,
+  "mc_fraction_pass": 0.974,
+  "decenter_tolerance_um": 4.33
+}

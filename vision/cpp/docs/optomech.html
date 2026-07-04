@@ -180,6 +180,74 @@
     </table>
   </div>
 
+
+  <div class="card">
+    <h2>⑨ 本格FEA検証 ― Python 有限要素モデル（メッシュベース）</h2>
+    <p class="sub">閉形式ではなく、オイラー・ベルヌーイ梁要素を組み立てた実FEM。一般化固有値問題で固有振動・モード形状、熱-構造連成、Newmark-β法で落下衝撃の過渡応答を解き、閉形式解と照合検証。研究で培ったFEA（Abaqus/Ansys/自作FEM）の実力を実装で提示。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr" >
+      <div class="figure" style="background:#fff"><img src="assets/barrel_modes.png" alt="モード形状"></div>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <div class="figure" style="background:#fff"><img src="assets/barrel_thermal.png" alt="熱勾配たわみ"></div>
+        <div class="figure" style="background:#fff"><img src="assets/barrel_shock.png" alt="落下衝撃過渡"></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：1次モード <b>10,639 Hz</b>（閉形式 10,624 Hz と <b>0.14%</b> 一致）／熱勾配たわみ FE=解析解 一致（<b>3.15 µm</b>/5℃勾配）／落下衝撃 <b>安全率30.6</b>（Newmark-β過渡）。24要素・梁FE。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑩ CAE × 生成AI 設計改革 ― PyTorch GNN代理 ＋ ベイズ生成探索</h2>
+    <p class="sub">研究の PyTorch×GNN×ベイズ を設計に直結（求人票「生成AIを活用した設計改革」）。①梁FEでCAE正解を生成 → ②<b>PyTorch GCN</b> が「設計→性能」を瞬時予測（R²=0.99/1.00/1.00）→ ③<b>ベイズ最適化(GP+EI)</b> が制約（1次モード≥9kHz・安全率≥6）を満たす<b>最軽量設計を生成</b>し、実FEで検証。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div class="figure" style="background:#fff"><img src="assets/gnn_parity.png" alt="GNN代理 vs CAE パリティ"></div>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <div class="figure" style="background:#fff"><img src="assets/generative_convergence.png" alt="ベイズ生成探索の収束"></div>
+        <div class="figure" style="background:#fff"><img src="assets/design_pareto.png" alt="設計空間パレート"></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:10px">生成された最適設計：<b>Mg合金＋薄肉＋7リブ</b> → 1次モード <b>9.1kHz</b>・質量 <b>17.2g</b>・安全率 <b>36</b>（代理予測が実FEと一致）。CAEと生成AIを結ぶ"設計改革"を実装（PyTorch）。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑪ 軸対称ソリッドFE ― 実メッシュによる熱変形・応力場</h2>
+    <p class="sub">梁要素では捉えられない断面内の応力分布を解くため、鏡筒壁の (r,z) 断面を <b>4節点 軸対称ソリッド(Q4)要素</b>でメッシュ化し、真の2次元弾性場を有限要素で解く。均一昇温での熱膨張場を求め、軸方向の伸び（＝バックフォーカス・ドリフト）を αLΔT と照合。マウント面拘束による熱応力の集中も可視化——CAEエンジニアが実際に回す解析と可視化そのもの。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div class="figure" style="background:#fff"><img src="assets/axisym_mesh.png" alt="軸対称メッシュと熱変形・von Mises応力場"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：160要素・205節点のQ4メッシュ。ΔT=10℃で軸方向伸び <b>9.68 µm</b>（解析解 αLΔT=9.44µm と <b>2.5%</b> 一致、0.97µm/℃）／半径膨張 3.65µm。マウント面（z=0）の径方向拘束が最大 <b>21 MPa</b> の熱応力を生む様子をメッシュ変形＋von Mises等値図で可視化。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑫ 波動光学 MTF ― 機械誤差 → 波面 → 画質（メカと光学の接点）</h2>
+    <p class="sub">レンズの合否は幾何スポットではなく <b>MTF（コントラスト）</b>で決まる。メカ設計者が担う「<b>機械誤差 → 波面誤差 → MTF劣化</b>」の写像を波動光学で実装：瞳にゼルニケ波面を載せ、PSF=|FFT(瞳)|²・MTF=瞳の自己相関で計算。偏心/傾き→コマ・非点、熱ドリフト（鏡筒CTE＋dn/dT）→デフォーカスとして重畳し、モンテカルロで「MTF規格を確実に満たす公差」を逆算。公差モジュール④のKPIを"スポット"から"MTF"へ格上げ。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div class="figure" style="background:#fff"><img src="assets/mtf_curves.png" alt="波動光学 MTF曲線（回折限界・熱デフォーカス・公差擾乱）"></div>
+      <div class="figure" style="background:#fff"><img src="assets/mtf_tolerance.png" alt="MTF規格からの公差逆算（モンテカルロ＋偏心スイープ）"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：無収差FE-MTFが閉形式の回折MTFと <b>最大誤差 0.0003</b> で一致（f/2.8・λ=0.55µm・遮断649 lp/mm）。規格 MTF≥0.35 @60 lp/mm に対し、公称 <b>0.88</b>／熱+20℃で <b>0.56</b>（デフォーカス0.25λ、150 lp/mm付近のコントラスト反転も再現）。モンテカルロ合格率 <b>97%</b>（P10=0.50）、規格から導く偏心公差 <b>4.3 µm</b>。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑬ 制御系設計 ― OISサーボの周波数整形・外乱抑圧・共振ノッチ補償</h2>
+    <p class="sub">アクチュエータを時間領域で回すC++ ois/cam に対し、<b>周波数領域で閉ループを設計・証明</b>する（メカトロ評価者の言語）。2次アクチュエータに<b>PI＋位相進み補償</b>を巻き、ループ整形でボード線図・<b>位相/ゲイン余裕</b>を確定。感度関数 S=1/(1+L) を手ブレPSDに適用して残留像振れ（stops）と外乱抑圧を評価し、閉ループ・ステップ応答で整定・オーバーシュートを提示。さらに<b>軽減衰の機構共振がゲイン余裕を食う→ノッチフィルタで回復</b>という定番の課題まで実装。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <div class="figure" style="background:#fff"><img src="assets/ois_bode.png" alt="OIS開ループ・ボード線図（位相/ゲイン余裕）"></div>
+        <div class="figure" style="background:#fff"><img src="assets/notch_bode.png" alt="アクチュエータ共振とノッチ補償"></div>
+      </div>
+      <div class="figure" style="background:#fff"><img src="assets/ois_rejection.png" alt="外乱抑圧（感度×手ブレPSD）と閉ループ・ステップ応答"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">設計結果：<b>位相余裕 53°・ゲイン余裕 13 dB・交差 99 Hz</b>、閉ループ整定 <b>20 ms</b>・オーバーシュート 11%。手ブレ抑圧 <b>3.4 stops</b>（RMS 3.8→0.36 µm）。共振補償：軽減衰260 Hz共振でゲイン余裕 <b>−4 dB（不安定）→ ノッチで +5 dB（安定）</b>にサンプル遅延（0.4 ms）込みで回復。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑭ CAD ― 寸法駆動の鏡筒3Dモデル ＆ GD&amp;T 図面</h2>
+    <p class="sub">解析だけでなく<b>設計成果物そのもの</b>——メカ設計者が引く2D/3D CAD。名前付き寸法（外径・壁厚・全長・フランジ・4つのレンズ座）から<b>断面をパラメトリックに定義→回転ソリッドを生成し STL 出力</b>（任意のCAD/CAMへ取り込み可）。さらに<b>GD&amp;T 断面図</b>（データムA/B・幾何公差・H7はめあい・表題欄）を PNG と実 <b>DXF</b> で作図。各幾何公差は「同軸度→偏心→ボアサイト」「座の振れ→傾き→コマ」のように<b>光学・熱の予算から逆算</b>して決めており、図面は"飾り"ではなく<b>導出</b>されている。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:0.85fr 1.15fr">
+      <div class="figure" style="background:#fff"><img src="assets/barrel_3d.png" alt="寸法駆動の鏡筒回転ソリッド（3D）"></div>
+      <div class="figure" style="background:#fff"><img src="assets/barrel_gdt.png" alt="GD&T 断面図（データム・幾何公差・はめあい・表題欄）"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">成果物：ウォータータイトな回転ソリッド（体積 <b>10.3 cm³</b>・Al6061で質量 <b>27.9 g</b>）→ <code class="inl">lens_barrel.stl</code>、GD&amp;T図面 → <code class="inl">lens_barrel_drawing.dxf</code>。幾何公差：マウント面 平面度 0.008（データムA）／外径 同軸度 ⌀0.02（B）／レンズ座 円周振れ 0.005（B）／座 ⌀ H7 すべりばめ——公差スタック④の像面予算から導出。</p>
+  </div>
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

@@ -64,6 +64,20 @@ jobs:
           cp vision/cpp/docs/assets/tol_hist.png        _site/assets/ || echo "missing tol_hist"
           cp vision/cpp/docs/assets/cam_step.png        _site/assets/ || echo "missing cam_step"
           cp vision/cpp/docs/assets/ois_trace.png       _site/assets/ || echo "missing ois_trace"
+          cp vision/cpp/docs/assets/barrel_modes.png    _site/assets/ || echo "missing barrel_modes"
+          cp vision/cpp/docs/assets/barrel_thermal.png  _site/assets/ || echo "missing barrel_thermal"
+          cp vision/cpp/docs/assets/barrel_shock.png    _site/assets/ || echo "missing barrel_shock"
+          cp vision/cpp/docs/assets/gnn_parity.png      _site/assets/ || echo "missing gnn_parity"
+          cp vision/cpp/docs/assets/generative_convergence.png _site/assets/ || echo "missing gen_conv"
+          cp vision/cpp/docs/assets/design_pareto.png   _site/assets/ || echo "missing design_pareto"
+          cp vision/cpp/docs/assets/axisym_mesh.png     _site/assets/ || echo "missing axisym_mesh"
+          cp vision/cpp/docs/assets/mtf_curves.png      _site/assets/ || echo "missing mtf_curves"
+          cp vision/cpp/docs/assets/mtf_tolerance.png   _site/assets/ || echo "missing mtf_tolerance"
+          cp vision/cpp/docs/assets/ois_bode.png        _site/assets/ || echo "missing ois_bode"
+          cp vision/cpp/docs/assets/ois_rejection.png   _site/assets/ || echo "missing ois_rejection"
+          cp vision/cpp/docs/assets/notch_bode.png      _site/assets/ || echo "missing notch_bode"
+          cp vision/cpp/docs/assets/barrel_3d.png       _site/assets/ || echo "missing barrel_3d"
+          cp vision/cpp/docs/assets/barrel_gdt.png      _site/assets/ || echo "missing barrel_gdt"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \
