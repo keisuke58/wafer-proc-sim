@@ -215,6 +215,16 @@
     </div>
     <p class="sub" style="margin-top:10px">検証：160要素・205節点のQ4メッシュ。ΔT=10℃で軸方向伸び <b>9.68 µm</b>（解析解 αLΔT=9.44µm と <b>2.5%</b> 一致、0.97µm/℃）／半径膨張 3.65µm。マウント面（z=0）の径方向拘束が最大 <b>21 MPa</b> の熱応力を生む様子をメッシュ変形＋von Mises等値図で可視化。</p>
   </div>
+
+  <div class="card">
+    <h2>⑫ 波動光学 MTF ― 機械誤差 → 波面 → 画質（メカと光学の接点）</h2>
+    <p class="sub">レンズの合否は幾何スポットではなく <b>MTF（コントラスト）</b>で決まる。メカ設計者が担う「<b>機械誤差 → 波面誤差 → MTF劣化</b>」の写像を波動光学で実装：瞳にゼルニケ波面を載せ、PSF=|FFT(瞳)|²・MTF=瞳の自己相関で計算。偏心/傾き→コマ・非点、熱ドリフト（鏡筒CTE＋dn/dT）→デフォーカスとして重畳し、モンテカルロで「MTF規格を確実に満たす公差」を逆算。公差モジュール④のKPIを"スポット"から"MTF"へ格上げ。</p>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr">
+      <div class="figure" style="background:#fff"><img src="assets/mtf_curves.png" alt="波動光学 MTF曲線（回折限界・熱デフォーカス・公差擾乱）"></div>
+      <div class="figure" style="background:#fff"><img src="assets/mtf_tolerance.png" alt="MTF規格からの公差逆算（モンテカルロ＋偏心スイープ）"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">検証：無収差FE-MTFが閉形式の回折MTFと <b>最大誤差 0.0003</b> で一致（f/2.8・λ=0.55µm・遮断649 lp/mm）。規格 MTF≥0.35 @60 lp/mm に対し、公称 <b>0.88</b>／熱+20℃で <b>0.56</b>（デフォーカス0.25λ、150 lp/mm付近のコントラスト反転も再現）。モンテカルロ合格率 <b>97%</b>（P10=0.50）、規格から導く偏心公差 <b>4.3 µm</b>。</p>
+  </div>
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

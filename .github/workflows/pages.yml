@@ -71,6 +71,8 @@ jobs:
           cp vision/cpp/docs/assets/generative_convergence.png _site/assets/ || echo "missing gen_conv"
           cp vision/cpp/docs/assets/design_pareto.png   _site/assets/ || echo "missing design_pareto"
           cp vision/cpp/docs/assets/axisym_mesh.png     _site/assets/ || echo "missing axisym_mesh"
+          cp vision/cpp/docs/assets/mtf_curves.png      _site/assets/ || echo "missing mtf_curves"
+          cp vision/cpp/docs/assets/mtf_tolerance.png   _site/assets/ || echo "missing mtf_tolerance"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

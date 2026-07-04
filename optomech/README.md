@@ -58,6 +58,7 @@ apps/optm_demo.cpp  runs all modules, writes JSON + figures
 tests/              one ctest per module
 docs/               self-contained GitHub Pages dashboard + assets
 fem/                Python FE — beam model + axisymmetric solid model
+optics/             Python wave-optics — MTF from mechanical error
 ai/                 PyTorch GNN surrogate + Bayesian generative design
 ```
 
@@ -119,6 +120,30 @@ with a real, visualizable mesh.
 
 ```bash
 python3 fem/barrel_axisym.py  # writes fem/figures/axisym_mesh.png + barrel_axisym_results.json
+```
+Pure `numpy` + `matplotlib`.
+
+## Wave-optics MTF from mechanical error (`optics/mtf_wavefront.py`, Python)
+
+The C++ `tolerance` module scores a barrel by geometric boresight spot [µm], but
+a camera lens is actually accepted on **MTF** (contrast at a spatial frequency),
+which is set by the *wavefront*. This module is the mechanical designer's real
+optical KPI — the **mechanics → wavefront → MTF** map that a barrel designer owns
+(not the optical prescription itself):
+
+- **Wave-optics core** — a Zernike wavefront is placed on the pupil, PSF = |FFT(P)|²,
+  MTF = |autocorr(P)|. The aberration-free MTF matches the closed-form circular-
+  aperture diffraction MTF to **< 0.0003** (validation).
+- **Mechanics → aberration** — element decenter/tilt → coma/astigmatism; thermal
+  focus drift (barrel CTE + lens `dn/dT`) → defocus. At +20 °C the MTF at 60 lp/mm
+  falls from **0.88 → 0.56** and the model reproduces the defocus contrast-reversal.
+- **MTF-based tolerancing** — Monte Carlo over decenter/tilt/temperature gives the
+  MTF@spec distribution (**97 %** pass, P10 = 0.50) and back-solves the decenter
+  tolerance that holds the spec (**4.3 µm**) — upgrading the tolerance KPI from spot
+  to MTF.
+
+```bash
+python3 optics/mtf_wavefront.py  # writes optics/figures/*.png + mtf_wavefront_results.json
 ```
 Pure `numpy` + `matplotlib`.
 
