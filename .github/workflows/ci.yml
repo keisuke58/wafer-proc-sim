@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pybind11 numpy scipy scikit-learn pytest
+          pip install pybind11 numpy scipy scikit-learn pytest matplotlib pandas
 
       - name: Static analysis — cppcheck
         run: |
