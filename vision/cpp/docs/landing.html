@@ -43,13 +43,13 @@
     <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
     <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
     <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
-      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>8社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>9社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
   </header>
 
   <div class="nav">
     <a class="navcard" href="companies.html" style="border-color:var(--disco);background:linear-gradient(135deg,var(--surface),var(--surface-2))">
       <div class="ic">🗺️</div><b>会社別サマリ（まずはここ）</b>
-      <span>8社×専用ダッシュボードの全体像：各社1行ストーリー＋看板数字＋リンクを1ページに集約</span></a>
+      <span>9社×専用ダッシュボードの全体像：各社1行ストーリー＋看板数字＋リンクを1ページに集約</span></a>
     <a class="navcard" href="dashboard.html">
       <div class="ic">📊</div><b>知能化検査ダッシュボード</b>
       <span>スループット・SPC摩耗予知・APC制御・ウェハ歩留りを実測値で可視化</span></a>
@@ -89,6 +89,9 @@
     <a class="navcard" href="tel.html">
       <div class="ic">🌀</div><b>装置プロセス物理（東京エレクトロン向け）</b>
       <span>エッチプロファイル進化（BOW/TAPER/ARDE）・ALD被覆前線とAR²則・FEOLベイズ最適化</span></a>
+    <a class="navcard" href="accretech.html">
+      <div class="ic">📐</div><b>精密計測工学（東京精密向け）</b>
+      <span>表面粗さ（ISO 16610/4287、Ra=2A/π検証）・真円度（LSC/MZC・調和診断）をISO定義から実装</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -127,7 +130,7 @@
   <h2 class="sec">半導体テスト工学 ― ate（Advantest向け）<a href="advantest.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-ate"></div>
 
-  <h2 class="sec">メモリデバイス／装置プロセス ― kioxia・tel<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a></h2>
+  <h2 class="sec">メモリ／装置プロセス／精密計測 ― kioxia・tel・accretech<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a><a href="accretech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 計測</a></h2>
   <div class="gal" id="g-memtel"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
@@ -211,6 +214,9 @@ const GAL = {
     ['ate_shmoo.png','シュムー＆Marchテスト','Vmin@1GHz=0.781V／naiveはCFid 0%・March C-は100%'],
   ],
   'g-memtel': [
+    ['acc_rough.png','表面粗さ（ISO 16610）','λc透過率50.0%検証・Ra/Rq/Rz、正弦波Ra=2A/π閉ループ'],
+    ['acc_round.png','真円度（LSC/MZC）','MZCが10.8%タイト・k=3調和＝チャック歪み診断'],
+
     ['nand_vth.png','TLC Vth窓の一生','ISPP直後 vs 3k P/E+1年：窓が両側から閉じる'],
     ['nand_life.png','耐久定格の出どころ','リテンション×LDPC限界の交点＝5322 P/E'],
     ['tel_etch.png','エッチプロファイル進化','パッシベーション1つでBOW→垂直→TAPER＋RIEラグ48%'],

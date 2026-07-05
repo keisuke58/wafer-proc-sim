@@ -1,0 +1,19 @@
+{
+  "roughness": {
+    "Ra_um": 0.3074,
+    "Rq_um": 0.3848,
+    "Rz_um": 2.235,
+    "transmission_at_lc": 0.5
+  },
+  "roundness": {
+    "LSC_um": 9.983,
+    "MZC_um": 8.91,
+    "mzc_gain_pct": 10.8,
+    "harmonic_peaks": {
+      "k1": 7.972,
+      "k2": 2.987,
+      "k3": 1.999,
+      "k4": 0.003
+    }
+  }
+}

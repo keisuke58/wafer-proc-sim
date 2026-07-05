@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 8社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 9社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,12 +52,12 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, eight companies</div>
+  <div class="eyebrow">Portfolio map · one repo, nine companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>8社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（650+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+  <p class="lead">1つのリポジトリで<strong>9社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（650+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">8<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">9<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
     <div class="stat"><div class="v">650+</div><div class="k">自動テスト（CI緑）</div></div>
     <div class="stat"><div class="v">33</div><div class="k">レビュー済みPR</div></div>
@@ -167,6 +167,19 @@
     </div>
     <div class="links"><a href="tel.html">telダッシュボード</a></div>
     <div class="src">telproc/etch_ald・optimization/{tel_feol_bo, tel_tmcmc_calibration}</div>
+  </div>
+
+  <div class="co" style="--co:#b03a2e">
+    <div class="role">Precision Metrology — 精密計測機器</div>
+    <h2>東京精密（Accretech）<span style="font-size:12px;color:var(--muted)">｜「測る」をISO定義から実装（2カード）</span></h2>
+    <p class="story">表面粗さ（ISO 16610ガウシアンフィルタ・Ra/Rq/Rz）と真円度（ISO 12181のLSC/MZC・調和分解診断）を規格の定義から実装し、解析解と閉ループ検証。既存のGage R&R・IM寸法測定・%GRRと合わせて計測スタック一式。</p>
+    <div class="kpis">
+      <div class="kpi"><b>50.0%</b><span>ガウシアンフィルタのλc透過率（ISO定義を数値検証）</span></div>
+      <div class="kpi"><b>Ra=2A/π</b><span>正弦波の解析解と実装の一致（誤差&lt;2%）</span></div>
+      <div class="kpi"><b>k=3</b><span>調和分解＝3つ爪チャック歪みの診断</span></div>
+    </div>
+    <div class="links"><a href="accretech.html">accretechダッシュボード</a></div>
+    <div class="src">accretech/surface_roundness</div>
   </div>
 
   <footer>

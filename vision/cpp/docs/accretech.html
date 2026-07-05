@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>精密計測工学 — 表面粗さと真円度をISO定義から実装</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#b03a2e; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#ff8a75; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#ff8a75; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#b03a2e; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Precision metrology · roughness and roundness from the ISO definitions up</div>
+  <h1>精密計測工学 — 「測る」をISO定義から実装する</h1>
+  <p class="lead">寸法計測メーカーの中核2計測——<strong>表面粗さ（ISO 16610/4287）と真円度（ISO 12181）</strong>——を定義から実装し、解析解との閉ループで検証。フィルタの透過率・基準円フィット・調和診断という「計測器の中身」を数字で示す。既存の計測・最適化ダッシュボード（カメラ校正Gage R&R・IM寸法測定・%GRR）と合わせてAccretech照準の計測スタックが揃う。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v g">50.0<small> %</small></div><div class="k">ガウシアンフィルタのλc透過率（ISO定義どおり）</div></div>
+    <div class="tile"><div class="v g">2A/π</div><div class="k">正弦波のRa解析解と実装の一致（誤差&lt;2%）</div></div>
+    <div class="tile"><div class="v accent">−10.8<small> %</small></div><div class="k">MZC（最小領域円）がLSCより締まる量</div></div>
+    <div class="tile"><div class="v b">k=3</div><div class="k">調和分解が示す「3つ爪チャック歪み」</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 表面粗さ — ISO 16610ガウシアンフィルタで「形状」と「肌」を分ける</h2>
+    <p class="sub">スタイラス軌跡は形状＋うねり＋粗さの重ね合わせ。ISO 16610-21のガウシアン輪郭フィルタ（λc=0.8mm）で平均線＝うねりを分離し、残差が粗さプロファイル。<strong>振幅透過率がλcでちょうど50%</strong>というISOの定義そのものを数値検証（実測50.0%）。パラメータはISO 4287：Ra・Rq・Rz（5基準長）。さらに<strong>純正弦波のRa=2A/πという解析解</strong>と実装を突き合わせる閉ループつき——「計測器を作る側」の検証作法。</p>
+    <div class="figure"><img src="assets/acc_rough.png" alt="生トレースとガウシアン平均線、分離された粗さプロファイルとRa/Rq/Rz"></div>
+  </div>
+
+  <div class="card">
+    <h2>② 真円度 — LSC vs MZC、そして調和分解という診断</h2>
+    <p class="sub">スピンドル軌跡 r(θ) には偏心（k=1：<strong>段取りであって形状ではない</strong>）・楕円（k=2）・ロービング（k=3以上）・ノイズが混在。ISO 12181の基準円：<strong>LSC（最小二乗円）</strong>は1次調和係数で中心が閉形式で出る実務の主力、<strong>MZC（最小領域円）</strong>はChebyshev基準で半径バンドを直接最小化（常にLSC以下——本実装で10.8%タイト）。右のFFT調和分解は注入した振幅（偏心8・楕円3・3山2µm）をそのまま回収し、<strong>k=3のピーク＝3つ爪チャックの締め歪み</strong>という故障診断まで一直線。</p>
+    <div class="figure"><img src="assets/acc_round.png" alt="極座標の真円度プロットとLSC/MZC、調和分解による診断"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="metro.html">計測・最適化ダッシュボード</a>（カメラ校正＋Gage R&R・ダイ間位置合わせ）・<a href="keyence.html">画像寸法測定（IM）</a>（置き方フリー σ0.42µm）・%GRR計測能力。出所：<code class="inl">accretech/surface_roundness.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">accretech/surface_roundness.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開規格（ISO 16610-21・ISO 4287・ISO 12181）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/accretech">keisuke58/wafer-proc-sim/accretech</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>
