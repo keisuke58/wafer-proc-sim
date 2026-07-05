@@ -1,0 +1,135 @@
+{
+  "pitch_nm": 32.0,
+  "na": 0.33,
+  "sigma": 0.8,
+  "defects": [
+    {
+      "kind": "particle",
+      "size_nm": 5.0,
+      "det_score_pct": 11.46,
+      "dcd_focus_pct": 6.45,
+      "dcd_defoc_pct": 7.08,
+      "dcd_worst_pct": 7.08,
+      "prints": false
+    },
+    {
+      "kind": "bump",
+      "size_nm": 5.0,
+      "det_score_pct": 8.15,
+      "dcd_focus_pct": 3.41,
+      "dcd_defoc_pct": 3.89,
+      "dcd_worst_pct": 3.89,
+      "prints": false
+    },
+    {
+      "kind": "particle",
+      "size_nm": 6.0,
+      "det_score_pct": 15.48,
+      "dcd_focus_pct": 8.36,
+      "dcd_defoc_pct": 9.19,
+      "dcd_worst_pct": 9.19,
+      "prints": false
+    },
+    {
+      "kind": "bump",
+      "size_nm": 6.0,
+      "det_score_pct": 10.89,
+      "dcd_focus_pct": 4.65,
+      "dcd_defoc_pct": 5.78,
+      "dcd_worst_pct": 5.78,
+      "prints": false
+    },
+    {
+      "kind": "particle",
+      "size_nm": 8.0,
+      "det_score_pct": 26.27,
+      "dcd_focus_pct": 18.24,
+      "dcd_defoc_pct": 20.0,
+      "dcd_worst_pct": 20.0,
+      "prints": true
+    },
+    {
+      "kind": "bump",
+      "size_nm": 8.0,
+      "det_score_pct": 15.72,
+      "dcd_focus_pct": 7.64,
+      "dcd_defoc_pct": 9.29,
+      "dcd_worst_pct": 9.29,
+      "prints": false
+    },
+    {
+      "kind": "particle",
+      "size_nm": 12.0,
+      "det_score_pct": 49.65,
+      "dcd_focus_pct": 100.0,
+      "dcd_defoc_pct": 100.0,
+      "dcd_worst_pct": 100.0,
+      "prints": true
+    },
+    {
+      "kind": "bump",
+      "size_nm": 12.0,
+      "det_score_pct": 21.84,
+      "dcd_focus_pct": 12.49,
+      "dcd_defoc_pct": 16.64,
+      "dcd_worst_pct": 16.64,
+      "prints": true
+    },
+    {
+      "kind": "particle",
+      "size_nm": 16.0,
+      "det_score_pct": 67.03,
+      "dcd_focus_pct": 100.0,
+      "dcd_defoc_pct": 100.0,
+      "dcd_worst_pct": 100.0,
+      "prints": true
+    },
+    {
+      "kind": "bump",
+      "size_nm": 16.0,
+      "det_score_pct": 23.71,
+      "dcd_focus_pct": 13.42,
+      "dcd_defoc_pct": 18.41,
+      "dcd_worst_pct": 18.41,
+      "prints": true
+    },
+    {
+      "kind": "particle",
+      "size_nm": 20.0,
+      "det_score_pct": 82.94,
+      "dcd_focus_pct": 100.0,
+      "dcd_defoc_pct": 100.0,
+      "dcd_worst_pct": 100.0,
+      "prints": true
+    },
+    {
+      "kind": "bump",
+      "size_nm": 20.0,
+      "det_score_pct": 23.89,
+      "dcd_focus_pct": 13.29,
+      "dcd_defoc_pct": 18.05,
+      "dcd_worst_pct": 18.05,
+      "prints": true
+    },
+    {
+      "kind": "particle",
+      "size_nm": 26.0,
+      "det_score_pct": 89.91,
+      "dcd_focus_pct": 100.0,
+      "dcd_defoc_pct": 100.0,
+      "dcd_worst_pct": 100.0,
+      "prints": true
+    },
+    {
+      "kind": "bump",
+      "size_nm": 26.0,
+      "det_score_pct": 23.41,
+      "dcd_focus_pct": 13.14,
+      "dcd_defoc_pct": 18.03,
+      "dcd_worst_pct": 18.03,
+      "prints": true
+    }
+  ],
+  "n_printing": 9,
+  "n_total": 14
+}

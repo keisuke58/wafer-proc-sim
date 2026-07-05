@@ -104,6 +104,8 @@ jobs:
           cp vision/cpp/docs/assets/im_repeat.png       _site/assets/ || echo "missing im_repeat"
           cp vision/cpp/docs/assets/ae_anomaly.png      _site/assets/ || echo "missing ae_anomaly"
           cp vision/cpp/docs/assets/adc_al.png          _site/assets/ || echo "missing adc_al"
+          cp vision/cpp/docs/assets/euv_print.png       _site/assets/ || echo "missing euv_print"
+          cp vision/cpp/docs/assets/photon_budget.png   _site/assets/ || echo "missing photon_budget"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \
