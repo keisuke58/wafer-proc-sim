@@ -1,0 +1,63 @@
+{
+  "spray": {
+    "hp64nm": {
+      "v_damage_mps": 205.3,
+      "windows": {
+        "100nm": {
+          "v_removal_mps": 6.4,
+          "open": true
+        },
+        "50nm": {
+          "v_removal_mps": 25.7,
+          "open": true
+        },
+        "30nm": {
+          "v_removal_mps": 71.4,
+          "open": true
+        }
+      }
+    },
+    "hp32nm": {
+      "v_damage_mps": 102.6,
+      "windows": {
+        "100nm": {
+          "v_removal_mps": 6.4,
+          "open": true
+        },
+        "50nm": {
+          "v_removal_mps": 25.7,
+          "open": true
+        },
+        "30nm": {
+          "v_removal_mps": 71.4,
+          "open": true
+        }
+      }
+    },
+    "hp16nm": {
+      "v_damage_mps": 51.3,
+      "windows": {
+        "100nm": {
+          "v_removal_mps": 6.4,
+          "open": true
+        },
+        "50nm": {
+          "v_removal_mps": 25.7,
+          "open": true
+        },
+        "30nm": {
+          "v_removal_mps": 71.4,
+          "open": false
+        }
+      }
+    }
+  },
+  "marangoni": {
+    "u_front_mm_s_at_full_ipa": 10.89,
+    "watermarks_per_wafer": {
+      "spin_only(ipa=0)": 10000.0,
+      "ipa_25pct": 2215.0,
+      "ipa_100pct": 9.0
+    }
+  }
+}

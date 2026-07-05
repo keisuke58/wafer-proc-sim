@@ -74,6 +74,9 @@
     <a class="navcard" href="keyence.html">
       <div class="ic">📏</div><b>センサ/計測器 信号処理（Keyence向け）</b>
       <span>三角測量サブピクセル抽出・画像寸法測定（IM）・ロックイン・ガルバノ・深度合成・ブラウザ実動デモ</span></a>
+    <a class="navcard" href="screen.html">
+      <div class="ic">🧼</div><b>半導体洗浄プロセス物理（SCREEN向け）</b>
+      <span>粒子付着/除去力学・メガソニック（キャビテーション）・SC-1アンダーカット・パターン倒壊・スピン薄膜EBP</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -105,6 +108,9 @@
 
   <h2 class="sec">マスク/ウェハ欠陥検査 ― inspection（Lasertec向け）<a href="inspection.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-inspection"></div>
+
+  <h2 class="sec">半導体洗浄プロセス ― cleaning（SCREEN向け）<a href="screen.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-screen"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -175,6 +181,12 @@ const GAL = {
     ['neu_real_classifier.png','実写真6クラス分類','NEU実写真1800枚のCNN分類（精度0.976）'],
     ['euv_print.png','EUV転写性判定（ΔCD）','「見える≠転写する」を空中像ΔCDで格付け（位相欠陥の焦点非対称）'],
     ['photon_budget.png','フォトンバジェット','7.2σしきい値・感度×スループットのフロンティア'],
+  ],
+  'g-screen': [
+    ['clean_pre.png','粒子除去の力学','付着∝d vs 抗力∝d²：メガソニックで30nm PRE 0→85%'],
+    ['clean_chem.png','薬液と倒壊の限界','アンダーカット vs 損失予算、倒壊AR 水8.2→scCO2 28'],
+    ['clean_spin.png','スピン薄膜動力学','EBP方程式（解析=数値）と394枚/時'],
+    ['spray_dry.png','スプレー窓とMarangoni乾燥','hp16で30nm粒子の窓が閉じる／WM 10⁴→9個/枚'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],
