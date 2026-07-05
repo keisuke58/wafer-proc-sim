@@ -119,6 +119,21 @@
   </div>
 
   <div class="card">
+    <h2>ブレード・ドレッシング方策の最適化（目立て周期 vs 状態基準保全）</h2>
+    <p class="sub">目つぶれ（砥粒摩滅）＋目詰まり（ローディング）で切削力が上昇し、臨界力で自生発刃（セルフドレッシング）が起きてチッピングが跳ねる——この物理をモデル化し、「ドレスしない／固定周期N／状態基準CBM（レシピ正規化したスピンドル電流EWMAがθ超えでドレス）」の3方策を同一の混流生産（軟材⇔硬材セグメント）で比較。CBMは材種基準力で正規化するため、混流でも1つのしきい値で刃の鈍化だけに反応する。</p>
+    <div style="display:grid; gap:14px">
+      <div class="figure"><img src="assets/dress_state.png" alt="Blade sharpness, cutting force and chipping under no-dressing vs condition-based dressing"></div>
+      <div class="figure"><img src="assets/dress_policy.png" alt="Cost vs dressing interval, and robustness of frozen policies to a product-mix shift"></div>
+    </div>
+    <div class="legend">
+      <span class="it">ドレスなし比 <b>−55%</b>（総コスト/1000街路）</span>
+      <span class="it">最良固定周期(N=150)比 <b>−5.4%</b>・スペック違反 <b>1/4</b>（0.5→0.125件/1000）</span>
+      <span class="it">ミックスシフト後も凍結方策のまま <b>−3.8%</b> 優位</span>
+      <span class="it">1台あたり年間換算 <b>約273万円</b> の削減（350万街路/年）</span>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>フルウェハ欠陥マップ・歩留り</h2>
     <p class="sub">ダイ毎の検査結果を集約。緑＝良品、赤＝不良、灰＝ウェハ外。エッジリング欠陥を可視化。</p>
     <div style="display:grid; gap:18px; grid-template-columns:1fr; align-items:center">
@@ -160,6 +175,7 @@
     数値の出所：<code class="inl">vision/cpp</code> のツール群をこのホスト（4コア x86）で実行した実測値。
     計測再現性はノイズ40試行、ベンチは2048×2048中央値、SPC/APCは合成劣化シナリオ。
     ビルドは <code class="inl">-Wall -Wextra -Wpedantic</code> 警告ゼロ、ctest 9/9 通過。
+    ドレッシング方策比較は <code class="inl">optimization/blade_dressing.py</code>（決定論シード、結果JSONを同梱）。
     <a href="./">← ダッシュボード一覧</a>
   </footer>
 </div>
