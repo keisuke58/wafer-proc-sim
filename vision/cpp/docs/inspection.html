@@ -102,8 +102,22 @@
     <p class="sub" style="margin-top:10px">出所：<code class="inl">vision/neu_real_classifier.py</code>（データは公開NEU-CLS、リポジトリ外・gitignore）。欠陥"分類"（ADC）も実写真で定量実証。</p>
   </div>
 
+  <div class="card">
+    <h2>⑦ EUVアクティニック結像 — 「見える」と「転写する」は別物（ΔCD判定）</h2>
+    <p class="sub">検査機の存在意義は「欠陥が<strong>ウェハに転写するか</strong>」の判定（リペア/無視/廃棄の処置判断）。λ=13.5nm・NA0.33・部分コヒーレント（Abbe光源和・σ0.8）のEUV結像を自作し、16nmハーフピッチL/Sに<strong>振幅欠陥（吸収体パーティクル）と位相欠陥（多層膜バンプ, φ=4πh/λ）</strong>を置いて空中像を計算。レジストしきい値は基準CD=16nmに較正し、隣接ラインの<strong>ΔCD%</strong>で転写性を判定（スペック10%）。位相欠陥は<strong>through-focus非対称</strong>（−25nmデフォーカスで最悪化：ΔCD 13.6→19.4%）——ベストフォーカスだけ見ると見逃す、という物理まで再現。</p>
+    <div class="figure"><img src="assets/euv_print.png" alt="EUV空中像・転写性 vs 欠陥サイズ・検出強度 vs 転写影響の散布図"></div>
+    <p class="sub" style="margin-top:10px">核心の散布図（右下）：検出強度が同等でも<strong>6nmパーティクルは転写せず、16nm位相バンプは転写する</strong>（位相欠陥は可視度が20%台で頭打ちのまま転写影響だけ悪化）。処置判断はピクセル数でなく<strong>転写性（空中像ΔCD）で格付けすべき</strong>という、アクチニック検査の価値そのもの。出所：<code class="inl">inspection/euv_printability.py</code>。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑧ フォトンバジェット — 検査機は光子カウンタである（感度×スループット）</h2>
+    <p class="sub">画素SNR = c·√(Φ·t) の一本の式からスペックシートの全てが出る。~10¹³画素/マスクに対し偽カウント10個/枚の予算 → 判定しきい値は<strong>7.2σ</strong>（MLの常識からは異様に高い理由）。捕捉率 vs 欠陥サイズを1/2/4枚・日の運転点で、また<strong>90%捕捉の最小サイズ vs スループット</strong>のフロンティアを光源パワー×1/×2で計算。</p>
+    <div class="figure" style="max-width:760px"><img src="assets/photon_budget.png" alt="捕捉率 vs サイズ、および感度-スループットのフロンティア"></div>
+    <p class="sub" style="margin-top:10px">1→4枚/日で90%捕捉の最小サイズは <strong>13.0 → 18.7nm</strong> に劣化、16nm欠陥の捕捉率は 100% → 16%。光源2倍は<strong>同感度でスループット約2倍</strong>（サイズ比2^(-1/4)を解析どおり検証）——アクチニック検査の律速がEUV光源パワーである理由を定量で語れる。出所：<code class="inl">inspection/photon_budget.py</code>。</p>
+  </div>
+
   <footer>
-    数値の出所：<code class="inl">inspection/defect_inspect.py</code> の実測出力（合成データ・全手法を自作実装）。
+    数値の出所：<code class="inl">inspection/defect_inspect.py</code>・<code class="inl">euv_printability.py</code>・<code class="inl">photon_budget.py</code> の実測出力（合成データ・全手法を自作実装）。
     手法は公開情報（アクチニック検査・Die-to-Die/Database・適応しきい値・位相欠陥・DL異常検出）に基づく再実装であり、特定製品のアルゴリズムではありません。
     ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/inspection">keisuke58/wafer-proc-sim/inspection</a> ／ <a href="./">← ダッシュボード一覧</a>
   </footer>

@@ -1,0 +1,28 @@
+{
+  "threshold_sigma": 7.17,
+  "n_pixels": "2.70e+13",
+  "false_per_mask": 10.0,
+  "operating_points": {
+    "1_masks_per_day": {
+      "dwell_us": 12.815,
+      "photons_per_pixel": 6407.6,
+      "capture_16nm": 1.0,
+      "capture_20nm": 1.0,
+      "min_size_90pct_nm": 13.0
+    },
+    "2_masks_per_day": {
+      "dwell_us": 6.271,
+      "photons_per_pixel": 3135.6,
+      "capture_16nm": 0.9631,
+      "capture_20nm": 1.0,
+      "min_size_90pct_nm": 15.54
+    },
+    "4_masks_per_day": {
+      "dwell_us": 2.999,
+      "photons_per_pixel": 1499.6,
+      "capture_16nm": 0.1646,
+      "capture_20nm": 0.994,
+      "min_size_90pct_nm": 18.69
+    }
+  }
+}
