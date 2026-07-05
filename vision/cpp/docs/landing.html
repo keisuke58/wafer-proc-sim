@@ -67,7 +67,7 @@
       <span>カメラ校正+Gage R&amp;R・ダイ間位置合わせ/差分検査・ベイズ最適化レシピ・搬送経路最適化</span></a>
     <a class="navcard" href="optomech.html">
       <div class="ic">📷</div><b>レンズ鏡筒メカ設計（Sony向け）</b>
-      <span>公差スタックアップ+光学感度・AF機構+VCM制御・鏡筒FEA(熱/落下/モード)・手ブレ補正(OIS)</span></a>
+      <span>公差スタック・VCM/OIS制御・鏡筒FEA・波動光学MTF・STOP解析・CMOSセンサ信号鎖・ハイブリッドAF</span></a>
     <a class="navcard" href="inspection.html">
       <div class="ic">🛰️</div><b>マスク/ウェハ欠陥検査（Lasertec向け）</b>
       <span>サブピクセルDie-to-Die・適応統計検出（nuisance抑制）・位相欠陥チャネル・DL異常検出</span></a>
@@ -151,6 +151,9 @@ const GAL = {
     ['tol_hist.png','鏡筒公差スタックアップ','偏心/傾き/間隔公差→像面ボアサイト誤差（モンテカルロ）'],
     ['cam_step.png','AF機構＋VCM制御','ボイスコイルのPID+FFステップ応答（整定3.9ms）'],
     ['ois_trace.png','手ブレ補正（OIS）','ジャイロ検出→アクチュエータで像を安定化（3.2 stops）'],
+    ['stop_chain.png','STOP解析','熱FEM→Zernike→MTF一気通貫（温度窓 Al55°C→Invar119°C）'],
+    ['sensor_ptc.png','CMOSセンサPTC','フォトントランスファーで変換ゲイン逆推定（誤差0.77%）'],
+    ['af_hybrid.png','ハイブリッドAF','PDAF+コントラスト：合焦1345→201ms（6.7倍）'],
   ],
   'g-keyence': [
     ['ps_lockin.png','同期検波（ロックイン）','外乱光100倍下の検出余裕 0.09→1.1・チャタ261→3回'],
