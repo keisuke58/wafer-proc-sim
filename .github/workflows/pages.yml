@@ -100,6 +100,8 @@ jobs:
           cp vision/cpp/docs/assets/sensor_ptc.png      _site/assets/ || echo "missing sensor_ptc"
           cp vision/cpp/docs/assets/sensor_hdr.png      _site/assets/ || echo "missing sensor_hdr"
           cp vision/cpp/docs/assets/af_hybrid.png       _site/assets/ || echo "missing af_hybrid"
+          cp vision/cpp/docs/assets/im_scene.png        _site/assets/ || echo "missing im_scene"
+          cp vision/cpp/docs/assets/im_repeat.png       _site/assets/ || echo "missing im_repeat"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \
