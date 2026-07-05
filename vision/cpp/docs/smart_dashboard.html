@@ -121,6 +121,20 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>切削音の自己教師ありAI異常検知（AE/振動 生波形）</h2>
+    <p class="sub">正常カットの音（砥粒帯18–38kHz＋スピンドル高調波＋ピンクノイズ、センサゲインドリフト±1.5dB込み）<b>だけ</b>でスペクトルオートエンコーダを学習——実ラインでは故障ラベルは集まらないが正常データはタダ、という運用制約に合わせた設計。チッピング（微小インパルス）・グレージング（<b>レベルでなくスペクトル形状の変化</b>＝RMSには不可視）・ワーククラック（共振リンギング）を再構成誤差で検知する。</p>
+    <div class="figure" style="background:#fff"><img src="assets/ae_anomaly.png" alt="自己教師あり異常検知：スペクトル・スコア分布・AUROC比較・進行性グレージングの警報遅れ"></div>
+    <p class="sub" style="margin-top:10px">初期段階の故障（進行度15–70%）でAUROC：チッピング <b>1.00</b>／グレージング <b>1.00</b>／クラック <b>0.98</b>——古典のRMS＋シューハート管理図は <b>0.43／0.22／0.62</b>（グレージングは方向すら逆でほぼ検知不能）。進行性グレージングのストリームでは<b>発症から4カットで警報</b>（RMSは300カット無警報）。誤報率は正常99.5%分位のしきい値で0.5%に固定。出所：<code class="inl">ml/cutting_ae_anomaly.py</code>。</p>
+  </div>
+
+  <div class="card">
+    <h2>少ラベルAI ― どの画像にラベルを付けるべきか（深層能動学習ADC）</h2>
+    <p class="sub">ファブのAI導入のボトルネックはモデルでなく<b>ラベル付け工数</b>。カーフ品位3クラスのCNNをラベル予算つきで学習し、ランダム／エントロピー（不確実性）／エントロピー＋多様性（埋め込みk-center）の3戦略を同一シードで比較。</p>
+    <div class="figure" style="background:#fff;max-width:760px"><img src="assets/adc_al.png" alt="精度 vs ラベル数：ランダム/エントロピー/多様性の比較"></div>
+    <p class="sub" style="margin-top:10px">結果：精度90%到達に必要なラベルは ランダム<b>96枚</b> → エントロピー<b>48枚</b>（<b>半減</b>）。多様性追加は72枚で、この規模の単純なプールでは純粋な不確実性が最良——「凝った手法が常に勝つわけではない」ことまで含めて実験で示した。出所：<code class="inl">vision/adc_active_learning.py</code>（3シード平均、結果JSONコミット済み）。</p>
+  </div>
+
   <footer>
     数値の出所：<code class="inl">vision/cpp/apps/smart_demo</code>（振動/CMP/整列）と <code class="inl">test_cnn</code>（CNN推論精度）をこのホスト（x86）で実行した実測値。
     CNNは合成欠陥パッチ480枚のテスト、振動は4096点@20kHz、CMP/整列は合成シナリオ。
