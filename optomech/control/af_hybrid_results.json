@@ -1,0 +1,28 @@
+{
+  "dof_um": 8.6,
+  "1000lux": {
+    "contrast": {
+      "mean_ms": 1345.3,
+      "p95_ms": 1349.2,
+      "in_dof_rate": 1.0
+    },
+    "hybrid": {
+      "mean_ms": 201.2,
+      "p95_ms": 204.6,
+      "in_dof_rate": 1.0
+    }
+  },
+  "10lux": {
+    "contrast": {
+      "mean_ms": 1345.6,
+      "p95_ms": 1357.0,
+      "in_dof_rate": 0.033
+    },
+    "hybrid": {
+      "mean_ms": 313.1,
+      "p95_ms": 431.9,
+      "in_dof_rate": 0.783
+    }
+  },
+  "speedup_1000lux": 6.69
+}

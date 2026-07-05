@@ -96,6 +96,10 @@ jobs:
           cp vision/cpp/docs/assets/vhx_stack.png       _site/assets/ || echo "missing vhx_stack"
           cp vision/cpp/docs/assets/dress_state.png     _site/assets/ || echo "missing dress_state"
           cp vision/cpp/docs/assets/dress_policy.png    _site/assets/ || echo "missing dress_policy"
+          cp vision/cpp/docs/assets/stop_chain.png      _site/assets/ || echo "missing stop_chain"
+          cp vision/cpp/docs/assets/sensor_ptc.png      _site/assets/ || echo "missing sensor_ptc"
+          cp vision/cpp/docs/assets/sensor_hdr.png      _site/assets/ || echo "missing sensor_hdr"
+          cp vision/cpp/docs/assets/af_hybrid.png       _site/assets/ || echo "missing af_hybrid"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

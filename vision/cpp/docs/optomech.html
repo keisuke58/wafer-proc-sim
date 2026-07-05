@@ -248,6 +248,30 @@
     </div>
     <p class="sub" style="margin-top:10px">成果物：ウォータータイトな回転ソリッド（体積 <b>10.3 cm³</b>・Al6061で質量 <b>27.9 g</b>）→ <code class="inl">lens_barrel.stl</code>、GD&amp;T図面 → <code class="inl">lens_barrel_drawing.dxf</code>。幾何公差：マウント面 平面度 0.008（データムA）／外径 同軸度 ⌀0.02（B）／レンズ座 円周振れ 0.005（B）／座 ⌀ H7 すべりばめ——公差スタック④の像面予算から導出。</p>
   </div>
+  <div class="card">
+    <h2>⑮ STOP解析 ― 熱FEM → Zernike波面 → MTF（構造・熱・光学の一気通貫）</h2>
+    <p class="sub">⑪の軸対称FEMと⑫の波動光学MTFを<b>1本のチェーン</b>に接続した Structural-Thermal-Optical Performance 解析。鏡筒材料（Al 6061 / Ti-6Al-4V / Invar 36）ごとに<b>FEを実際に回して</b>軸伸び感度を取り（Al: 0.968 µm/°C、線形性 R²=1.000）、レンズ dn/dT・径方向温度勾配による座の傾き（非点）・たわみ偏心（コマ）を Zernike 係数に変換、瞳FFTで 60 lp/mm の MTF に落とす。出てくるのは設計者がサインする数字——<b>MTF≥0.35 を守れる動作温度窓</b>。</p>
+    <div class="figure" style="background:#fff"><img src="assets/stop_chain.png" alt="STOP chain: FE growth, wavefront build-up, MTF vs temperature, MTF curves"></div>
+    <p class="sub" style="margin-top:10px">結果：温度窓 <b>Al 55°C</b> [−8, +47] → <b>Ti 94°C</b> [−29, +65] → <b>Invar 119°C</b>。Invarでも窓が無限にならないのは<b>レンズ dn/dT（0.55 µm/°C）と勾配収差が残るから</b>——鏡筒だけ奢っても athermal にはならない、という設計判断まで数値で示せる。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑯ CMOSイメージセンサ信号鎖 ― フォトンからDNまで（PTC・SNR10・HDR）</h2>
+    <p class="sub">レンズ側だけでなく<b>センサ側のデバイス物理</b>。1.0µm級モバイルBSI画素（満井6000e⁻・読出し1.6e⁻・QE0.75・PRNU0.8%・12bit ADC）をフォトンから合成し、標準評価の<b>フォトントランスファーカーブ（PTC）</b>を実施：2フレーム差分で固定パターンを消し、読出しフロア→ショット（傾き½）→PRNU→満井崩壊の各領域を分離。ショット領域の傾きから<b>変換ゲインを逆推定して真値と照合（誤差0.77%）</b>——手法自体を閉ループで検証している。Poisson thinning（QEを乗算でなく間引きとして扱う）を誤ると25%ズレる、という落とし穴込み。</p>
+    <div class="grid2">
+      <div class="figure" style="background:#fff"><img src="assets/sensor_ptc.png" alt="Photon transfer curve and SNR vs signal"></div>
+      <div class="figure" style="background:#fff"><img src="assets/sensor_hdr.png" alt="Split-exposure HDR SNR vs illuminance"></div>
+    </div>
+    <p class="sub" style="margin-top:10px">データシート値：DR <b>71.5 dB</b>・SNR10 <b>18.2 lux</b>（f/2.0・1/30s）。分割露光HDR（1/16）でDR <b>96 dB</b> へ拡張——ただし継ぎ目でSNRが落ちる<b>stitch dip</b>まで含めて描く（単露光のグラフには出てこないHDRのコスト）。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑰ ハイブリッドAF ― PDAF一発ジャンプ ＋ コントラスト微調整</h2>
+    <p class="sub">②⑬のVCMサーボの上に載る<b>合焦戦略</b>そのものをシミュレーション。像面位相差（PDAF）は左右半瞳像の視差∝デフォーカスを<b>実際に画像形成して</b>（1/fシーン・半瞳ぼけ・フォトンノイズ・窓NCC＋サブピクセル）1フレームで符号つき推定。コントラストAFは製品ファームと同じ<b>全域スイープ→微調整</b>（大デフォーカスでは勾配計量が平坦でヒルクライムが成立しない——本シミュレーションでそれ自体を実証）。計量はPoissonノイズ床を差し引いた不偏推定、AF窓は2次元（32行平均）。</p>
+    <div class="figure" style="background:#fff"><img src="assets/af_hybrid.png" alt="Hybrid AF: focus traces, PDAF calibration, time-to-focus benchmark"></div>
+    <p class="sub" style="margin-top:10px">結果：明所（1000 lux）で合焦時間 <b>1345 ms → 201 ms（6.7倍）</b>、成功率とも100%。暗所（10 lux）ではコントラストのみが破綻（成功3%＝実機の「暗所ハント」）する一方、ハイブリッドは<b>信頼度つきPDAF反復＋低信頼時スイープfallback</b>で 313 ms・成功78%。速さの理由と限界を同じモデルで説明できる。</p>
+  </div>
+
   <footer>
     数値の出所：<code class="inl">apps/optm_demo</code> の実測出力。全モジュールをC++17でゼロから実装し、
     単体テスト（ctest）全通過・コンパイラ警告ゼロを維持。ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/optomech">keisuke58/optomech-lens-sim</a>。

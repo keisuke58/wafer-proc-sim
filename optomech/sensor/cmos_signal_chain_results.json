@@ -1,0 +1,21 @@
+{
+  "pixel": {
+    "full_well_e": 6000.0,
+    "read_noise_e": 1.6,
+    "qe": 0.75,
+    "prnu_pct": 0.8,
+    "adc_bits": 12
+  },
+  "conversion_gain_true_dn_per_e": 0.65,
+  "conversion_gain_ptc_estimate": 0.655,
+  "conversion_gain_error_pct": 0.77,
+  "dynamic_range_db": 71.5,
+  "snr10_signal_e": 102.5,
+  "snr10_lux": 18.2,
+  "saturation_lux": 1067.0,
+  "hdr": {
+    "exposure_ratio": 16,
+    "dr_single_db": 71.5,
+    "dr_hdr_db": 95.6
+  }
+}
