@@ -45,3 +45,11 @@ def test_film_thinning_matches_analytic():
     t, ha, hn = sc.film_thinning()
     m = ha > 1e-3
     assert np.max(np.abs(hn[m] - ha[m]) / ha[m]) < 0.02
+
+
+def test_kerf_debris_removed_by_spin_alone():
+    """The DISCO cross-over claim: micron-scale kerf debris needs no
+    megasonic — spin shear alone removes it completely."""
+    tau = sc.wall_shear_spin()
+    assert sc.removal_efficiency([500.0], tau)[0] > 0.99
+    assert sc.removal_efficiency([1000.0], tau)[0] > 0.99

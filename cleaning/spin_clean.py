@@ -172,6 +172,12 @@ def run():
                    "ipa": round(max_aspect_ratio(SIGMA_IPA), 2),
                    "scco2": round(max_aspect_ratio(SIGMA_SCCO2), 2)},
         "throughput_wph": round(throughput_wph(), 1),
+        # dicing cross-over: kerf debris is micron-scale, spin suffices
+        "pre_spin_kerf_debris": {
+            "500nm": round(float(removal_efficiency([500.0], tau_s)[0]), 3),
+            "1000nm": round(float(
+                removal_efficiency([1000.0], tau_s)[0]), 3),
+        },
     }
     return res
 
@@ -262,6 +268,39 @@ def _plot_chem_collapse(path):
     plt.close(fig)
 
 
+def _plot_dicing(path):
+    """DISCO cross-over figure: kerf-debris sizes (0.2-5 um) vs front-end
+    particle sizes — why a dicer's spinner needs no megasonic while a
+    front-end cleaner cannot live without it. Same physics, one curve."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    tau = wall_shear_spin()
+    d = np.logspace(np.log10(20), np.log10(5000), 60)
+    pre_s = removal_efficiency(d, tau) * 100
+    pre_m = removal_efficiency(d, tau, megasonic=True) * 100
+
+    fig, ax = plt.subplots(figsize=(8.6, 4.2))
+    ax.semilogx(d, pre_s, color="#26a", lw=2, label="spin only (1500 rpm)")
+    ax.semilogx(d, pre_m, color="#2a7", lw=1.6, ls="--",
+                label="+ megasonic")
+    ax.axvspan(200, 5000, color="#26a", alpha=0.08)
+    ax.axvspan(20, 100, color="#c44", alpha=0.08)
+    ax.text(950, 30, "kerf debris after dicing\n(0.2-5 um):\nspin alone"
+            " suffices", fontsize=9, ha="center", color="#26a")
+    ax.text(45, 30, "front-end\nparticles\n(<100 nm):\nneeds assist",
+            fontsize=9, ha="center", color="#c44")
+    ax.axhline(95, color="k", ls=":", lw=1)
+    ax.set_xlabel("particle diameter [nm]")
+    ax.set_ylabel("removal efficiency PRE [%]")
+    ax.set_title("One scaling law, two machines: adhesion ~ d vs drag ~ d^2")
+    ax.legend(fontsize=9, loc="center right")
+    fig.tight_layout()
+    fig.savefig(path, dpi=110)
+    plt.close(fig)
+
+
 def _plot_spin(path):
     import matplotlib
     matplotlib.use("Agg")
@@ -290,6 +329,7 @@ def main():
     _plot_pre(os.path.join(ASSETS, "clean_pre.png"))
     _plot_chem_collapse(os.path.join(ASSETS, "clean_chem.png"))
     _plot_spin(os.path.join(ASSETS, "clean_spin.png"))
+    _plot_dicing(os.path.join(ASSETS, "clean_dicing.png"))
     print("figures ->", ASSETS)
 
 

@@ -110,6 +110,7 @@ jobs:
           cp vision/cpp/docs/assets/clean_pre.png       _site/assets/ || echo "missing clean_pre"
           cp vision/cpp/docs/assets/clean_chem.png      _site/assets/ || echo "missing clean_chem"
           cp vision/cpp/docs/assets/clean_spin.png      _site/assets/ || echo "missing clean_spin"
+          cp vision/cpp/docs/assets/clean_dicing.png    _site/assets/ || echo "missing clean_dicing"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

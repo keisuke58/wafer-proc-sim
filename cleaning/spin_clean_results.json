@@ -24,5 +24,9 @@
     "ipa": 11.06,
     "scco2": 28.39
   },
-  "throughput_wph": 394.5
+  "throughput_wph": 394.5,
+  "pre_spin_kerf_debris": {
+    "500nm": 1.0,
+    "1000nm": 1.0
+  }
 }
