@@ -94,6 +94,8 @@ jobs:
           cp vision/cpp/docs/assets/ps_lockin.png       _site/assets/ || echo "missing ps_lockin"
           cp vision/cpp/docs/assets/md_galvo.png        _site/assets/ || echo "missing md_galvo"
           cp vision/cpp/docs/assets/vhx_stack.png       _site/assets/ || echo "missing vhx_stack"
+          cp vision/cpp/docs/assets/dress_state.png     _site/assets/ || echo "missing dress_state"
+          cp vision/cpp/docs/assets/dress_policy.png    _site/assets/ || echo "missing dress_policy"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

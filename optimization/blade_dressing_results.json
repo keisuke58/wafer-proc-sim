@@ -1,0 +1,60 @@
+{
+  "n_streets": 8000,
+  "usl_chip_um": 25.0,
+  "none": {
+    "blade": 2622.2663942758245,
+    "machine": 10000.0,
+    "yield": 17812.5,
+    "total": 30434.766394275823,
+    "violations_per_1000": 11.875,
+    "dresses_per_1000": 0.0
+  },
+  "best_fixed": {
+    "N": 150,
+    "blade": 3142.436102782835,
+    "machine": 10441.666666666666,
+    "yield": 750.0,
+    "total": 14334.1027694495,
+    "violations_per_1000": 0.5,
+    "dresses_per_1000": 6.625
+  },
+  "best_cbm": {
+    "theta": 1.4,
+    "blade": 2966.658214446965,
+    "machine": 10400.0,
+    "yield": 187.5,
+    "total": 13554.158214446965,
+    "violations_per_1000": 0.125,
+    "dresses_per_1000": 6.0
+  },
+  "cbm_saving_vs_best_fixed_pct": 5.4,
+  "cbm_saving_vs_none_pct": 55.5,
+  "cbm_saving_yen_per_year_per_machine": 2729806,
+  "shifted_mix": {
+    "none": {
+      "blade": 2680.182129268117,
+      "machine": 10000.0,
+      "yield": 18187.5,
+      "total": 30867.682129268116,
+      "violations_per_1000": 12.125,
+      "dresses_per_1000": 0.0
+    },
+    "fixed_frozen": {
+      "blade": 3172.234605850366,
+      "machine": 10441.666666666666,
+      "yield": 937.5,
+      "total": 14551.401272517032,
+      "violations_per_1000": 0.625,
+      "dresses_per_1000": 6.625
+    },
+    "cbm_frozen": {
+      "blade": 3028.512392972934,
+      "machine": 10408.333333333334,
+      "yield": 562.5,
+      "total": 13999.345726306268,
+      "violations_per_1000": 0.375,
+      "dresses_per_1000": 6.125
+    },
+    "cbm_saving_vs_fixed_pct": 3.8
+  }
+}
