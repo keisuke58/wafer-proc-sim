@@ -4,7 +4,7 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-673%20passing-brightgreen)](#quick-start)
+[![Tests](https://img.shields.io/badge/tests-682%20passing-brightgreen)](#quick-start)
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20C%2B%2B%20%7C%20CUDA%20%7C%20Rust%20%7C%20Go%20%7C%20IEC%2061131--3-blue)](#language-coverage)
 
 Physics-accurate simulation of a DISCO DFL7160-class dicing saw.
@@ -19,9 +19,9 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 **▶ Live dashboards:** **https://keisuke58.github.io/wafer-proc-sim/** ・ **▶ 会社別サマリ:** **[companies.html](https://keisuke58.github.io/wafer-proc-sim/companies.html)**
 
-### 🗺 10社×専用ダッシュボード
+### 🗺 11社×専用ダッシュボード
 
-同一リポジトリで10社それぞれのド真ん中の技術を「物理モデル→実装→定量評価→テスト→公開ページ」まで一気通貫で実装（自作モジュールのみ・結果JSONコミット済み・CI 673テスト緑）:
+同一リポジトリで11社それぞれのド真ん中の技術を「物理モデル→実装→定量評価→テスト→公開ページ」まで一気通貫で実装（自作モジュールのみ・結果JSONコミット済み・CI 682テスト緑）:
 
 | 会社 | 領域 | 看板の数字 | ページ |
 |------|------|-----------|--------|
@@ -35,6 +35,7 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 | **東京エレクトロン** | エッチ/ALD | 1ノブでBOW→垂直→TAPER、ドーズ∝AR^1.93 | [tel](https://keisuke58.github.io/wafer-proc-sim/tel.html) |
 | **東京精密** | ISO粗さ・真円度 | λc透過率50.0%、Ra=2A/π閉ループ | [accretech](https://keisuke58.github.io/wafer-proc-sim/accretech.html) |
 | **荏原製作所** | 真空ポンプ・CMP | N2ベントで1Pa到達8.6×短縮、密度CMP 373nm | [ebara](https://keisuke58.github.io/wafer-proc-sim/ebara.html) |
+| **キヤノン** | 露光装置・NIL | 整合ダイポールでDOF 5.4×、NIL 9.7→25.5wph | [canon](https://keisuke58.github.io/wafer-proc-sim/canon.html) |
 
 Two project families live in this repo:
 
@@ -156,7 +157,7 @@ The optics ⇄ mechanics boundary: tolerance stack-up, mechanism/control, struct
 | `plc/` | IEC 61131-3 | `SpindleFB`, `InterlockFB`, `RecipeSeqFB`, `DicingController` |
 | `rust/` | Rust / PyO3 | `SpindleKernel`, `nondominated_sort`, `rbf_kernel_matrix` — memory-safe, IEC 61508 compatible |
 | `telemetry/` | Go | HTTP + WebSocket server streaming `DiscoMachine` state in real time |
-| `tests/` | Python | **673 tests** — physics invariants + C++/Python parity + integration |
+| `tests/` | Python | **682 tests** — physics invariants + C++/Python parity + integration |
 
 ---
 
@@ -243,7 +244,7 @@ bash build_all_kernels.sh        # builds all 15 C++ kernels
 ### Run tests
 
 ```bash
-python -m pytest tests/ -q       # 673 tests, ~90 s
+python -m pytest tests/ -q       # 682 tests, ~90 s
 ```
 
 ### Run digital twin
@@ -376,7 +377,7 @@ wafer-proc-sim/
 ├── telemetry/          Go — HTTP/WebSocket server
 │   ├── main.go
 │   └── go.mod
-├── tests/              673 pytest tests
+├── tests/              682 pytest tests
 ├── benchmark_all_kernels.py
 └── build_all_kernels.sh
 ```
