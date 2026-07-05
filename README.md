@@ -4,7 +4,7 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-602%20passing-brightgreen)](#quick-start)
+[![Tests](https://img.shields.io/badge/tests-673%20passing-brightgreen)](#quick-start)
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20C%2B%2B%20%7C%20CUDA%20%7C%20Rust%20%7C%20Go%20%7C%20IEC%2061131--3-blue)](#language-coverage)
 
 Physics-accurate simulation of a DISCO DFL7160-class dicing saw.
@@ -17,7 +17,24 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 > An engineering portfolio by **Keisuke Nishioka (西岡 佳祐)**: computational mechanics turned into design decisions — FEA & material mechanics, optimization & uncertainty quantification, and CAE-surrogate / generative design. Every module is written from scratch (no black-box solvers) and validated against a closed-form or analytic reference.
 
-**▶ Live dashboards:** **https://keisuke58.github.io/wafer-proc-sim/**
+**▶ Live dashboards:** **https://keisuke58.github.io/wafer-proc-sim/** ・ **▶ 会社別サマリ:** **[companies.html](https://keisuke58.github.io/wafer-proc-sim/companies.html)**
+
+### 🗺 10社×専用ダッシュボード
+
+同一リポジトリで10社それぞれのド真ん中の技術を「物理モデル→実装→定量評価→テスト→公開ページ」まで一気通貫で実装（自作モジュールのみ・結果JSONコミット済み・CI 673テスト緑）:
+
+| 会社 | 領域 | 看板の数字 | ページ |
+|------|------|-----------|--------|
+| **DISCO**（本命） | 切る・削る・磨く×知能化 | ドレッシングCBM総コスト−55%、AE異常AUROC 1.0 | [dashboard](https://keisuke58.github.io/wafer-proc-sim/dashboard.html) ほか6面 |
+| **Sony** | 鏡筒メカ＋センサ物理＋AF | STOP温度窓55→119°C、PTC変換ゲイン0.77% | [optomech](https://keisuke58.github.io/wafer-proc-sim/optomech.html) |
+| **Keyence** | 変位計/画像寸法の信号鎖 | ロバスト抽出5.5µm vs 重心35µm、実動JSデモ | [keyence](https://keisuke58.github.io/wafer-proc-sim/keyence.html) |
+| **Lasertec** | EUVマスク検査 | 転写性ΔCD格付け、フォトンバジェット7.2σ | [inspection](https://keisuke58.github.io/wafer-proc-sim/inspection.html) |
+| **SCREEN** | 枚葉洗浄物理 | PRE@30nm 0→85%（メガソニック） | [screen](https://keisuke58.github.io/wafer-proc-sim/screen.html) |
+| **Advantest** | テスト工学 | 注入RJを12.8%誤差で回収→1e-12外挿 | [advantest](https://keisuke58.github.io/wafer-proc-sim/advantest.html) |
+| **キオクシア** | 3D NANDデバイス物理 | 耐久定格5322 P/E＝物理から導出 | [kioxia](https://keisuke58.github.io/wafer-proc-sim/kioxia.html) |
+| **東京エレクトロン** | エッチ/ALD | 1ノブでBOW→垂直→TAPER、ドーズ∝AR^1.93 | [tel](https://keisuke58.github.io/wafer-proc-sim/tel.html) |
+| **東京精密** | ISO粗さ・真円度 | λc透過率50.0%、Ra=2A/π閉ループ | [accretech](https://keisuke58.github.io/wafer-proc-sim/accretech.html) |
+| **荏原製作所** | 真空ポンプ・CMP | N2ベントで1Pa到達8.6×短縮、密度CMP 373nm | [ebara](https://keisuke58.github.io/wafer-proc-sim/ebara.html) |
 
 Two project families live in this repo:
 
@@ -139,7 +156,7 @@ The optics ⇄ mechanics boundary: tolerance stack-up, mechanism/control, struct
 | `plc/` | IEC 61131-3 | `SpindleFB`, `InterlockFB`, `RecipeSeqFB`, `DicingController` |
 | `rust/` | Rust / PyO3 | `SpindleKernel`, `nondominated_sort`, `rbf_kernel_matrix` — memory-safe, IEC 61508 compatible |
 | `telemetry/` | Go | HTTP + WebSocket server streaming `DiscoMachine` state in real time |
-| `tests/` | Python | **602 tests** — physics invariants + C++/Python parity + integration |
+| `tests/` | Python | **673 tests** — physics invariants + C++/Python parity + integration |
 
 ---
 
@@ -226,7 +243,7 @@ bash build_all_kernels.sh        # builds all 15 C++ kernels
 ### Run tests
 
 ```bash
-python -m pytest tests/ -q       # 602 tests, ~75 s
+python -m pytest tests/ -q       # 673 tests, ~90 s
 ```
 
 ### Run digital twin
@@ -359,7 +376,7 @@ wafer-proc-sim/
 ├── telemetry/          Go — HTTP/WebSocket server
 │   ├── main.go
 │   └── go.mod
-├── tests/              279 pytest tests
+├── tests/              673 pytest tests
 ├── benchmark_all_kernels.py
 └── build_all_kernels.sh
 ```

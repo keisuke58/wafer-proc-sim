@@ -1,0 +1,19 @@
+{
+  "pump": {
+    "S0_m3h": 100,
+    "V_m3": 0.2,
+    "p_ult0_Pa": 0.5
+  },
+  "roughing": {
+    "t_to_10Pa_s": 66.79,
+    "t_analytic_VS_ln_s": 66.41,
+    "err_pct": 0.57
+  },
+  "t_to_crossover_1Pa_s": {
+    "volume_gas_only": 88.0,
+    "humid_air_vent": 794.9,
+    "pump_x2": 397.4,
+    "dry_N2_vent": 92.5
+  },
+  "ultimate_24h_Pa": 0.5045
+}

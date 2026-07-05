@@ -1,0 +1,24 @@
+{
+  "model": {
+    "R_blanket_nm_min": 250.0,
+    "h_step_nm": 600.0,
+    "L_pl_mm": 1.5
+  },
+  "eff_density": {
+    "min": 0.156,
+    "max": 0.778,
+    "drawn_min": 0.15,
+    "drawn_max": 0.9
+  },
+  "clear_time_min": {
+    "first": 1.57,
+    "last": 3.07
+  },
+  "overpolish_range_nm": 373.2,
+  "overpolish_range_no_pad_avg_nm": 450.0,
+  "range_vs_Lpl_nm": {
+    "L_pl_0.5mm": 450.0,
+    "L_pl_1.5mm": 373.2,
+    "L_pl_3.0mm": 241.9
+  }
+}

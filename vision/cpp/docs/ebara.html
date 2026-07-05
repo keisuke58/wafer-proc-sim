@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>真空・CMP装置工学 — 排気の物理と平坦化の物理</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#1f618d; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#6fb1e0; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#6fb1e0; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#1f618d; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Vacuum &amp; CMP equipment · pumping down and polishing flat, from the gas balance up</div>
+  <h1>真空・CMP装置工学 — 排気の物理と平坦化の物理</h1>
+  <p class="lead">半導体装置を裏で支える2つの機械——<strong>ドライ真空ポンプ</strong>と<strong>CMP装置</strong>——の設計判断を、気体収支ODEとパターン密度モデルで数値化。「ポンプを2倍にするより無料のN2ベントが効く」「平坦性はパッドではなくレイアウトで決まる」という装置エンジニアの経験則を、式と閉ループ検証で再現する。CMPユニットプロセス（Preston・R2R制御・ディッシング・EPD）はC++実装済み（<a href="dashboard.html">加工ダッシュボード</a>）で、本ページはその上流＝ダイスケール予測を足す。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v g">0.6<small> %</small></div><div class="k">排気曲線 vs 解析解 t=V/S·ln(p₀/p) の一致</div></div>
+    <div class="tile"><div class="v accent">8.6<small> ×</small></div><div class="k">1Pa到達の短縮：ドライN2ベント（無料）。ポンプ2倍は2×</div></div>
+    <div class="tile"><div class="v b">373<small> nm</small></div><div class="k">パターン密度起因のオーバーポリッシュ幅（L_pl=1.5mm）</div></div>
+    <div class="tile"><div class="v g">∝ρ_eff</div><div class="k">クリア時間は有効密度に比例（密度2倍→時間2倍、誤差2%）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① ドライポンプ排気 — 最後の一桁が一番遠い</h2>
+    <p class="sub">多段ルーツ式ドライポンプの正味排気速度は <code class="inl">S(p)=S₀(1−p_ult/p)</code>：段間圧縮比が尽きる圧力で逆流＝順流となり速度が崩落する（左）。チャンバは気体収支 <code class="inl">V·dp/dt=−S(p)p+Q(t)</code> に従い、初期は教科書どおりの指数排気（<strong>解析解 V/S·ln(p₀/p) と0.6%一致</strong>）、その後は壁が吸着した水の1/t放出（アウトガス）床に張り付く。ロードロック設計の核心：<strong>1Pa（ターボ引継ぎ）到達は湿式大気ベントで795s、ポンプを2倍にしても397s、ドライN2ベントなら92s</strong>——高い方の対策より、無料の対策が8.6×効く。積分はS(p)·p=S₀(p−p_ult)の厳密線形性を使った無条件安定の指数更新。</p>
+    <div class="figure"><img src="assets/eb_pump.png" alt="ドライポンプの排気速度曲線と、ベント条件別の排気カーブ"></div>
+  </div>
+
+  <div class="card">
+    <h2>② パターン密度CMP — 平坦性はパッドの旋盤目ではなくレイアウトで決まる</h2>
+    <p class="sub">酸化膜CMP初期はパッドが凸部だけに乗るため、局所レートは <code class="inl">R/ρ_eff</code>。ただしパッドはmm単位でしか曲がらないので、効くのは描画密度ではなく<strong>平坦化長L_pl（〜1.5mm）でガウシアン平均した有効密度</strong>（Stine/Ouma、MITモデル）。段差はρ_eff·h/Rで閉じ、以後ブランケットレート——つまり<strong>クリア時間マップ＝有効密度マップ</strong>（比例、テストで2%）。帰結：最密ブロックが抜けるまで磨くと疎な領域は<strong>373nm</strong>余計に削れる。この幅は密度コントラスト×段差で決まる＝<strong>ダミーフィル（レイアウト）の問題であって、パッドやスラリーのノブでは消えない</strong>。L_plを0.5→3mmに振ると450→242nm：パッド剛性が上がるほどレイアウトは救われる。</p>
+    <div class="figure"><img src="assets/eb_cmp.png" alt="描画密度と有効密度、クリア時間マップ、オーバーポリッシュ分布"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="dashboard.html">CMPユニットプロセス（C++）</a>（Preston除去・R2R時間制御・ディッシング/エロージョン・摩擦EPD）・<a href="tel.html">エッチ/ALD（真空プロセス側）</a>・<a href="screen.html">洗浄（ウェット側）</a>。出所：<code class="inl">ebara/cmp_pattern.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">ebara/vacuum_pump.py</code>・<code class="inl">ebara/cmp_pattern.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開文献（真空技術の気体収支・Stine/Oumaパターン密度モデル）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/ebara">keisuke58/wafer-proc-sim/ebara</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>
