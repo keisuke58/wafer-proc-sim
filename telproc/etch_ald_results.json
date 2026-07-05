@@ -1,0 +1,16 @@
+{
+  "etch": {
+    "depth_400nm_open_nm": 1079.0,
+    "depth_20nm_trench_nm": 556.4,
+    "rie_lag_pct": 48.4
+  },
+  "ald": {
+    "dose_to_95pct": {
+      "AR10": 6.66,
+      "AR20": 23.84,
+      "AR40": 92.86,
+      "AR80": 369.6
+    },
+    "dose_vs_ar_exponent": 1.93
+  }
+}
