@@ -111,6 +111,7 @@ jobs:
           cp vision/cpp/docs/assets/clean_chem.png      _site/assets/ || echo "missing clean_chem"
           cp vision/cpp/docs/assets/clean_spin.png      _site/assets/ || echo "missing clean_spin"
           cp vision/cpp/docs/assets/clean_dicing.png    _site/assets/ || echo "missing clean_dicing"
+          cp vision/cpp/docs/assets/spray_dry.png       _site/assets/ || echo "missing spray_dry"
           # Curated result figures for the gallery on the landing page.
           for f in \
             notebooks/vision_single_kerf.png notebooks/vision_accuracy.png \

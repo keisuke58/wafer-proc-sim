@@ -81,8 +81,20 @@
     <div class="figure" style="max-width:640px"><img src="assets/clean_spin.png" alt="スピン膜厚の解析解と数値解、スループット"></div>
   </div>
 
+  <div class="card">
+    <h2>⑤ 二流体スプレー洗浄 ― 「除去の床」と「破壊の天井」の窓が閉じていく</h2>
+    <p class="sub">液滴衝突はウォーターハンマー圧（≈0.2ρcv）と横方向マイクロジェット（≈3v）を生む。除去に必要な速度（床）は<strong>粘性底層の遮蔽</strong>——ジェット境界層（≈1µm）より小さい粒子は動圧を(d/δ)²しか感じない——のせいで小粒子ほど跳ね上がり、一方で破壊の天井は<strong>ライン高さがノード不変（≈120nm）でARが上がる</strong>ため微細化とともに直線的に下がる。二つの線に挟まれた運転窓が装置スペックの正体。</p>
+    <div class="figure" style="max-width:820px"><img src="assets/spray_dry.png" alt="スプレー運転窓（除去床vs破壊天井）とMarangoni乾燥のウォーターマーク密度"></div>
+    <p class="sub" style="margin-top:10px">結果：100nm粒子は6m/s・50nmは26m/sで除去でき全ノードで安全。しかし<strong>30nm粒子は71m/s必要で、hp16nmの破壊天井51m/sを超える＝窓が閉じる</strong>（hp32では102m/sでまだ開いている）。「damage-freeスプレーの軍拡競争」が1x-nmノードで物理限界に突き当たる様子を定量化。出所：<code class="inl">cleaning/spray_dry.py</code>。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ Marangoni（IPA）乾燥 ― ウォーターマークが消える条件</h2>
+    <p class="sub">乾燥前線にIPA濃度勾配があると表面張力勾配が水膜をバルク側へ引き戻し（Marangoni流、全量供給で前線速度≈11mm/s）、膜が蒸発破断する前に前線が通過する。破断すれば溶存シリカが析出＝ウォーターマーク。サイトごとの膜厚ばらつき（対数正規）で通過時間 vs 破断時間を競争させると、<strong>ウォーターマーク数はIPA供給量に対して指数的に減少</strong>：スピンのみ10⁴個/枚 → IPA全量で<span class="pill ok">9個/枚</span>。ウェハ温度+15°Cは蒸発を倍加させ曲線を右へずらす——「乾燥は温度とIPAの競争」という設計則。</p>
+  </div>
+
   <footer>
-    数値の出所：<code class="inl">cleaning/spin_clean.py</code> の実測出力（合成モデル・全物理を自作実装、結果JSONコミット済み）。
+    数値の出所：<code class="inl">cleaning/spin_clean.py</code>・<code class="inl">spray_dry.py</code> の実測出力（合成モデル・全物理を自作実装、結果JSONコミット済み）。
     付着・除去・倒壊の各モデルは公開文献の標準的な物理（vdW付着、O'Neill抗力、回転円盤境界層、Schlichtingストリーミング、キャビテーション除去、毛管倒壊、EBP方程式）に基づく再実装であり、特定製品の内部実装ではありません。
     ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/cleaning">keisuke58/wafer-proc-sim/cleaning</a> ／ <a href="./">← ダッシュボード一覧</a>
   </footer>

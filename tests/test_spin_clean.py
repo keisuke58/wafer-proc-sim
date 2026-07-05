@@ -53,3 +53,27 @@ def test_kerf_debris_removed_by_spin_alone():
     tau = sc.wall_shear_spin()
     assert sc.removal_efficiency([500.0], tau)[0] > 0.99
     assert sc.removal_efficiency([1000.0], tau)[0] > 0.99
+
+
+class TestSprayDry:
+    def test_damage_ceiling_drops_with_half_pitch(self):
+        import cleaning.spray_dry as sd
+        assert sd.v_damage(64.0) > sd.v_damage(32.0) > sd.v_damage(16.0)
+
+    def test_window_closes_at_fine_node_for_small_particles(self):
+        """The headline: 30nm-particle removal is spray-safe at hp32 but
+        NOT at hp16 — damage-free spray runs out of window."""
+        import cleaning.spray_dry as sd
+        v30 = sd.v_removal(30.0)
+        assert v30 < sd.v_damage(32.0)
+        assert v30 > sd.v_damage(16.0)
+
+    def test_sublayer_shielding_raises_removal_velocity(self):
+        import cleaning.spray_dry as sd
+        assert sd.v_removal(30.0) > sd.v_removal(100.0) * 5
+
+    def test_ipa_supply_kills_watermarks(self):
+        import cleaning.spray_dry as sd
+        wm0 = sd.watermark_density(0.0)
+        wm1 = sd.watermark_density(1.0)
+        assert wm1 < wm0 / 100.0
