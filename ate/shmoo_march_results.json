@@ -1,0 +1,33 @@
+{
+  "shmoo": {
+    "vt_V": 0.35,
+    "alpha": 1.3,
+    "fmax_1v0_ghz": 1.324,
+    "vmin_1ghz_V": 0.781,
+    "vmin_1p5ghz_V": 1.148
+  },
+  "march_coverage": {
+    "SAF0": {
+      "march_c": 1.0,
+      "naive_4n": 1.0
+    },
+    "SAF1": {
+      "march_c": 1.0,
+      "naive_4n": 1.0
+    },
+    "TF": {
+      "march_c": 1.0,
+      "naive_4n": 1.0
+    },
+    "CFin": {
+      "march_c": 1.0,
+      "naive_4n": 0.5
+    },
+    "CFid": {
+      "march_c": 1.0,
+      "naive_4n": 0.0
+    }
+  },
+  "march_ops_per_bit": 10,
+  "naive_ops_per_bit": 4
+}
