@@ -1,0 +1,51 @@
+{
+  "mm_per_px": 0.03,
+  "one_shot": {
+    "dia_A_mm": {
+      "measured": 5.9995,
+      "nominal": 6.0,
+      "tol": 0.02,
+      "dev_um": -0.47,
+      "go": true
+    },
+    "dia_B_mm": {
+      "measured": 5.9999,
+      "nominal": 6.0,
+      "tol": 0.02,
+      "dev_um": -0.13,
+      "go": true
+    },
+    "pitch_mm": {
+      "measured": 11.999,
+      "nominal": 12.0,
+      "tol": 0.03,
+      "dev_um": -1.03,
+      "go": true
+    },
+    "width_mm": {
+      "measured": 14.0,
+      "nominal": 14.0,
+      "tol": 0.05,
+      "dev_um": -0.04,
+      "go": true
+    }
+  },
+  "repeatability_um": {
+    "dia_A_mm": 0.42,
+    "dia_B_mm": 0.64,
+    "pitch_mm": 0.56,
+    "width_mm": 3.73
+  },
+  "mean_abs_error_um": {
+    "dia_A_mm": 0.29,
+    "dia_B_mm": 0.49,
+    "pitch_mm": 0.42,
+    "width_mm": 1.63
+  },
+  "caliper_sigma_um": {
+    "dia_A_mm": 10.79,
+    "dia_B_mm": 8.73,
+    "pitch_mm": 9.23,
+    "width_mm": 9.93
+  }
+}
