@@ -1,0 +1,19 @@
+{
+  "auroc_ae": {
+    "chipping": 1.0,
+    "glazing": 1.0,
+    "crack": 0.979
+  },
+  "auroc_rms": {
+    "chipping": 0.433,
+    "glazing": 0.223,
+    "crack": 0.622
+  },
+  "glazing_stream": {
+    "onset_cut": 150,
+    "alarm_ae": 154,
+    "alarm_rms": null,
+    "delay_ae_cuts": 4,
+    "delay_rms_cuts": null
+  }
+}
