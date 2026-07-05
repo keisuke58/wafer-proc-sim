@@ -1,0 +1,24 @@
+{
+  "fluid": {
+    "eta_Pas": 0.025,
+    "gamma_Nm": 0.03,
+    "h0_nm": 250.0,
+    "rlt_target_nm": 10.0
+  },
+  "ode_vs_analytic_max_err": 1e-06,
+  "t_spread_s": {
+    "pitch_200um": 2.546,
+    "pitch_100um": 0.637,
+    "ratio": 4.0
+  },
+  "wph_at_0.1_per_cm2": {
+    "air_pitch200": 9.7,
+    "He_pitch200": 12.1,
+    "He_pitch100": 25.5
+  },
+  "spread_used_s": {
+    "air_pitch200": 3.42,
+    "He_pitch200": 2.55,
+    "He_pitch100": 0.68
+  }
+}

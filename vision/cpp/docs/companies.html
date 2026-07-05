@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 10社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 11社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,15 +52,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, ten companies</div>
+  <div class="eyebrow">Portfolio map · one repo, eleven companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>10社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（670+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+  <p class="lead">1つのリポジトリで<strong>11社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（680+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">10<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">11<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
-    <div class="stat"><div class="v">670+</div><div class="k">自動テスト（CI緑）</div></div>
-    <div class="stat"><div class="v">35</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">680+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">36</div><div class="k">レビュー済みPR</div></div>
     <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
   </div>
 
@@ -193,6 +193,19 @@
     </div>
     <div class="links"><a href="ebara.html">ebaraダッシュボード</a></div>
     <div class="src">ebara/{vacuum_pump, cmp_pattern}・vision/cpp/src/cmp.cpp</div>
+  </div>
+
+  <div class="co" style="--co:#c00000">
+    <div class="role">Lithography Equipment — 露光装置・ナノインプリント</div>
+    <h2>キヤノン<span style="font-size:12px;color:var(--muted)">｜結像のプロセスウィンドウとNILの流体力学（2カード）</span></h2>
+    <p class="story">回折次数和のAbbe結像（厳密デフォーカス位相）でKrF（λ248/NA0.86）のBossung曲線→プロセスウィンドウを導出し、「照明はピッチに整合させる解像度ノブ」（σ=λ/2pNA）を数値で証明。NIL側はスクイーズ流の閉形式解でRLT到達時間∝ピッチ²を検証し、欠陥×スループットのパレートで吐出パターン設計の効きを示す。</p>
+    <div class="kpis">
+      <div class="kpi"><b>5.4×</b><span>整合ダイポールのDOF（200→1080nm @5%EL）</span></div>
+      <div class="kpi"><b>4.00</b><span>NIL展開時間のピッチ²則（理論4.0）</span></div>
+      <div class="kpi"><b>9.7→25.5</b><span>NILスループット wph（雰囲気＋液滴微細化）</span></div>
+    </div>
+    <div class="links"><a href="canon.html">canonダッシュボード</a></div>
+    <div class="src">canon/{litho_imaging, nanoimprint}</div>
   </div>
 
   <footer>

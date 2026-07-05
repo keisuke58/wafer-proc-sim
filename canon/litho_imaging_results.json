@@ -1,0 +1,22 @@
+{
+  "optics": {
+    "lambda_nm": 248.0,
+    "NA": 0.86,
+    "k1_at_100nm_hp": 0.347
+  },
+  "rayleigh": {
+    "min_hp_k1_0.25_nm": 72.1,
+    "coherent_cutoff_pitch_nm": 169.6
+  },
+  "contrast_at_100nm_hp": {
+    "conv": 0.321,
+    "annular": 0.495,
+    "dipole_x": 0.906
+  },
+  "dof_at_5pct_EL_nm": {
+    "conv": 200.0,
+    "annular": 560.0,
+    "dipole_x": 1080.0
+  },
+  "dof_relaxed_130nm_conv_nm": 400.0
+}
