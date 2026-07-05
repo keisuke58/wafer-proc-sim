@@ -1,0 +1,11 @@
+{
+  "levels": 8,
+  "ispp_step_V": 0.25,
+  "rber_fresh": "3.35e-05",
+  "rber_3k_1yr_55C": "1.77e-03",
+  "rber_3k_1yr_85C": "2.35e-03",
+  "uber_bch_at_1e-3": "4.71e-40",
+  "uber_bch_at_6e-3": "1.23e-02",
+  "endurance_ldpc_1yr_55C": 5322,
+  "endurance_ldpc_1yr_85C": 4763
+}
