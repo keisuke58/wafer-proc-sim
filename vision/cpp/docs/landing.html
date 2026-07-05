@@ -43,7 +43,7 @@
     <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
     <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
     <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
-      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>9社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>10社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
   </header>
 
   <div class="nav">
@@ -92,6 +92,9 @@
     <a class="navcard" href="accretech.html">
       <div class="ic">📐</div><b>精密計測工学（東京精密向け）</b>
       <span>表面粗さ（ISO 16610/4287、Ra=2A/π検証）・真円度（LSC/MZC・調和診断）をISO定義から実装</span></a>
+    <a class="navcard" href="ebara.html">
+      <div class="ic">🌪️</div><b>真空・CMP装置工学（荏原製作所向け）</b>
+      <span>ドライポンプ排気ODE（1Pa到達はベント気体で決まる）・パターン密度CMP（平坦性はレイアウトで決まる）</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -130,7 +133,7 @@
   <h2 class="sec">半導体テスト工学 ― ate（Advantest向け）<a href="advantest.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-ate"></div>
 
-  <h2 class="sec">メモリ／装置プロセス／精密計測 ― kioxia・tel・accretech<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a><a href="accretech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 計測</a></h2>
+  <h2 class="sec">メモリ／装置プロセス／精密計測／真空・CMP ― kioxia・tel・accretech・ebara<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a><a href="accretech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 計測</a><a href="ebara.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 真空/CMP</a></h2>
   <div class="gal" id="g-memtel"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
@@ -221,6 +224,8 @@ const GAL = {
     ['nand_life.png','耐久定格の出どころ','リテンション×LDPC限界の交点＝5322 P/E'],
     ['tel_etch.png','エッチプロファイル進化','パッシベーション1つでBOW→垂直→TAPER＋RIEラグ48%'],
     ['tel_ald.png','ALDのAR²則','被覆前線・必要ドーズ∝AR^1.93（数値検証）'],
+    ['eb_pump.png','ドライポンプ排気','1Pa到達：湿式795s→N2ベント92s（解析解と0.6%一致）'],
+    ['eb_cmp.png','パターン密度CMP','有効密度＝クリア時間マップ・オーバーポリッシュ373nm'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

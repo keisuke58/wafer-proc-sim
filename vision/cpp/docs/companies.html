@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 9社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 10社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,15 +52,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, nine companies</div>
+  <div class="eyebrow">Portfolio map · one repo, ten companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>9社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（650+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+  <p class="lead">1つのリポジトリで<strong>10社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（670+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">9<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">10<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
-    <div class="stat"><div class="v">650+</div><div class="k">自動テスト（CI緑）</div></div>
-    <div class="stat"><div class="v">33</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">670+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">35</div><div class="k">レビュー済みPR</div></div>
     <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
   </div>
 
@@ -180,6 +180,19 @@
     </div>
     <div class="links"><a href="accretech.html">accretechダッシュボード</a></div>
     <div class="src">accretech/surface_roundness</div>
+  </div>
+
+  <div class="co" style="--co:#1f618d">
+    <div class="role">Vacuum &amp; CMP Equipment — 真空ポンプ・CMP装置</div>
+    <h2>荏原製作所<span style="font-size:12px;color:var(--muted)">｜排気の物理と平坦化の物理（2カード）</span></h2>
+    <p class="story">ドライポンプ排気の気体収支ODE（解析解と0.6%一致）で「1Pa到達はベント気体で決まる」を定量化し、パターン密度CMP（Stine/Oumaモデル）で「平坦性はレイアウトで決まる」を導出。CMPユニットプロセス（Preston・R2R・ディッシング・EPD）はC++実装済みで、その上流のダイスケール予測を足す構成。</p>
+    <div class="kpis">
+      <div class="kpi"><b>8.6×</b><span>1Pa到達短縮：ドライN2ベント（ポンプ2倍は2×）</span></div>
+      <div class="kpi"><b>373nm</b><span>パターン密度起因のオーバーポリッシュ幅</span></div>
+      <div class="kpi"><b>∝ρ_eff</b><span>クリア時間は有効密度に比例（誤差2%）</span></div>
+    </div>
+    <div class="links"><a href="ebara.html">ebaraダッシュボード</a></div>
+    <div class="src">ebara/{vacuum_pump, cmp_pattern}・vision/cpp/src/cmp.cpp</div>
   </div>
 
   <footer>
