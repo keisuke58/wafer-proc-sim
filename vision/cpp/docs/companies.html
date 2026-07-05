@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>会社別サマリ — 8社×専用ダッシュボードの全体像</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0b57b8; --good:#2e7d57; --bad:#c0392b;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#4d97ff; --good:#4fb483; --bad:#e5776b;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#4d97ff; --good:#4fb483; --bad:#e5776b;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0b57b8; --good:#2e7d57; --bad:#c0392b;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6}
+  .wrap{max-width:1020px;margin:0 auto;padding:36px 22px 64px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:27px;margin:.3em 0 .2em;letter-spacing:-.01em;line-height:1.2}
+  .lead{color:var(--muted);font-size:14.5px;max-width:74ch}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0 8px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow);text-align:center}
+  .stat .v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:11px;color:var(--muted)}
+  .co{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:18px;border-left:5px solid var(--co,#888)}
+  .co h2{font-size:18px;margin:0 0 2px}
+  .co .role{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .co .story{font-size:13.8px;color:var(--muted);margin:8px 0 12px}
+  .kpis{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+  .kpi{border:1px solid var(--line);border-radius:10px;padding:7px 12px;background:var(--bg)}
+  .kpi b{font-size:16px;font-variant-numeric:tabular-nums}
+  .kpi span{display:block;font-size:10.5px;color:var(--muted)}
+  .links{font-size:13px}
+  .links a{margin-right:14px;font-weight:600}
+  .src{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Portfolio map · one repo, eight companies</div>
+  <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
+  <p class="lead">1つのリポジトリで<strong>8社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（650+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">8<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
+    <div class="stat"><div class="v">650+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">33</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
+  </div>
+
+  <div class="co" style="--co:#0b57b8">
+    <div class="role">Dicing / Grinding / Laser — 精密加工装置</div>
+    <h2>DISCO（本命）<span style="font-size:12px;color:var(--muted)">｜切る・削る・磨く×知能化</span></h2>
+    <p class="story">最厚の6ダッシュボード群。C++自作画像処理（wproc）でのカーフ検査から、ブレード摩耗GP・ドレッシング方策最適化・切削音の自己教師ありAI・少ラベル能動学習・FEM/TMCMC/ベイズ最適化のR&Dまで。「加工の物理」と「検査/AIの実装」の両利きを示す構成。</p>
+    <div class="kpis">
+      <div class="kpi"><b>−55%</b><span>ドレッシングCBMの総コスト（vs 目立てなし）</span></div>
+      <div class="kpi"><b>+4カット</b><span>グレージング発症→AI警報（RMS管理図は無警報）</span></div>
+      <div class="kpi"><b>96→48枚</b><span>ADC 90%到達に必要なラベル（能動学習で半減）</span></div>
+      <div class="kpi"><b>0.976</b><span>実写真1800枚・6クラス分類精度</span></div>
+    </div>
+    <div class="links"><a href="dashboard.html">メイン</a><a href="grind.html">研削</a><a href="laser.html">レーザー</a><a href="smart.html">スマートAI</a><a href="systems.html">装置システム</a><a href="metro.html">計測・最適化</a></div>
+    <div class="src">vision/cpp（C++17, 警告ゼロ）・machine・optimization・ml・fem ほか</div>
+  </div>
+
+  <div class="co" style="--co:#5a5ad1">
+    <div class="role">Optical / Mechanical / Sensor — 光学機器・イメージセンサ</div>
+    <h2>Sony<span style="font-size:12px;color:var(--muted)">｜レンズ鏡筒メカ設計＋センサ物理（17カード）</span></h2>
+    <p class="story">公差スタックからGD&T図面までのメカ設計一式に加え、熱FEM→Zernike→MTFの<strong>STOP一気通貫</strong>、CMOSセンサのPTC（変換ゲイン逆推定を真値と照合）、PDAF＋コントラストのハイブリッドAFまで——レンズの外も中も。</p>
+    <div class="kpis">
+      <div class="kpi"><b>55→119°C</b><span>MTF≥0.35の温度窓（Al→Invar、FE実測）</span></div>
+      <div class="kpi"><b>0.77%</b><span>PTCによる変換ゲイン逆推定誤差（閉ループ）</span></div>
+      <div class="kpi"><b>6.7倍</b><span>ハイブリッドAFの合焦高速化（1345→201ms）</span></div>
+    </div>
+    <div class="links"><a href="optomech.html">optomechダッシュボード（17カード）</a></div>
+    <div class="src">optomech/{fem, optics, control, sensor, cad}</div>
+  </div>
+
+  <div class="co" style="--co:#0e8a8a">
+    <div class="role">Mask / Wafer Inspection — EUVマスク検査</div>
+    <h2>Lasertec<span style="font-size:12px;color:var(--muted)">｜「見える」と「転写する」は別物（8カード）</span></h2>
+    <p class="story">Die-to-Die差分・適応統計・位相欠陥チャネル・DL異常検出に加え、自作のEUV部分コヒーレント結像で<strong>転写性（空中像ΔCD）による欠陥格付け</strong>と、フォトンバジェットが決める感度×スループットのフロンティアまで。実写真51組でAUROC 0.91の実証つき。</p>
+    <div class="kpis">
+      <div class="kpi"><b>ΔCD 19.4%</b><span>位相欠陥は−25nmデフォーカスで最悪化（焦点非対称）</span></div>
+      <div class="kpi"><b>7.2σ</b><span>偽カウント10個/枚を守る判定しきい値</span></div>
+      <div class="kpi"><b>0.91</b><span>実画像ピクセルAUROC（教師なし）</span></div>
+    </div>
+    <div class="links"><a href="inspection.html">inspectionダッシュボード（8カード）</a></div>
+    <div class="src">inspection/{defect_inspect, real_anomaly, euv_printability, photon_budget}</div>
+  </div>
+
+  <div class="co" style="--co:#1466c4">
+    <div class="role">Sensors / Measurement — センサ・計測器</div>
+    <h2>Keyence<span style="font-size:12px;color:var(--muted)">｜信号鎖を中身から作る（10カード＋実動デモ）</span></h2>
+    <p class="story">レーザー変位計の撮像→サブピクセル抽出→寸法→%GRRの信号鎖と、画像寸法測定（IM）の「誰が測っても同じ」の定量証明。ロバスト抽出器はC++で毎秒491プロファイルまで実測し、さらに<strong>ページ内でスライダ操作できるJavaScript実動デモ</strong>つき——面接の場でその場で動かせる。</p>
+    <div class="kpis">
+      <div class="kpi"><b>5.5 vs 35µm</b><span>多重反射下のロバスト法 vs 重心法（RMS）</span></div>
+      <div class="kpi"><b>491本/秒</b><span>C++抽出器の実測スループット（3200点）</span></div>
+      <div class="kpi"><b>σ0.42µm</b><span>IM繰返し性（30回置き直し）vs ノギスσ9〜11µm</span></div>
+    </div>
+    <div class="links"><a href="keyence.html">keyenceダッシュボード（⑩がライブデモ）</a></div>
+    <div class="src">keyence/{lj_signal_chain, lj_fast.cpp, product_suite, im_dimension}</div>
+  </div>
+
+  <div class="co" style="--co:#0e7d6c">
+    <div class="role">Wet Processing — 洗浄装置</div>
+    <h2>SCREEN<span style="font-size:12px;color:var(--muted)">｜「洗うだけ」が一番難しい理由（6カード）</span></h2>
+    <p class="story">粒子除去の力学（付着∝d vs 抗力∝d²）・メガソニックのキャビテーション・SC-1アンダーカットと材料損失予算・毛管倒壊のσ^(-1/4)則・スプレーの「除去床×破壊天井」・Marangoni乾燥——洗浄装置一台分の物理を三重拘束の最適化問題として定量化。</p>
+    <div class="kpis">
+      <div class="kpi"><b>0→85%</b><span>PRE@30nm（スピンのみ→メガソニック）</span></div>
+      <div class="kpi"><b>窓が閉じる</b><span>hp16nmで30nm粒子のdamage-freeスプレー不成立</span></div>
+      <div class="kpi"><b>10⁴→9個</b><span>ウォーターマーク/枚（IPA Marangoni乾燥）</span></div>
+    </div>
+    <div class="links"><a href="screen.html">screenダッシュボード</a></div>
+    <div class="src">cleaning/{spin_clean, spray_dry}</div>
+  </div>
+
+  <div class="co" style="--co:#8a2be2">
+    <div class="role">Automatic Test Equipment — 半導体テスタ</div>
+    <h2>Advantest<span style="font-size:12px;color:var(--muted)">｜測れない1e-12をどう保証するか（4カード）</span></h2>
+    <p class="story">既知量のジッタを注入した10Gb/sリンクでバスタブ曲線を実誤り計数し、dual-Diracで<strong>注入RJを閉ループ回収</strong>→1e-12へ外挿。シュムーからのFmax/Vmin抽出と、Marchテストが結合故障を捕まえる証明（故障シミュレータ）まで。</p>
+    <div class="kpis">
+      <div class="kpi"><b>12.8%</b><span>RJ推定誤差（真値1.5psに対して）</span></div>
+      <div class="kpi"><b>73.8ps</b><span>アイ開口@BER 1e-12（外挿）</span></div>
+      <div class="kpi"><b>100 vs 0%</b><span>CFid検出率：March C- vs naiveテスト</span></div>
+    </div>
+    <div class="links"><a href="advantest.html">advantestダッシュボード</a></div>
+    <div class="src">ate/{jitter_bathtub, shmoo_march}</div>
+  </div>
+
+  <div class="co" style="--co:#c2185b">
+    <div class="role">Memory Device — 3D NANDフラッシュ</div>
+    <h2>キオクシア<span style="font-size:12px;color:var(--muted)">｜書込みパルスから耐久定格まで（2カード）</span></h2>
+    <p class="story">ISPPのVth分布形成→P/Eサイクルの酸化膜劣化→Arrheniusリテンション→ECC訂正限界を一気通貫。「耐久定格○○P/E」というスペックの数字が、リテンション曲線とLDPC限界の交点として物理から出てくることを導出。</p>
+    <div class="kpis">
+      <div class="kpi"><b>5322 P/E</b><span>耐久定格（1年リテンション×LDPC限界@55°C）</span></div>
+      <div class="kpi"><b>1e-3→5e-40</b><span>BCH-72がRBERをUBERへ潰す桁数</span></div>
+      <div class="kpi"><b>3.4e-5</b><span>fresh RBER（8状態の分布重なりから解析計算）</span></div>
+    </div>
+    <div class="links"><a href="kioxia.html">kioxiaダッシュボード</a></div>
+    <div class="src">memdev/nand_sim</div>
+  </div>
+
+  <div class="co" style="--co:#0f6ab4">
+    <div class="role">Process Equipment — エッチ・成膜装置</div>
+    <h2>東京エレクトロン<span style="font-size:12px;color:var(--muted)">｜エッチの形とALDの届く深さ（2カード＋関連3モジュール）</span></h2>
+    <p class="story">高ARトレンチのプロファイル進化（パッシベーション1つでBOW→垂直→TAPER、RIEラグ48%）と、ALD被覆前線の<strong>AR²ドーズ則の数値検証</strong>（フィット指数1.93）。既存のFEOLベイズ最適化・TMCMCキャリブレーション・CMP APCと合わせて装置プロセス一式。</p>
+    <div class="kpis">
+      <div class="kpi"><b>1 knob</b><span>パッシベーション掃引で3プロファイル</span></div>
+      <div class="kpi"><b>AR^1.93</b><span>ALD必要ドーズのスケーリング（理論AR²）</span></div>
+      <div class="kpi"><b>48%</b><span>20nm溝のRIEラグ（240秒）</span></div>
+    </div>
+    <div class="links"><a href="tel.html">telダッシュボード</a></div>
+    <div class="src">telproc/etch_ald・optimization/{tel_feol_bo, tel_tmcmc_calibration}</div>
+  </div>
+
+  <footer>
+    すべて合成データ上の自作実装（公開標準の物理・アルゴリズムの再実装）であり、特定製品の内部実装ではありません。実データ検証はNEU実写真（1800枚分類・51組検出）で実施。
+    数値は各モジュールの実測出力（結果JSONコミット済み）。<a href="./">← トップ（全ギャラリー）</a> ／ <a href="https://github.com/keisuke58/wafer-proc-sim">GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
