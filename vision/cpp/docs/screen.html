@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>半導体洗浄プロセス物理 — 単枚スピン洗浄の中身</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0e7d6c; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#3fbfa8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#3fbfa8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0e7d6c; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Wet processing · single-wafer spin cleaning physics</div>
+  <h1>半導体洗浄プロセス物理 — 「洗うだけ」が最先端で一番難しい理由</h1>
+  <p class="lead">単枚スピン洗浄装置の中の物理をゼロから実装。先端ノードの洗浄は<strong>30nm以下の粒子を、膜を数Å以上削らず、10:1パターンを倒さずに</strong>取るという三重拘束の最適化問題——付着力学・キャビテーション・薬液アンダーカット・毛管倒壊・スピン薄膜動力学を1本のモジュールで定量化した。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v b">0<small> %</small></div><div class="k">スピンのみのPRE@30nm｜物理的に不可能</div></div>
+    <div class="tile"><div class="v g">85<small> %</small></div><div class="k">＋メガソニック（キャビテーション）@30nm</div></div>
+    <div class="tile"><div class="v accent">8.2→28<small> AR</small></div><div class="k">倒壊限界｜水→scCO²乾燥（15nmライン）</div></div>
+    <div class="tile"><div class="v g">394<small> wph</small></div><div class="k">8チャンバ構成のスループット</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 粒子除去の力学 — なぜ小さい粒子ほど取れないのか</h2>
+    <p class="sub">付着はvan der Waals力で<strong>∝ d</strong>、流体抗力は境界層せん断で<strong>∝ d²</strong>——直径が半分になると抗力だけ4倍不利になる。この次数の差が「小粒子問題」の正体。除去は転がりモーメント判定（抗力×腕1.4r vs 付着×接触半径）＋表面粗さ起因の対数正規ばらつきでモンテカルロ評価。メガソニック（1MHz）は音響流のせん断でなく<strong>キャビテーション・マイクロジェット</strong>（衝撃圧×粒子断面積、確率的ヒット）が支配——それでも∝d²なので最小粒子は最後まで残る。</p>
+    <div class="figure"><img src="assets/clean_pre.png" alt="付着vs抗力のスケーリングとPRE曲線（スピン/メガソニック/SC-1）"></div>
+    <p class="sub" style="margin-top:10px">結果：スピンのみ（1500rpm）はPRE 100nmで<span class="pill ok">90%</span>だが30nmで<span class="pill bad">0%</span>。メガソニックで30nm <span class="pill ok">85%</span>・50nm 91%まで拡張、SC-1 0.3nmアンダーカット追加で88%/94%。出所：<code class="inl">cleaning/spin_clean.py</code>。</p>
+  </div>
+
+  <div class="card">
+    <h2>② 薬液の力と代償 — アンダーカットは材料損失予算に阻まれる</h2>
+    <p class="sub">SC-1は粒子の接触部の下を等方エッチし、接触半径（≈0.8nm）を食い切ると粒子は完全解放（PRE=100%）。だが<strong>エッチ量＝材料損失</strong>であり、先端ノードの損失予算は0.1nm/回——完全アンダーカットに必要な0.8nmの<strong>8分の1</strong>しか使えない。20回洗浄の累積損失（右軸）が「化学で全部解決」を封じる。物理（メガソニック）と化学（微量エッチ）の分担設計こそが洗浄レシピ開発。</p>
+    <div class="figure" style="max-width:760px"><img src="assets/clean_chem.png" alt="PRE@30nm vs SC-1エッチ量と累積材料損失、表面張力vs倒壊限界AR"></div>
+    <p class="sub" style="margin-top:10px">右図は<strong>③パターン倒壊</strong>：乾燥時の毛管圧 2σcosθ/S が隣接ラインを引き寄せ、たわみ&gt;S/2で倒壊。倒壊限界ARは<strong>σ^(-1/4)</strong>則（実装で解析検証）——水(72mN/m)でAR <span class="pill bad">8.2</span>、IPA(21.7)で<span class="pill ok">11.1</span>、超臨界CO₂(≈0)で<span class="pill ok">28.4</span>。「乾燥流体の選択＝装置スペック」の理由。</p>
+  </div>
+
+  <div class="card">
+    <h2>④ スピン動力学と生産性 — Emslie-Bonner-Peck薄膜方程式</h2>
+    <p class="sub">リンス液膜は dh/dt = −2ρω²h³/(3μ) で薄化（解析解 vs 数値積分の一致で実装検証、誤差&lt;2%）。薬液30s＋リンス20s＋乾燥15s＋搬送8sのシーケンスで<strong>8チャンバ 394枚/時</strong>。①〜③の物理予算（PRE・損失・倒壊）を守った上でこの数字を出すのが装置設計。</p>
+    <div class="figure" style="max-width:640px"><img src="assets/clean_spin.png" alt="スピン膜厚の解析解と数値解、スループット"></div>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">cleaning/spin_clean.py</code> の実測出力（合成モデル・全物理を自作実装、結果JSONコミット済み）。
+    付着・除去・倒壊の各モデルは公開文献の標準的な物理（vdW付着、O'Neill抗力、回転円盤境界層、Schlichtingストリーミング、キャビテーション除去、毛管倒壊、EBP方程式）に基づく再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/cleaning">keisuke58/wafer-proc-sim/cleaning</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

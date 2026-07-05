@@ -1,0 +1,28 @@
+{
+  "wall_shear_spin_pa": 149.4,
+  "wall_shear_megasonic_pa": 84.1,
+  "pre_spin": {
+    "20nm": 0.0,
+    "30nm": 0.001,
+    "50nm": 0.101,
+    "100nm": 0.899
+  },
+  "pre_megasonic": {
+    "20nm": 0.723,
+    "30nm": 0.849,
+    "50nm": 0.907,
+    "100nm": 0.99
+  },
+  "pre_mega_sc1_0p3nm": {
+    "20nm": 0.809,
+    "30nm": 0.884,
+    "50nm": 0.935,
+    "100nm": 0.998
+  },
+  "ar_max": {
+    "water": 8.2,
+    "ipa": 11.06,
+    "scco2": 28.39
+  },
+  "throughput_wph": 394.5
+}
