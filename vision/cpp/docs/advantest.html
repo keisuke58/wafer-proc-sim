@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>半導体テスト工学 — ATEの中身（ジッタ・シュムー・Marchテスト）</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#8a2be2; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#b57bff; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#b57bff; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#8a2be2; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Automatic test equipment · jitter, shmoo, memory test</div>
+  <h1>半導体テスト工学 — 「測れないBER 1e-12」をどう保証するか</h1>
+  <p class="lead">テスタ（ATE）の中核アルゴリズムをゼロから実装。テスト時間内に測れるのはBER 1e-6まで——それでもスペックは1e-12にある。<strong>ジッタのRJ/DJ分離と外挿・シュムープロットからのFmax/Vmin抽出・メモリMarchテストの故障カバレッジ証明</strong>という、テスト工学の三本柱を注入既知の真値と閉ループで検証した。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v accent">12.8<small> %</small></div><div class="k">RJ推定誤差｜注入1.5psに対する閉ループ検証</div></div>
+    <div class="tile"><div class="v g">73.8<small> ps</small></div><div class="k">アイ開口@BER 1e-12（外挿、10Gb/s）</div></div>
+    <div class="tile"><div class="v g">0.781<small> V</small></div><div class="k">Vmin@1GHz｜シュムーから抽出</div></div>
+    <div class="tile"><div class="v b">0<small> %</small></div><div class="k">naiveテストのCFid検出率（March C-は100%）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① アイパターンとジッタ注入 — 真値を知っている リンクを作る</h2>
+    <p class="sub">10Gb/s PRBS-7を帯域制限チャネル（ISI＝データ依存DJ）に通し、<strong>既知量のジッタを注入</strong>：RJ σ=1.5ps（ガウス）・周期ジッタ2ps（正弦）・DCD 1.5ps。エッジ時刻を直接揺らして波形を合成し、受信端でパーシスタンス・アイを構成。真値を自分で作っているから、後段の推定手法を<strong>閉ループで採点できる</strong>。</p>
+    <div class="figure"><img src="assets/ate_eye.png" alt="10Gb/sアイパターンとバスタブ曲線（dual-Diracフィット）"></div>
+    <p class="sub" style="margin-top:10px"><strong>② バスタブとdual-Dirac外挿</strong>（右図）：実際に誤り数を数えて測れるのは1e-6まで（10⁶ビット）。Q-スケール（erfc⁻¹）で両裾を直線フィットし、RJ σと交差位置を推定→<strong>RJ推定1.69ps（誤差12.8%、PJのarcsine裾による既知バイアス込み）</strong>、BER 1e-12でのトータルジッタ26.2ps・アイ開口73.8psまで外挿。「測れない領域の保証」の作法そのもの。出所：<code class="inl">ate/jitter_bathtub.py</code>。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ シュムープロット — 緑と赤の地図からFmax/Vminを抽出する</h2>
+    <p class="sub">Vdd×クロックのpass/failマップ。デバイスはαべき則クリティカルパス（delay ∝ V/(V−Vt)^α, α=1.3）＋オンチップばらつき（境界のスペックル）でモデル化。マップからFmax(V)曲線をあて、<strong>Vmin@1GHz=0.781V・@1.5GHz=1.148V</strong>を二分法で抽出——テスト結果を「動く/動かない」でなく<strong>設計へ返す数字</strong>に変換する仕事。</p>
+    <div class="figure" style="max-width:820px"><img src="assets/ate_shmoo.png" alt="シュムープロットとFmax曲線、Marchテストのカバレッジ比較"></div>
+    <p class="sub" style="margin-top:10px"><strong>④ Marchメモリテストのカバレッジ証明</strong>（右図）：ビットレベルの故障シミュレータにSAF0/1・遷移故障TF・結合故障CFin/CFidを注入し、March C-（10Nオペ）とnaiveなw0/r0/w1/r1（4Nオペ）を対決。naiveは固着・遷移は捕まえるが<strong>CFin 50%・CFid 0%</strong>——March C-は全クラス<span class="pill ok">100%</span>。「なぜ業界は10Nを払うのか」をシミュレーションで証明。出所：<code class="inl">ate/shmoo_march.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">ate/jitter_bathtub.py</code>・<code class="inl">ate/shmoo_march.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開標準（dual-Diracジッタモデル・αべき則MOSFET遅延・March C-アルゴリズム）に基づく再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/ate">keisuke58/wafer-proc-sim/ate</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

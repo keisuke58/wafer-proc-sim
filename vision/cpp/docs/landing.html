@@ -77,6 +77,9 @@
     <a class="navcard" href="screen.html">
       <div class="ic">🧼</div><b>半導体洗浄プロセス物理（SCREEN向け）</b>
       <span>粒子付着/除去力学・メガソニック（キャビテーション）・SC-1アンダーカット・パターン倒壊・スピン薄膜EBP</span></a>
+    <a class="navcard" href="advantest.html">
+      <div class="ic">⏱️</div><b>半導体テスト工学（Advantest向け）</b>
+      <span>ジッタRJ/DJ分離とBER外挿・アイパターン・シュムーFmax/Vmin・Marchメモリテストのカバレッジ証明</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -111,6 +114,9 @@
 
   <h2 class="sec">半導体洗浄プロセス ― cleaning（SCREEN向け）<a href="screen.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-screen"></div>
+
+  <h2 class="sec">半導体テスト工学 ― ate（Advantest向け）<a href="advantest.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-ate"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -187,6 +193,10 @@ const GAL = {
     ['clean_chem.png','薬液と倒壊の限界','アンダーカット vs 損失予算、倒壊AR 水8.2→scCO2 28'],
     ['clean_spin.png','スピン薄膜動力学','EBP方程式（解析=数値）と394枚/時'],
     ['spray_dry.png','スプレー窓とMarangoni乾燥','hp16で30nm粒子の窓が閉じる／WM 10⁴→9個/枚'],
+  ],
+  'g-ate': [
+    ['ate_eye.png','アイ/バスタブ/RJ-DJ分離','注入RJ 1.5psを12.8%誤差で回収、1e-12へ外挿'],
+    ['ate_shmoo.png','シュムー＆Marchテスト','Vmin@1GHz=0.781V／naiveはCFid 0%・March C-は100%'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

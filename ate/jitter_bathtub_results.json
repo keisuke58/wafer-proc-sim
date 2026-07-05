@@ -1,0 +1,13 @@
+{
+  "bits": 1000000,
+  "injected": {
+    "rj_ps": 1.5,
+    "pj_ps": 2.0,
+    "dcd_ps": 1.5
+  },
+  "rj_hat_ps": 1.693,
+  "rj_error_pct": 12.8,
+  "eye_crossing_sep_ps": 97.58,
+  "tj_1e12_ps": 26.23,
+  "eye_open_1e12_ps": 73.77
+}
