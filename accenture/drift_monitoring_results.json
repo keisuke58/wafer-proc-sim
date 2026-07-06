@@ -1,0 +1,42 @@
+{
+  "config": {
+    "n_ref": 6000,
+    "n_window": 1500,
+    "bins": 10,
+    "psi_shift_threshold": 0.25
+  },
+  "psi_identical_dist": 0.0014,
+  "psi_monotone": true,
+  "warn_window_psi": 2,
+  "alarm_window_psi": 4,
+  "acc_drop_window": 7,
+  "lead_time_windows": 3,
+  "psi_series": [
+    0.009,
+    0.033,
+    0.104,
+    0.226,
+    0.345,
+    0.623,
+    0.857,
+    1.08,
+    1.481,
+    1.734,
+    2.429,
+    2.494
+  ],
+  "acc_series": [
+    0.784,
+    0.759,
+    0.767,
+    0.752,
+    0.759,
+    0.737,
+    0.734,
+    0.718,
+    0.7,
+    0.673,
+    0.657,
+    0.677
+  ]
+}

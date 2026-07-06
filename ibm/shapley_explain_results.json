@@ -1,0 +1,31 @@
+{
+  "model": {
+    "n_features": 6,
+    "background": 200,
+    "nonlinear": true
+  },
+  "instance": {
+    "prediction": 0.9049,
+    "base_value": 0.471
+  },
+  "efficiency_axiom": {
+    "sum_shapley": 0.433843,
+    "pred_minus_base": 0.433843,
+    "residual": 0.0
+  },
+  "shapley_values": {
+    "debt_ratio": 0.1637,
+    "income": 0.1576,
+    "late_pays": 0.0893,
+    "utilization": 0.026,
+    "n_accounts": -0.0143,
+    "age": 0.0116
+  },
+  "top_driver": "debt_ratio",
+  "permutation_max_err_vs_exact": {
+    "25": 0.0407,
+    "100": 0.0317,
+    "400": 0.0124,
+    "1600": 0.0016
+  }
+}
