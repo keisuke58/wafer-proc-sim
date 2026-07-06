@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ドーピング・成膜工学 — イオン注入/RTAとPVDスパッタ</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0b3d91; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#7ba7e8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#7ba7e8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#0b3d91; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Ion implantation &amp; PVD · putting atoms where you want them, from the physics up</div>
+  <h1>ドーピング・成膜工学 — 原子を「打ち込む」と「飛ばして積む」</h1>
+  <p class="lead">前工程で空白だった2工程を埋める：<strong>イオン注入＋活性化アニール</strong>（LSS理論→ガウス分布→FD拡散ソルバを解析解と閉ループ）と、<strong>PVDスパッタのトレンチ被覆</strong>（可視積分→オーバーハング→ピンチオフ）。どちらも装置世界最大手の看板工程で、「なぜRTAが存在するのか」「なぜ高ARはALDに切り替えるのか」という装置選定の論理を数値で示す。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v g">&lt;1%</div><div class="k">注入プロファイル積分＝ドーズ回収（質量保存）</div></div>
+    <div class="tile"><div class="v accent">185 vs 349<small> nm</small></div><div class="k">接合深さ：スパイクRTA vs 炉アニール（熱予算の意味）</div></div>
+    <div class="tile"><div class="v g">1.00</div><div class="k">平面フラックス閉ループ（可視積分の検証）</div></div>
+    <div class="tile"><div class="v accent">2.1<small> ×</small></div><div class="k">AR3でコリメーションが買う底面カバレッジ</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① イオン注入＋RTA — 熱予算がなぜ「秒」を買うのか</h2>
+    <p class="sub">LSS理論の投影飛程Rp・ストラグルΔRp（B/P/Asのべき乗フィット、<strong>重いイオンほど浅い</strong>をテストで検証）＋チャネリングテールで注入プロファイルを構成し、<strong>積分がドーズを&lt;1%で回収</strong>（残りは表面切断の物理的ロス）。アニールは自作FD拡散ソルバで解き、<strong>ガウスがガウスのまま σ²+=2Dt になる解析解と閉ループ</strong>（誤差&lt;5%、チャネル項除く）。Arrhenius D(T)で熱予算を定量化すると：スパイクRTA（1050°C/10s）は接合185nm、炉（1000°C/30分）は<strong>349nm——ほぼ2倍深い</strong>。浅接合が要る世代でRTAが発明された理由が、1本のグラフになる。シート抵抗はキャリア濃度依存移動度で積分。</p>
+    <div class="figure"><img src="assets/amat_implant.png" alt="LSS注入プロファイルとRTA vs 炉アニールの接合深さ"></div>
+  </div>
+
+  <div class="card">
+    <h2>② PVDスパッタ — 「見通し線」の税金とピンチオフ</h2>
+    <p class="sub">PVDは見通し線の堆積：トレンチ開口は全天を見るが、底は狭まる円錐しか見えない——上部コーナーが最速で成長し、<strong>オーバーハング→ピンチオフ→ボイド</strong>へ。表面ポリラインを法線成長させ、<strong>毎ステップ可視積分を再計算</strong>（cos^n光源、遮蔽判定はレイ×全線分のベクトル化交差）。閉ループ：平面のフラックスは厳密に1.00。結果：拡散源の底面カバレッジはAR0.5→3で55→19%と単調劣化、<strong>コリメーション（cos²⁰）で2.1倍改善</strong>——それでも足りない高ARは<a href="tel.html">ALD（AR^1.93ドーズ則）</a>に切り替える、という装置選定の分岐点まで一直線。</p>
+    <div class="figure"><img src="assets/amat_pvd.png" alt="拡散源とコリメート源のトレンチプロファイルとカバレッジ曲線"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="kokusai.html">熱酸化・バッチ炉</a>・<a href="tel.html">エッチ/ALD</a>・<a href="sumco.html">CZ結晶成長</a>。出所：<code class="inl">amat/{implant_anneal, pvd_sputter}.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">amat/implant_anneal.py</code>・<code class="inl">amat/pvd_sputter.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開文献（LSS理論・拡散方程式・見通し線堆積モデル）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/amat">keisuke58/wafer-proc-sim/amat</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

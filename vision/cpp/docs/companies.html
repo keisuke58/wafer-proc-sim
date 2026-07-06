@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 15社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 18社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,15 +52,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, fifteen companies</div>
+  <div class="eyebrow">Portfolio map · one repo, eighteen companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>15社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（700+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。<a href="companies_en.html">English version</a>・<a href="litho_story.html">リソグラフィ4社横断ストーリー</a>もどうぞ。</p>
+  <p class="lead">1つのリポジトリで<strong>18社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（720+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。<a href="companies_en.html">English version</a>・<a href="litho_story.html">リソグラフィ4社横断ストーリー</a>もどうぞ。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">15<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">18<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
-    <div class="stat"><div class="v">700+</div><div class="k">自動テスト（CI緑）</div></div>
-    <div class="stat"><div class="v">38</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">720+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">40</div><div class="k">レビュー済みPR</div></div>
     <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
   </div>
 
@@ -258,6 +258,45 @@
     </div>
     <div class="links"><a href="ibm.html">ibmダッシュボード</a></div>
     <div class="src">ibm/{fairness_mitigation, shapley_explain}</div>
+  </div>
+
+  <div class="co" style="--co:#0b3d91">
+    <div class="role">Implant / Deposition — イオン注入・成膜装置</div>
+    <h2>アプライドマテリアルズ<span style="font-size:12px;color:var(--muted)">｜原子を打ち込む・飛ばして積む（2カード）</span></h2>
+    <p class="story">LSS理論のイオン注入（ドーズ回収<1%）＋FD拡散ソルバを解析解と閉ループし、スパイクRTA vs 炉アニールの接合深さ（185 vs 349nm）で「なぜRTAか」を定量化。PVDスパッタは可視積分からトレンチ被覆を解き、コリメーションの効きとALDへの分岐点を示す。</p>
+    <div class="kpis">
+      <div class="kpi"><b>185 vs 349nm</b><span>接合深さ：スパイクRTA vs 炉（熱予算の意味）</span></div>
+      <div class="kpi"><b>1.00</b><span>平面フラックス閉ループ（可視積分検証）</span></div>
+      <div class="kpi"><b>2.1×</b><span>AR3でコリメーションが買う底面カバレッジ</span></div>
+    </div>
+    <div class="links"><a href="amat.html">amatダッシュボード</a></div>
+    <div class="src">amat/{implant_anneal, pvd_sputter}</div>
+  </div>
+
+  <div class="co" style="--co:#a03c64">
+    <div class="role">Thermal Processing — 熱処理・バッチ炉</div>
+    <h2>KOKUSAI ELECTRIC<span style="font-size:12px;color:var(--muted)">｜Deal-Groveと150枚同時の均一性（2カード）</span></h2>
+    <p class="story">業界最有名のプロセス式Deal-Grove（x²+Ax=B(t+τ)）を実装しODE積分と解析解を0.000%で閉ループ、線形→放物線の漸近も±2%で検証。バッチ炉はガス枯渇（±17.4%）をArrhenius温度傾斜+21°Cで0.00%に潰す——ゾーン設定温度が数度ずつ違う理由の計算。</p>
+    <div class="kpis">
+      <div class="kpi"><b>0.000%</b><span>Deal-Grove ODE vs 解析解の閉ループ</span></div>
+      <div class="kpi"><b>36分 vs 11時間</b><span>ウェット vs ドライの500nm——2化学併存の理由</span></div>
+      <div class="kpi"><b>±17.4→0.00%</b><span>ボート内均一性：温度傾斜補償の前後</span></div>
+    </div>
+    <div class="links"><a href="kokusai.html">kokusaiダッシュボード</a></div>
+    <div class="src">kokusai/{oxidation, batch_furnace}</div>
+  </div>
+
+  <div class="co" style="--co:#0f766e">
+    <div class="role">Silicon Wafer — 結晶成長・ウェハ製造</div>
+    <h2>SUMCO<span style="font-size:12px;color:var(--muted)">｜全ウェハの出発点：CZ引き上げ（2カード）</span></h2>
+    <p class="story">CZ引き上げの熱収支限界 v_max∝1/√R（数値掃引指数−0.50で理論と厳密一致、150/300mmで428/303mm/h）と、Voronkovのv/G基準による欠陥モード地図。全半径が中立帯に収まる「完全シリコン窓」は300mmで幅1.2mm/h＝150mmの0.23倍——大口径完全Siの難しさを1枚で。</p>
+    <div class="kpis">
+      <div class="kpi"><b>−0.50</b><span>v_max∝R^p 掃引指数（理論−1/2と厳密一致）</span></div>
+      <div class="kpi"><b>428→303mm/h</b><span>150→300mmの引き上げ限界</span></div>
+      <div class="kpi"><b>0.23×</b><span>完全Si窓の収縮（300mm vs 150mm）</span></div>
+    </div>
+    <div class="links"><a href="sumco.html">sumcoダッシュボード</a></div>
+    <div class="src">sumco/cz_growth</div>
   </div>
 
   <footer>

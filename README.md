@@ -4,7 +4,7 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-704%20passing-brightgreen)](#quick-start)
+[![Tests](https://img.shields.io/badge/tests-720%20passing-brightgreen)](#quick-start)
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20C%2B%2B%20%7C%20CUDA%20%7C%20Rust%20%7C%20Go%20%7C%20IEC%2061131--3-blue)](#language-coverage)
 
 Physics-accurate simulation of a DISCO DFL7160-class dicing saw.
@@ -19,9 +19,9 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 
 **▶ Live dashboards:** **https://keisuke58.github.io/wafer-proc-sim/** ・ **▶ 会社別サマリ:** **[companies.html](https://keisuke58.github.io/wafer-proc-sim/companies.html)**
 
-### 🗺 15社×専用ダッシュボード
+### 🗺 18社×専用ダッシュボード
 
-同一リポジトリで15社それぞれのド真ん中の技術を「物理モデル→実装→定量評価→テスト→公開ページ」まで一気通貫で実装（自作モジュールのみ・結果JSONコミット済み・CI 704テスト緑）:
+同一リポジトリで18社それぞれのド真ん中の技術を「物理モデル→実装→定量評価→テスト→公開ページ」まで一気通貫で実装（自作モジュールのみ・結果JSONコミット済み・CI 720テスト緑）:
 
 | 会社 | 領域 | 看板の数字 | ページ |
 |------|------|-----------|--------|
@@ -40,6 +40,9 @@ PLC logic in **IEC 61131-3 Structured Text**, telemetry in **Go**, safety-critic
 | **日立ハイテク** | CD-SEM計測 | LER差分法2.51→1.76nm、シュリンク外挿−0.17nm | [hitachi](https://keisuke58.github.io/wafer-proc-sim/hitachi.html) |
 | **アクセンチュア** | 応用AI・MLOps | アップリフトQini×5.6、ドリフト警報3窓先 | [accenture](https://keisuke58.github.io/wafer-proc-sim/accenture.html) |
 | **IBM** | 信頼できるAI | 公平性DIR 0.64→1.00、Shapley効率性残差0 | [ibm](https://keisuke58.github.io/wafer-proc-sim/ibm.html) |
+| **アプライドマテリアルズ** | 注入・PVD | 接合RTA 185 vs 炉349nm、コリメーション2.1× | [amat](https://keisuke58.github.io/wafer-proc-sim/amat.html) |
+| **KOKUSAI ELECTRIC** | 熱処理・バッチ炉 | Deal-Grove閉ループ0.000%、均一性±17.4→0% | [kokusai](https://keisuke58.github.io/wafer-proc-sim/kokusai.html) |
+| **SUMCO** | 結晶成長 | v_max∝R^-0.50厳密、完全Si窓300mmは0.23× | [sumco](https://keisuke58.github.io/wafer-proc-sim/sumco.html) |
 
 Two project families live in this repo:
 
@@ -161,7 +164,7 @@ The optics ⇄ mechanics boundary: tolerance stack-up, mechanism/control, struct
 | `plc/` | IEC 61131-3 | `SpindleFB`, `InterlockFB`, `RecipeSeqFB`, `DicingController` |
 | `rust/` | Rust / PyO3 | `SpindleKernel`, `nondominated_sort`, `rbf_kernel_matrix` — memory-safe, IEC 61508 compatible |
 | `telemetry/` | Go | HTTP + WebSocket server streaming `DiscoMachine` state in real time |
-| `tests/` | Python | **704 tests** — physics invariants + C++/Python parity + integration |
+| `tests/` | Python | **720 tests** — physics invariants + C++/Python parity + integration |
 
 ---
 
@@ -248,7 +251,7 @@ bash build_all_kernels.sh        # builds all 15 C++ kernels
 ### Run tests
 
 ```bash
-python -m pytest tests/ -q       # 704 tests, ~95 s
+python -m pytest tests/ -q       # 720 tests, ~100 s
 ```
 
 ### Run digital twin
@@ -381,7 +384,7 @@ wafer-proc-sim/
 ├── telemetry/          Go — HTTP/WebSocket server
 │   ├── main.go
 │   └── go.mod
-├── tests/              704 pytest tests
+├── tests/              720 pytest tests
 ├── benchmark_all_kernels.py
 └── build_all_kernels.sh
 ```

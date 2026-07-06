@@ -43,7 +43,7 @@
     <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
     <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
     <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
-      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>15社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>18社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
   </header>
 
   <div class="nav">
@@ -116,6 +116,15 @@
     <a class="navcard" href="companies_en.html">
       <div class="ic">🌐</div><b>English Summary（15社・英語版）</b>
       <span>15 companies, one repository — the portfolio map in English for international applications</span></a>
+    <a class="navcard" href="amat.html">
+      <div class="ic">🎯</div><b>注入・PVD（アプライドマテリアルズ向け）</b>
+      <span>LSS注入＋RTA（接合185 vs 349nm）・スパッタのトレンチ被覆（可視積分・コリメーション2.1×）</span></a>
+    <a class="navcard" href="kokusai.html">
+      <div class="ic">🔥</div><b>熱処理（KOKUSAI ELECTRIC向け）</b>
+      <span>Deal-Grove酸化（ODE vs 解析解0.000%）・バッチ炉枯渇を温度傾斜+21°Cで均一性0.00%へ</span></a>
+    <a class="navcard" href="sumco.html">
+      <div class="ic">💎</div><b>結晶成長（SUMCO向け）</b>
+      <span>CZ熱収支限界 v_max∝1/√R（厳密−0.50）・Voronkov v/Gの完全シリコン窓（300mmで0.23×）</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -159,6 +168,9 @@
 
   <h2 class="sec">応用AI・信頼できるAI ― accenture・ibm<a href="accenture.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 応用AI/MLOps</a><a href="ibm.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 公平性/説明性</a></h2>
   <div class="gal" id="g-aids"></div>
+
+  <h2 class="sec">前工程の物理 ― amat・kokusai・sumco<a href="amat.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 注入/PVD</a><a href="kokusai.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 熱処理</a><a href="sumco.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 結晶成長</a></h2>
+  <div class="gal" id="g-frontend"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -261,6 +273,13 @@ const GAL = {
     ['acn_drift.png','本番MLドリフト監視','PSI警報が精度低下より3窓早い・同一分布でPSI≈0'],
     ['ibm_fairness.png','アルゴリズム公平性','DIR 0.64→1.00（グループ別しきい値）・精度コスト6.4pt'],
     ['ibm_shapley.png','厳密Shapley説明性','効率性公理を残差0で検証・順列近似が1/√Nで収束'],
+  ],
+  'g-frontend': [
+    ['amat_implant.png','イオン注入＋RTA','LSSプロファイル・接合185 vs 349nm（RTA vs 炉）'],
+    ['amat_pvd.png','PVDスパッタ被覆','可視積分・ピンチオフ・コリメーション2.1×@AR3'],
+    ['kok_oxide.png','Deal-Grove酸化','ODE vs 解析解0.000%・ウェット36分 vs ドライ11時間'],
+    ['kok_furnace.png','バッチ炉均一性','枯渇±17.4%→温度傾斜+21°Cで0.00%'],
+    ['sumco_cz.png','CZ結晶成長','v_max∝R^-0.50厳密・完全Si窓300mmで0.23×'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],
