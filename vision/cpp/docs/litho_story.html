@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>リソグラフィ物語 — 露光・レジスト・計測・マスク検査の一気通貫</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#5b2c86; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#b28fd8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#b28fd8; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#5b2c86; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">The lithography chain · one photon’s journey from source to spec sheet</div>
+  <h1>リソグラフィ物語 — 1本の線が「引かれて・現像されて・測られる」まで</h1>
+  <p class="lead">半導体の線幅は1社では作れない。<strong>露光装置が空中像を作り（キヤノン）、レジストがそれをエッジに変え（富士フイルム）、CD-SEMがそれを数字にし（日立ハイテク）、マスク検査が上流の欠陥を止める（レーザーテック）</strong>——このポートフォリオでは、その連鎖の各段を同じ流儀（物理→自作実装→閉ループ検証）で実装した。このページは4社のモジュールを1本の物語として繋ぐ。各段の「持ち場の数字」がどう次の段の入力になるかに注目。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v accent">①→④</div><div class="k">露光→レジスト→計測→マスク検査の一気通貫</div></div>
+    <div class="tile"><div class="v g">DOF 5.4×</div><div class="k">①照明設計が買う焦点余裕（整合ダイポール）</div></div>
+    <div class="tile"><div class="v g">−0.43</div><div class="k">②LERのショットノイズ指数（理論−0.5）</div></div>
+    <div class="tile"><div class="v g">1.76nm</div><div class="k">③計測ノイズを引き算した真のLER（真値2.0）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>第1章 露光 — 空中像はレンズと「照明の設計」で決まる<span style="font-size:12px;color:var(--muted)">（キヤノン照準）</span></h2>
+    <p class="sub">KrF（λ248nm/NA0.86）の回折次数和Abbe結像。k1=0.35では従来照明のDOFは200nmしかないが、<strong>極位置をピッチに整合させたダイポール（σ=λ/2pNA）でDOF 1080nm</strong>——0次と±1次を瞳内で対称に置くと、デフォーカス位相の交差項が消えるため。ここで作られた「像コントラストK」が次章のレジストへの入力になる。</p>
+    <div class="figure"><img src="assets/canon_litho.png" alt="Bossung曲線とプロセスウィンドウ"></div>
+    <p class="sub" style="margin-top:8px">→ 詳細: <a href="canon.html">canon</a>（Bossung・プロセスウィンドウ・NIL）</p>
+  </div>
+
+  <div class="card">
+    <h2>第2章 レジスト — 像がエッジになる瞬間、ノイズが生まれる<span style="font-size:12px;color:var(--muted)">（富士フイルム照準）</span></h2>
+    <p class="sub">第1章の空中像（コントラストK=0.75）を受けたレジスト内部は<strong>計数実験の連鎖</strong>：光子Poisson→酸生成→PEB拡散→現像しきい値。その分散がそのままLER（線エッジラフネス）になり、<strong>LER∝dose^−0.43</strong>（計数統計の理論−0.5）——感度と粗さは物理的にトレードオフ。拡散長には内部最適（16nm）があり、Mack現像の選択性nが側壁を「坂」から「壁」に変える（76→85°）。ここで生まれたエッジ（真のLER 2.0nm相当）が次章の被測定物。</p>
+    <div class="figure"><img src="assets/ff_car.png" alt="CAR確率過程とLER"></div>
+    <p class="sub" style="margin-top:8px">→ 詳細: <a href="fujifilm.html">fujifilm</a>（CAR確率過程・Mack現像）</p>
+  </div>
+
+  <div class="card">
+    <h2>第3章 計測 — 「測る」がエッジを変え、ノイズがLERを水増しする<span style="font-size:12px;color:var(--muted)">（日立ハイテク照準）</span></h2>
+    <p class="sub">第2章のエッジをCD-SEMが測る——が、測定は2回ウソをつく。①検出ノイズはLERに二乗和で混入（naive 2.51nm vs 真値2.0）→<strong>差分法でノイズ床を引き算して1.76nm</strong>。②電子線がレジストを縮めながら測る→フレーム列の指数フィットで<strong>ゼロドーズ外挿−0.17nm</strong>。第2章の「真のLER」と第3章の「測定LER」の差こそ、計測工学の存在理由。</p>
+    <div class="figure"><img src="assets/ht_cdsem.png" alt="CD-SEM信号とLERバイアス除去"></div>
+    <p class="sub" style="margin-top:8px">→ 詳細: <a href="hitachi.html">hitachi</a>（SE信号形成・LER差分法・シュリンク外挿）</p>
+  </div>
+
+  <div class="card">
+    <h2>第4章 マスク検査 — 上流の欠陥は「見える」かではなく「転写する」かで裁く<span style="font-size:12px;color:var(--muted)">（レーザーテック照準）</span></h2>
+    <p class="sub">線を乱す欠陥の多くはマスク由来。EUV部分コヒーレント結像で欠陥の<strong>転写性（空中像ΔCD）</strong>を計算すると、検出スコアが同じ欠陥でも「刷られる/刷られない」に分かれる——修理判断は画素数でなく転写性で下すべき、という結論。位相欠陥はデフォーカスで最悪化（ΔCD 19.4%@−25nm）し、第1章の焦点余裕の議論と繋がって円環が閉じる。</p>
+    <div class="figure"><img src="assets/euv_print.png" alt="EUV転写性ΔCD"></div>
+    <p class="sub" style="margin-top:8px">→ 詳細: <a href="inspection.html">inspection</a>（EUV結像・転写性・フォトンバジェット）</p>
+  </div>
+
+  <footer>
+    各章の数値はそれぞれのモジュール（canon/・fujifilm/・hitachi/・inspection/）の実測出力。すべて合成データ上の自作実装（公開文献の物理・アルゴリズムの再実装）であり、特定製品の内部実装ではありません。
+    <a href="companies.html">← 15社サマリ</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

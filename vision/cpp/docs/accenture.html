@@ -74,6 +74,105 @@
     <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="smart.html">半導体スマートAI</a>（自己教師あり異常検知・少ラベル能動学習）・<a href="ibm.html">信頼できるAI（公平性・説明性）</a>。出所：<code class="inl">accenture/{uplift_modeling, drift_monitoring}.py</code>。</p>
   </div>
 
+  <div class="card">
+    <h2>③ ライブデモ — PSIドリフト監視をその場で動かす<span class="pill ok" style="margin-left:8px">in-browser</span></h2>
+    <p class="sub">下のスライダで<strong>本番データの分布シフト</strong>と<strong>ウィンドウのサンプル数</strong>を動かすと、参照分布（グレー）とライブ分布（赤）のヒストグラム、PSI・KS距離、判定（安定/警告/シフト）が<strong>この場で再計算</strong>されます。実装はカード②のPythonと同じ定義（参照分位10ビン・ラプラス平滑化）のJavaScript移植。シフト0でもPSIが厳密に0にならないこと（有限サンプルのノイズ床）、サンプル数を増やすとその床が下がること——監視しきい値の設計がなぜ「n次第」なのかを体感できます。</p>
+    <div style="border:1px solid var(--line);border-radius:10px;padding:14px">
+      <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;margin-bottom:10px">
+        <label>平均シフト: <input type="range" id="dm-shift" min="0" max="2" step="0.05" value="0.6" style="vertical-align:middle;width:150px"> <span id="dm-shift-v" style="font-family:var(--mono)">0.60</span>σ</label>
+        <label>分散比: <input type="range" id="dm-scale" min="0.5" max="2" step="0.05" value="1" style="vertical-align:middle;width:120px"> <span id="dm-scale-v" style="font-family:var(--mono)">1.00</span></label>
+        <label>ウィンドウn: <input type="range" id="dm-n" min="100" max="5000" step="100" value="1500" style="vertical-align:middle;width:150px"> <span id="dm-n-v" style="font-family:var(--mono)">1500</span></label>
+      </div>
+      <canvas id="dm-canvas" width="880" height="260" style="width:100%;border:1px solid var(--line);border-radius:6px;background:#fff"></canvas>
+      <div style="display:flex;gap:14px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <span class="pill" id="dm-psi" style="font-size:12px">PSI: –</span>
+        <span class="pill" id="dm-ks" style="font-size:12px">KS: –</span>
+        <span class="pill" id="dm-verdict" style="font-size:12px">–</span>
+        <span style="font-size:11.5px;color:var(--muted)">しきい値: PSI&lt;0.1 安定 / 0.1–0.25 警告 / &gt;0.25 シフト（業界慣行）</span>
+      </div>
+    </div>
+    <script>
+    (function(){
+      function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+      function gauss(rng){var u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+      var NREF=6000, refRng=mulberry32(42), REF=[];
+      for(var i=0;i<NREF;i++)REF.push(gauss(refRng));
+      REF.sort(function(a,b){return a-b});
+      // reference decile edges (quantiles of REF)
+      var EDGES=[-Infinity];
+      for(var q=1;q<10;q++)EDGES.push(REF[Math.floor(q/10*NREF)]);
+      EDGES.push(Infinity);
+      function binCounts(data){
+        var c=new Array(10).fill(0);
+        for(var i=0;i<data.length;i++){var x=data[i],b=0;
+          while(b<9&&x>EDGES[b+1])b++; c[b]++;}
+        return c;
+      }
+      function psi(live){
+        var cr=binCounts(REF), cl=binCounts(live), s=0;
+        for(var b=0;b<10;b++){
+          var pr=(cr[b]+0.5)/(NREF+5), pl=(cl[b]+0.5)/(live.length+5);
+          s+=(pl-pr)*Math.log(pl/pr);
+        }
+        return s;
+      }
+      function ks(live){
+        var sl=live.slice().sort(function(a,b){return a-b}),m=0,j=0;
+        for(var i=0;i<NREF;i++){
+          while(j<sl.length&&sl[j]<=REF[i])j++;
+          m=Math.max(m,Math.abs((i+1)/NREF-j/sl.length));
+        }
+        return m;
+      }
+      function hist(data,lo,hi,nb){
+        var h=new Array(nb).fill(0),w=(hi-lo)/nb;
+        for(var i=0;i<data.length;i++){
+          var b=Math.floor((data[i]-lo)/w);
+          if(b>=0&&b<nb)h[b]++;
+        }
+        for(var b=0;b<nb;b++)h[b]/=data.length*w;
+        return h;
+      }
+      var cv=document.getElementById('dm-canvas'),ctx=cv.getContext('2d');
+      function redraw(){
+        var shift=parseFloat(document.getElementById('dm-shift').value);
+        var scale=parseFloat(document.getElementById('dm-scale').value);
+        var n=parseInt(document.getElementById('dm-n').value);
+        document.getElementById('dm-shift-v').textContent=shift.toFixed(2);
+        document.getElementById('dm-scale-v').textContent=scale.toFixed(2);
+        document.getElementById('dm-n-v').textContent=n;
+        var rng=mulberry32(7+Math.round(shift*100)*7919+n), live=[];
+        for(var i=0;i<n;i++)live.push(shift+scale*gauss(rng));
+        var p=psi(live),k=ks(live);
+        var lo=-4,hi=6,nb=60;
+        var hr=hist(REF,lo,hi,nb),hl=hist(live,lo,hi,nb);
+        var pk=Math.max.apply(null,hr.concat(hl))*1.15;
+        ctx.clearRect(0,0,cv.width,cv.height);
+        var W=cv.width,H=cv.height,bw=W/nb;
+        function bars(h,color){
+          ctx.fillStyle=color;
+          for(var b=0;b<nb;b++){var y=h[b]/pk*(H-24);ctx.fillRect(b*bw,H-20-y,bw-1,y);}
+        }
+        ctx.globalAlpha=0.55;bars(hr,'#9aa4af');bars(hl,'#d81b60');ctx.globalAlpha=1;
+        ctx.fillStyle='#555';ctx.font='11px sans-serif';
+        for(var xv=-4;xv<=6;xv+=2){var px=(xv-lo)/(hi-lo)*W;ctx.fillText(xv,px-4,H-6);}
+        ctx.fillStyle='#9aa4af';ctx.fillRect(W-190,10,10,10);ctx.fillStyle='#555';ctx.fillText('reference (launch)',W-174,19);
+        ctx.fillStyle='#d81b60';ctx.fillRect(W-190,26,10,10);ctx.fillStyle='#555';ctx.fillText('live window',W-174,35);
+        document.getElementById('dm-psi').textContent='PSI: '+p.toFixed(3);
+        document.getElementById('dm-ks').textContent='KS: '+k.toFixed(3);
+        var v=document.getElementById('dm-verdict');
+        if(p<0.1){v.textContent='安定 (<0.1)';v.className='pill ok';}
+        else if(p<0.25){v.textContent='警告 (0.1–0.25)';v.className='pill';v.style.color='#b4740a';v.style.borderColor='#b4740a';}
+        else{v.textContent='シフト検知 (>0.25)';v.className='pill bad';}
+      }
+      ['dm-shift','dm-scale','dm-n'].forEach(function(id){
+        document.getElementById(id).addEventListener('input',redraw);
+      });
+      redraw();
+    })();
+    </script>
+  </div>
+
   <footer>
     数値の出所：<code class="inl">accenture/uplift_modeling.py</code>・<code class="inl">accenture/drift_monitoring.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
     手法は公開文献（アップリフト/Qini・PSI/KSドリフト検知）の再実装であり、特定製品の内部実装ではありません。
