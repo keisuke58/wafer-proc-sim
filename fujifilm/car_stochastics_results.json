@@ -1,0 +1,28 @@
+{
+  "model": {
+    "pitch_nm": 90.0,
+    "image_contrast": 0.75,
+    "photons_per_nm2": 8.0,
+    "pag_yield": 0.35
+  },
+  "ler_vs_dose_3sig_nm": {
+    "d0.5": 1.808,
+    "d1": 1.431,
+    "d2": 0.794,
+    "d4": 0.814
+  },
+  "dose_exponent": {
+    "fit": -0.43,
+    "theory": -0.5
+  },
+  "ler_vs_diffusion_nm": {
+    "Ld_2nm": 3.521,
+    "Ld_5nm": 1.431,
+    "Ld_10nm": 0.788,
+    "Ld_16nm": 0.663,
+    "Ld_22nm": 0.794,
+    "Ld_30nm": 1.59,
+    "Ld_40nm": 6.779
+  },
+  "optimal_Ld": "Ld_16nm"
+}

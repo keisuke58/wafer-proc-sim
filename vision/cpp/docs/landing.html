@@ -43,7 +43,7 @@
     <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
     <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
     <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
-      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>11社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>13社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
   </header>
 
   <div class="nav">
@@ -98,6 +98,12 @@
     <a class="navcard" href="canon.html">
       <div class="ic">🔆</div><b>露光装置工学（キヤノン向け）</b>
       <span>KrF Bossung曲線→プロセスウィンドウ（整合ダイポールでDOF 5.4×）・NILスクイーズ流と欠陥×スループット</span></a>
+    <a class="navcard" href="fujifilm.html">
+      <div class="ic">🧪</div><b>レジスト材料工学（富士フイルム向け）</b>
+      <span>CAR確率過程（LER∝dose^-1/2・拡散長の内部最適）・Mack現像モデル（γと側壁角は化学で決まる）</span></a>
+    <a class="navcard" href="hitachi.html">
+      <div class="ic">🔍</div><b>CD-SEM計測工学（日立ハイテク向け）</b>
+      <span>SE側壁ブルームとビーム径バイアス・LERノイズバイアス差分法・e線シュリンクのゼロドーズ外挿</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -136,7 +142,7 @@
   <h2 class="sec">半導体テスト工学 ― ate（Advantest向け）<a href="advantest.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
   <div class="gal" id="g-ate"></div>
 
-  <h2 class="sec">メモリ／装置プロセス／精密計測／真空・CMP／露光 ― kioxia・tel・accretech・ebara・canon<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a><a href="accretech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 計測</a><a href="ebara.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 真空/CMP</a><a href="canon.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 露光/NIL</a></h2>
+  <h2 class="sec">メモリ／装置プロセス／精密計測／真空・CMP／露光・材料・計測 ― kioxia・tel・accretech・ebara・canon・fujifilm・hitachi<a href="kioxia.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ NAND</a><a href="tel.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ エッチ/ALD</a><a href="accretech.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 計測</a><a href="ebara.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 真空/CMP</a><a href="canon.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 露光/NIL</a><a href="fujifilm.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ レジスト</a><a href="hitachi.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ CD-SEM</a></h2>
   <div class="gal" id="g-memtel"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
@@ -231,6 +237,9 @@ const GAL = {
     ['eb_cmp.png','パターン密度CMP','有効密度＝クリア時間マップ・オーバーポリッシュ373nm'],
     ['canon_litho.png','KrF Bossung＆プロセスウィンドウ','整合ダイポールσ=λ/2pNAでDOF 200→1080nm'],
     ['canon_nil.png','NILスクイーズ流','1/h=1/h0+kt閉ループ・スループット9.7→25.5wph'],
+    ['ff_car.png','CARレジスト確率過程','LER∝dose^-0.43（理論-0.5）・拡散長16nmに内部最適'],
+    ['ff_develop.png','Mack現像モデル','γ 1.4→7.0・側壁76→85°——坂か壁かは化学で決まる'],
+    ['ht_cdsem.png','CD-SEM計測','SE白エッジ・LER差分法2.51→1.76nm・シュリンク外挿−0.17nm'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

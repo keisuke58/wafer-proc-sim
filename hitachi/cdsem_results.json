@@ -1,0 +1,28 @@
+{
+  "signal": {
+    "cd_true_nm": 45.0,
+    "beam_nm": 3.0,
+    "swa_deg": 86.0,
+    "cd_raw_nm": 47.75,
+    "cd_bias_vs_beam_nm": {
+      "beam_2nm": 1.28,
+      "beam_3nm": 2.75,
+      "beam_5nm": 6.54,
+      "beam_8nm": 12.7
+    }
+  },
+  "ler_3sig_nm": {
+    "true": 2.0,
+    "naive_1frame": 2.51,
+    "unbiased_1frame": 1.76,
+    "naive_8frames": 2.07,
+    "unbiased_8frames": 1.97
+  },
+  "shrinkage": {
+    "zero_dose_reading_nm": 46.94,
+    "naive_16frame_avg_nm": 44.77,
+    "zero_dose_extrapolated_nm": 46.76,
+    "err_naive_nm": -2.16,
+    "err_extrapolated_nm": -0.17
+  }
+}
