@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15 Companies, One Repository — Engineering Portfolio (English)</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#4338ca; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#a5b4fc; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#a5b4fc; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#4338ca; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Portfolio map · one repo, fifteen companies, physics to published dashboards</div>
+  <h1>15 Companies, One Repository — an engineering portfolio in English</h1>
+  <p class="lead">By <strong>Keisuke Nishioka</strong> (M.Sc. student, Keio University × Leibniz Universität Hannover double degree). Every module implements a company's core technology <strong>from the physics/algorithm up</strong> (no black-box solvers), validates it against a closed-form or analytic reference, ships it with tests (700+ green in CI), and publishes the results as a live dashboard. This page is the English summary; each card links to the full Japanese dashboard with figures and committed result JSONs. <a href="companies.html">日本語版はこちら</a>.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v accent">15</div><div class="k">company-specific dashboards</div></div>
+    <div class="tile"><div class="v accent">110+</div><div class="k">implementation cards with analysis</div></div>
+    <div class="tile"><div class="v accent">700+</div><div class="k">automated tests (CI green)</div></div>
+    <div class="tile"><div class="v accent">2</div><div class="k">interactive in-browser demos</div></div>
+  </div>
+
+  <div class="card" style="border-left:4px solid #0b57b8">
+    <div class="eyebrow" style="margin-bottom:2px">Dicing / Grinding / Laser — precision machining</div>
+    <h2>DISCO (primary target)</h2>
+    <p class="sub">The deepest stack: six dashboards from from-scratch C++ kerf inspection (wproc) to blade-wear GP, dressing policy optimization, self-supervised cutting-sound AI, label-efficient active learning, and FEM/TMCMC/Bayesian-optimization R&D.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0b57b8">−55%</b> <span style="font-size:11.5px;color:var(--muted)">total dressing cost with CBM vs no dressing</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0b57b8">+4 cuts</b> <span style="font-size:11.5px;color:var(--muted)">AE anomaly alarm lead over RMS control chart</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0b57b8">96→48</b> <span style="font-size:11.5px;color:var(--muted)">labels to 90% ADC accuracy with active learning</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="dashboard.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #5a5ad1">
+    <div class="eyebrow" style="margin-bottom:2px">Optics / Mechanics / Sensor</div>
+    <h2>Sony</h2>
+    <p class="sub">Full lens-barrel mechanical design (tolerance stack to GD&T) plus STOP analysis (thermal FE → Zernike → MTF), CMOS sensor PTC with conversion-gain closed loop, and a hybrid PDAF+contrast AF simulation.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#5a5ad1">55→119°C</b> <span style="font-size:11.5px;color:var(--muted)">MTF≥0.35 temperature window (Al→Invar)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#5a5ad1">0.77%</b> <span style="font-size:11.5px;color:var(--muted)">conversion-gain recovery error via PTC</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#5a5ad1">6.7×</b> <span style="font-size:11.5px;color:var(--muted)">hybrid AF speedup (1345→201 ms)</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="optomech.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #0e8a8a">
+    <div class="eyebrow" style="margin-bottom:2px">EUV mask inspection</div>
+    <h2>Lasertec</h2>
+    <p class="sub">Die-to-die difference imaging, phase-defect channel, and from-scratch partially coherent EUV imaging that grades defects by PRINTABILITY (aerial-image ΔCD) — plus the photon budget that sets the sensitivity-throughput frontier.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e8a8a">ΔCD 19.4%</b> <span style="font-size:11.5px;color:var(--muted)">phase defect worst at −25 nm defocus</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e8a8a">7.2σ</b> <span style="font-size:11.5px;color:var(--muted)">threshold holding 10 false counts/plate</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e8a8a">0.91</b> <span style="font-size:11.5px;color:var(--muted)">pixel AUROC on real images, unsupervised</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="inspection.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #1466c4">
+    <div class="eyebrow" style="margin-bottom:2px">Sensors / Measurement</div>
+    <h2>Keyence</h2>
+    <p class="sub">The laser-displacement signal chain from imaging to subpixel extraction to %GRR, a placement-free image dimension system, a C++ real-time port (491 profiles/s), and an interactive in-browser demo.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1466c4">5.5 vs 35 µm</b> <span style="font-size:11.5px;color:var(--muted)">robust vs centroid RMS under multi-reflection</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1466c4">σ 0.42 µm</b> <span style="font-size:11.5px;color:var(--muted)">IM repeatability over 30 re-placements</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1466c4">491/s</b> <span style="font-size:11.5px;color:var(--muted)">C++ extractor throughput (3200 px)</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="keyence.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #0e7d6c">
+    <div class="eyebrow" style="margin-bottom:2px">Wet processing / cleaning</div>
+    <h2>SCREEN</h2>
+    <p class="sub">Particle-removal mechanics (adhesion ∝d vs drag ∝d²), megasonic cavitation, SC-1 undercut vs material-loss budget, capillary collapse σ^(−1/4), spray damage ceilings and Marangoni drying — cleaning as a triple-constrained optimization.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e7d6c">0→85%</b> <span style="font-size:11.5px;color:var(--muted)">PRE @30 nm (spin-only → megasonic)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e7d6c">closes</b> <span style="font-size:11.5px;color:var(--muted)">damage-free spray window at hp16 for 30 nm</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0e7d6c">10⁴→9</b> <span style="font-size:11.5px;color:var(--muted)">watermarks/wafer with IPA Marangoni dry</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="screen.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #8a2be2">
+    <div class="eyebrow" style="margin-bottom:2px">Automatic test equipment</div>
+    <h2>Advantest</h2>
+    <p class="sub">A 10 Gb/s link with KNOWN injected jitter: bathtub curves from real error counting, dual-Dirac RJ/DJ separation closing the loop on the injected RJ, BER 1e-12 extrapolation, shmoo Fmax/Vmin, and a March-test fault-coverage proof.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#8a2be2">12.8%</b> <span style="font-size:11.5px;color:var(--muted)">RJ recovery error vs injected truth</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#8a2be2">73.8 ps</b> <span style="font-size:11.5px;color:var(--muted)">eye opening @BER 1e-12 (extrapolated)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#8a2be2">100 vs 0%</b> <span style="font-size:11.5px;color:var(--muted)">CFid coverage: March C− vs naive test</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="advantest.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #c2185b">
+    <div class="eyebrow" style="margin-bottom:2px">3D NAND memory device</div>
+    <h2>Kioxia</h2>
+    <p class="sub">ISPP Vth-distribution formation → P/E-cycle oxide degradation → Arrhenius retention → ECC limit, end to end: the endurance RATING emerges from physics as the crossing of the retention curve with the LDPC limit.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c2185b">5322 P/E</b> <span style="font-size:11.5px;color:var(--muted)">endurance rating (1-yr retention × LDPC @55°C)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c2185b">1e-3→5e-40</b> <span style="font-size:11.5px;color:var(--muted)">BCH-72 crushing RBER into UBER</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c2185b">3.4e-5</b> <span style="font-size:11.5px;color:var(--muted)">fresh RBER from analytic distribution overlap</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="kioxia.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #0f6ab4">
+    <div class="eyebrow" style="margin-bottom:2px">Etch / deposition equipment</div>
+    <h2>Tokyo Electron</h2>
+    <p class="sub">High-AR etch profile evolution (one passivation knob sweeps BOW→vertical→TAPER, 48% RIE lag) and an ALD coverage front with the AR² dose law verified numerically (fitted exponent 1.93).</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0f6ab4">1 knob</b> <span style="font-size:11.5px;color:var(--muted)">three profiles from one passivation sweep</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0f6ab4">AR^1.93</b> <span style="font-size:11.5px;color:var(--muted)">ALD dose scaling (theory AR²)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#0f6ab4">48%</b> <span style="font-size:11.5px;color:var(--muted)">RIE lag of a 20 nm trench at 240 s</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="tel.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #b03a2e">
+    <div class="eyebrow" style="margin-bottom:2px">Precision metrology</div>
+    <h2>Accretech (Tokyo Seimitsu)</h2>
+    <p class="sub">Surface roughness (ISO 16610 Gaussian filter, Ra/Rq/Rz) and roundness (ISO 12181 LSC/MZC, harmonic diagnosis) implemented from the standards up, closed against analytic references.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#b03a2e">50.0%</b> <span style="font-size:11.5px;color:var(--muted)">Gaussian filter transmission at λc (ISO exact)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#b03a2e">Ra=2A/π</b> <span style="font-size:11.5px;color:var(--muted)">sine closed loop within 2%</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#b03a2e">k=3</b> <span style="font-size:11.5px;color:var(--muted)">harmonic peak = three-jaw chuck distortion</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="accretech.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #1f618d">
+    <div class="eyebrow" style="margin-bottom:2px">Vacuum pumps / CMP</div>
+    <h2>Ebara</h2>
+    <p class="sub">Dry-pump pumpdown from the gas balance (matches V/S·ln(p0/p) within 0.6%): time to 1 Pa is set by the VENT GAS, not the pump. Plus die-scale pattern-density CMP (Stine/Ouma): planarity is a layout problem.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f618d">8.6×</b> <span style="font-size:11.5px;color:var(--muted)">faster to 1 Pa with a dry-N2 vent (pump ×2 buys 2×)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f618d">373 nm</b> <span style="font-size:11.5px;color:var(--muted)">pattern-density over-polish range</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f618d">∝ρ_eff</b> <span style="font-size:11.5px;color:var(--muted)">clear time proportional to effective density</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="ebara.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #c00000">
+    <div class="eyebrow" style="margin-bottom:2px">Lithography equipment / NIL</div>
+    <h2>Canon</h2>
+    <p class="sub">KrF order-sum Abbe imaging with the exact defocus phase: Bossung curves → process window, and the pitch-matched dipole (σ=λ/2pNA) buying 5.4× DOF. Plus nanoimprint squeeze-flow fluidics: the drop pattern sets throughput.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c00000">5.4×</b> <span style="font-size:11.5px;color:var(--muted)">DOF from matched dipole (200→1080 nm @5% EL)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c00000">4.00</b> <span style="font-size:11.5px;color:var(--muted)">NIL spread-time pitch² law (theory 4)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#c00000">9.7→25.5</b> <span style="font-size:11.5px;color:var(--muted)">NIL wafers/hour (ambient + finer drops)</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="canon.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #00794f">
+    <div class="eyebrow" style="margin-bottom:2px">Photoresist materials</div>
+    <h2>Fujifilm</h2>
+    <p class="sub">The chemically amplified resist as a chain of counting experiments: Monte-Carlo LER follows the shot-noise law (fitted −0.43 vs theory −0.5) with an interior optimum in PEB diffusion; Mack dissolution turns chemistry contrast into sidewall angle.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#00794f">−0.43</b> <span style="font-size:11.5px;color:var(--muted)">LER∝dose^p fitted exponent (theory −0.5)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#00794f">L_d 16 nm</b> <span style="font-size:11.5px;color:var(--muted)">PEB diffusion length minimizing LER</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#00794f">76→85°</b> <span style="font-size:11.5px;color:var(--muted)">sidewall angle from selectivity n=2→16</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="fujifilm.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #37474f">
+    <div class="eyebrow" style="margin-bottom:2px">CD-SEM metrology</div>
+    <h2>Hitachi High-Tech</h2>
+    <p class="sub">SE sidewall bloom (sec θ) signal formation, monotone beam-size CD bias, LER noise-bias removal by the repeat-scan difference method, and e-beam shrinkage handled by zero-dose extrapolation — the measurement changes the measurand.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#37474f">+2.8 nm</b> <span style="font-size:11.5px;color:var(--muted)">raw CD bias at a 3 nm beam (why you calibrate)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#37474f">2.51→1.76</b> <span style="font-size:11.5px;color:var(--muted)">LER 3σ nm: naive → unbiased (truth 2.0)</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#37474f">−0.17 nm</b> <span style="font-size:11.5px;color:var(--muted)">zero-dose extrapolation residual</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="hitachi.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #a100ff">
+    <div class="eyebrow" style="margin-bottom:2px">Applied AI & MLOps</div>
+    <h2>Accenture</h2>
+    <p class="sub">Causal uplift targeting (T-learner recovers true treatment effects at corr 0.90; Qini area 5.6× the response-model ranking) and production drift monitoring: the label-free PSI alarm fires 3 windows before accuracy drops.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#a100ff">×5.6</b> <span style="font-size:11.5px;color:var(--muted)">Qini area: uplift vs response-probability targeting</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#a100ff">3 windows</b> <span style="font-size:11.5px;color:var(--muted)">drift alarm lead over the labelled accuracy drop</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#a100ff">PSI≈0</b> <span style="font-size:11.5px;color:var(--muted)">0.001 on identical distributions (closed loop)</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="accenture.html">→ dashboard</a></p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #1f70c1">
+    <div class="eyebrow" style="margin-bottom:2px">Trustworthy AI</div>
+    <h2>IBM</h2>
+    <p class="sub">Algorithmic fairness (disparate impact measured and mitigated: reweighing shown exact AND honestly limited; group thresholds reach parity for a 6.4-pt accuracy cost) and exact Shapley explanations with the efficiency axiom verified to a 0 residual.</p>
+    <div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f70c1">0.64→1.00</b> <span style="font-size:11.5px;color:var(--muted)">DIR to parity via group thresholds</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f70c1">residual 0</b> <span style="font-size:11.5px;color:var(--muted)">Σφ = pred − base verified exactly</span></div><div class="kpi" style="display:inline-block;margin:4px 10px 4px 0"><b style="color:#1f70c1">1/√N</b> <span style="font-size:11.5px;color:var(--muted)">permutation-Shapley convergence to exact</span></div></div>
+    <p class="sub" style="margin-top:8px"><a href="ibm.html">→ dashboard</a></p>
+  </div>
+
+  <footer>
+    All implementations are from-scratch reconstructions of published physics and algorithms on synthetic data (plus real-image validation with the NEU dataset: 1800-image classification, 51-pair detection); nothing is a reimplementation of any company's proprietary internals.
+    Numbers are measured outputs of the committed modules (result JSONs in the repo).
+    <a href="./">← all dashboards</a> / <a href="https://github.com/keisuke58/wafer-proc-sim">GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
