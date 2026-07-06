@@ -1,0 +1,33 @@
+{
+  "constants_1100C": {
+    "dry": {
+      "A_um": 0.09,
+      "B_um2h": 0.027,
+      "tau_h": 0.076
+    },
+    "wet": {
+      "A_um": 0.11,
+      "B_um2h": 0.51,
+      "tau_h": 0.0
+    },
+    "B_ratio_wet_dry": 18.9
+  },
+  "closed_loop_ode_vs_analytic_pct": 0.0,
+  "linear_regime": {
+    "t_h": 0.005,
+    "x_um": 0.00148,
+    "BA_t_um": 0.0015,
+    "err_pct": 1.61
+  },
+  "parabolic_regime": {
+    "t_h": 40.0,
+    "x_um": 4.462,
+    "sqrt_Bt_um": 4.517,
+    "err_pct": 1.21
+  },
+  "recipes": {
+    "thin_30nm_dry1000C_min": 7.8,
+    "field_500nm_wet1100C_min": 35.9,
+    "field_500nm_DRY1100C_hours": 10.8
+  }
+}

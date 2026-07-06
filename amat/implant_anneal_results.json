@@ -1,0 +1,42 @@
+{
+  "implant": {
+    "species": "B",
+    "E_keV": 30,
+    "dose_cm2": 1000000000000000.0,
+    "dose_recovered_cm2": 992480000000000.0,
+    "dose_err_pct": 0.752,
+    "ranges": {
+      "B_30keV": {
+        "Rp_nm": 68.4,
+        "dRp_nm": 28.2
+      },
+      "P_80keV": {
+        "Rp_nm": 72.3,
+        "dRp_nm": 29.0
+      },
+      "As_100keV": {
+        "Rp_nm": 46.0,
+        "dRp_nm": 17.3
+      }
+    }
+  },
+  "anneal": {
+    "fd_vs_analytic_maxerr_frac": 0.0305,
+    "D_nm2s": {
+      "RTA_1050C": 5.028,
+      "furnace_1000C": 1.527
+    },
+    "as_implanted": {
+      "xj_nm": 179.7,
+      "Rs_ohm_sq": 122.1
+    },
+    "RTA_1050C_10s": {
+      "xj_nm": 185.4,
+      "Rs_ohm_sq": 121.6
+    },
+    "furnace_1000C_30min": {
+      "xj_nm": 348.8,
+      "Rs_ohm_sq": 113.7
+    }
+  }
+}

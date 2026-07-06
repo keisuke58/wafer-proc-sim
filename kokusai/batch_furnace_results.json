@@ -1,0 +1,21 @@
+{
+  "config": {
+    "n_wafers": 150,
+    "T0_C": 700.0,
+    "Ea_eV": 1.7,
+    "depletion_kaLQ": 0.35
+  },
+  "mass_balance_err": 0.0,
+  "flat_temperature": {
+    "rate_first_last": [
+      1.0,
+      0.706
+    ],
+    "uniformity_pct": 17.4
+  },
+  "with_ramp": {
+    "ramp_C": 20.95,
+    "uniformity_pct": 0.0
+  },
+  "zero_depletion_uniformity_pct": 0.0
+}

@@ -1,0 +1,34 @@
+{
+  "heat_balance": {
+    "v_max_mmh": {
+      "150mm": 427.9,
+      "200mm": 370.6,
+      "300mm": 302.6
+    },
+    "swept_exponent_vs_R": -0.5,
+    "theory_exponent": -0.5
+  },
+  "voronkov": {
+    "xi_crit_cm2_minK": 0.00134,
+    "neutral_band_pct": 10.0,
+    "G_edge_over_center_300mm": 1.18,
+    "perfect_window": {
+      "150mm": {
+        "lo_mmh": 44.62,
+        "hi_mmh": 50.03,
+        "width_mmh": 5.41
+      },
+      "200mm": {
+        "lo_mmh": 39.7,
+        "hi_mmh": 43.33,
+        "width_mmh": 3.62
+      },
+      "300mm": {
+        "lo_mmh": 34.15,
+        "hi_mmh": 35.38,
+        "width_mmh": 1.22
+      }
+    },
+    "window_shrink_300_vs_150": 0.23
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "model": {
+    "trench_w_nm": 100.0,
+    "source": "cos^n arrival",
+    "n_diffuse": 1,
+    "n_collimated": 20
+  },
+  "flat_flux_closed_loop": {
+    "mean": 1.0,
+    "expected": 1.0
+  },
+  "coverage_vs_AR": {
+    "AR": [
+      0.5,
+      1.0,
+      2.0,
+      3.0
+    ],
+    "diffuse": [
+      0.55,
+      0.421,
+      0.252,
+      0.194
+    ],
+    "collimated": [
+      0.724,
+      0.644,
+      0.558,
+      0.402
+    ]
+  },
+  "collimation_gain_at_AR3": 2.07
+}
