@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>信頼できるAI工学 — 公平性の是正とShapley説明性</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#1f70c1; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#6fb1e0; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#6fb1e0; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#1f70c1; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Trustworthy AI · fairness and explainability you can prove, not just claim</div>
+  <h1>信頼できるAI工学 — 公平性と説明性を「証明」する</h1>
+  <p class="lead">精度が高いだけのAIは信頼できない。<strong>不当な格差を測って是正し、どんな予測も人が検証できる形に分解する</strong>——これがIBMの掲げるトラストワージーAI（AIF360/AIX360）の核。ここでは①アルゴリズム公平性（disparate impactの測定と是正、reweighingの数式的閉ループ＋グループ別しきい値）②厳密Shapley値による説明性（効率性公理を残差0で検証）——を定義とゲーム理論から実装する。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v b">DIR 0.64</div><div class="k">ベースラインの不当格差（80%ルール未達）</div></div>
+    <div class="tile"><div class="v g">→ 1.00</div><div class="k">グループ別しきい値でパリティ達成（精度コスト6.4pt）</div></div>
+    <div class="tile"><div class="v g">残差 0</div><div class="k">Shapley効率性公理 Σφ=pred−base を厳密検証</div></div>
+    <div class="tile"><div class="v accent">1/√N</div><div class="k">順列近似の収束（厳密Shapley基準、0.041→0.002）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① アルゴリズム公平性 — disparate impactを測って是正する（AIF360相当）</h2>
+    <p class="sub">精度が高くても不公平はありうる：保護属性を特徴に使わなくても、<strong>プロキシ（相関する特徴）が属性を漏らし</strong>、あるグループの陽性率が低くなる＝disparate impact。指標を定義から実装：<strong>DIR</strong>（非優遇/優遇の陽性率比、80%ルール＝0.8以上で公平）・人口統計パリティ差・equalized odds差。是正はまず<strong>reweighing</strong>（AIF360前処理）——重み <code class="inl">w(a,y)=P(a)P(y)/P(a,y)</code> で属性とラベルを独立化し、<strong>重み付き陽性率がグループ間で厳密一致（残差&lt;1e-9）</strong>を閉ループ検証。ただしreweighingはラベルバイアスには効くが<strong>プロキシ漏れには効かない（DIR 0.64→0.65と正直な限界）</strong>。予測格差を実際に閉じるのは<strong>グループ別しきい値</strong>（後処理・reject-option系）：各グループの陽性率を共通目標に合わせDIR→1.00、ただし<strong>パリティは無料でない＝精度6.4pt</strong>のトレードオフ。審査会が実際に議論する数字。</p>
+    <div class="figure"><img src="assets/ibm_fairness.png" alt="DIRの是正比較と公平性-精度フロンティア"></div>
+  </div>
+
+  <div class="card">
+    <h2>② 厳密Shapley値による説明性 — 「なぜそう予測したか」を残差0で分解（AIX360相当）</h2>
+    <p class="sub">信頼できるAIには、任意の1予測を<strong>人（監査人）が検証できる特徴寄与に分解</strong>する説明が要る。協力ゲーム理論のShapley値は効率性・対称性・null-player・加法性を満たす唯一の帰属で、少数特徴なら全連合を列挙して<strong>厳密</strong>に計算できる。価値関数 <code class="inl">v(S)=E_bg[f(x_S, X_−S)]</code>（背景データで周辺化）から6特徴の厳密Shapleyを算出。核心は<strong>効率性公理</strong> <code class="inl">Σφ_i = f(x) − E[f]</code>——寄与の和が予測にぴったり一致（<strong>残差0</strong>で検証、"辻褄が合う"を数式で保証）。さらに大規模で使う<strong>順列モンテカルロ近似</strong>が、サンプル増で厳密値へ1/√Nで収束（最大誤差0.041→0.002）——列挙が高すぎる時に受け入れる誤差を定量化。</p>
+    <div class="figure"><img src="assets/ibm_shapley.png" alt="Shapley寄与のウォーターフォールと順列近似の収束"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="accenture.html">応用AI（アップリフト・ドリフト監視）</a>・<a href="smart.html">半導体スマートAI</a>。出所：<code class="inl">ibm/{fairness_mitigation, shapley_explain}.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">ibm/fairness_mitigation.py</code>・<code class="inl">ibm/shapley_explain.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開文献（AIF360のreweighing/disparate impact・reject-option後処理・Shapley値/AIX360）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/ibm">keisuke58/wafer-proc-sim/ibm</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

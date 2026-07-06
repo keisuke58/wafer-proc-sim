@@ -1,0 +1,30 @@
+{
+  "data": {
+    "n": 6000,
+    "groups": "A=0 unprivileged / A=1 privileged",
+    "note": "protected attribute NOT a feature; proxies leak"
+  },
+  "reweigh_closed_loop": {
+    "weighted_pos_rate_A0": 0.642333,
+    "weighted_pos_rate_A1": 0.642333,
+    "abs_diff": 0.0
+  },
+  "baseline_thresh0.5": {
+    "acc": 0.766,
+    "DIR": 0.639,
+    "dem_parity_diff": 0.307,
+    "eq_odds_diff": 0.206
+  },
+  "reweighed_model": {
+    "DIR": 0.651,
+    "note": "label reweighing barely moves prediction disparity"
+  },
+  "group_thresholds": {
+    "acc": 0.702,
+    "DIR": 1.0,
+    "dem_parity_diff": 0.0001,
+    "t_unpriv": 0.348,
+    "t_priv": 0.685
+  },
+  "parity_accuracy_cost_pts": 6.4
+}

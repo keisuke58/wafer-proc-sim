@@ -1,0 +1,18 @@
+{
+  "trial": {
+    "n": 8000,
+    "propensity": 0.5,
+    "features": 4
+  },
+  "uplift_recovery_corr_vs_true": 0.895,
+  "qini_area": {
+    "uplift": 68.2,
+    "response_model": 12.1,
+    "random": 11.1
+  },
+  "qini_area_AA_should_be_zero": -1.4,
+  "incremental_at_30pct": {
+    "uplift": 171,
+    "response_model": 75
+  }
+}

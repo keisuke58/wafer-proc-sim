@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 13社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 15社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,15 +52,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, thirteen companies</div>
+  <div class="eyebrow">Portfolio map · one repo, fifteen companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>13社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（690+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+  <p class="lead">1つのリポジトリで<strong>15社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（700+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">13<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">15<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
-    <div class="stat"><div class="v">690+</div><div class="k">自動テスト（CI緑）</div></div>
-    <div class="stat"><div class="v">37</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">700+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">38</div><div class="k">レビュー済みPR</div></div>
     <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
   </div>
 
@@ -232,6 +232,32 @@
     </div>
     <div class="links"><a href="hitachi.html">hitachiダッシュボード</a></div>
     <div class="src">hitachi/cdsem</div>
+  </div>
+
+  <div class="co" style="--co:#a100ff">
+    <div class="role">Applied AI &amp; MLOps — AIコンサル・実装（AIアーキテクト）</div>
+    <h2>アクセンチュア<span style="font-size:12px;color:var(--muted)">｜「予測」でなく「意思決定」を設計する（2カード）</span></h2>
+    <p class="story">因果アップリフト（施策で転換する人だけを狙う、T-learnerで真の因果効果を相関0.90回収）と、本番MLのドリフト監視（ラベルを待たずPSIで劣化を3窓先に検知）。モデル単体でなく「設計して運用まで持っていく」応用AIを、ランダム化試験とストリーム統計から実装し閉ループ検証。</p>
+    <div class="kpis">
+      <div class="kpi"><b>×5.6</b><span>アップリフト狙い撃ちのQini面積（転換確率順の何倍か）</span></div>
+      <div class="kpi"><b>3窓先</b><span>ドリフト警報が精度低下より早く鳴るリードタイム</span></div>
+      <div class="kpi"><b>PSI≈0</b><span>同一分布で0.001（計測が正しい閉ループ）</span></div>
+    </div>
+    <div class="links"><a href="accenture.html">accentureダッシュボード</a></div>
+    <div class="src">accenture/{uplift_modeling, drift_monitoring}</div>
+  </div>
+
+  <div class="co" style="--co:#1f70c1">
+    <div class="role">Trustworthy AI — 信頼できるAI（公平性・説明性）</div>
+    <h2>IBM<span style="font-size:12px;color:var(--muted)">｜公平性と説明性を「証明」する（2カード）</span></h2>
+    <p class="story">アルゴリズム公平性（disparate impactの測定、reweighingの数式的閉ループ＋グループ別しきい値でパリティ達成、AIF360相当）と、厳密Shapley値による説明性（効率性公理を残差0で検証、順列近似が1/√Nで収束、AIX360相当）。「精度が高いだけでは信頼できない」をゲーム理論と統計で定量化。</p>
+    <div class="kpis">
+      <div class="kpi"><b>0.64→1.00</b><span>DIR：グループ別しきい値でパリティ（精度コスト6.4pt）</span></div>
+      <div class="kpi"><b>残差0</b><span>Shapley効率性公理 Σφ=pred−base を厳密検証</span></div>
+      <div class="kpi"><b>1e-9</b><span>reweighing重み付き陽性率のグループ間一致</span></div>
+    </div>
+    <div class="links"><a href="ibm.html">ibmダッシュボード</a></div>
+    <div class="src">ibm/{fairness_mitigation, shapley_explain}</div>
   </div>
 
   <footer>
