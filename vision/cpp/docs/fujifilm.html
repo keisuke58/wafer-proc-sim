@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レジスト材料工学 — CAR確率過程とMack現像モデル</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#00794f; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#4ecf96; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#4ecf96; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#00794f; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Semiconductor materials · the resist itself, photon by photon</div>
+  <h1>レジスト材料工学 — LERは化学で決まり、側壁は溶解で決まる</h1>
+  <p class="lead">露光装置（<a href="canon.html">キヤノン照準</a>）が届けるのは空中像まで。それをエッジに変えるのは<strong>レジスト材料</strong>——半導体材料メーカーの主戦場。化学増幅レジスト（CAR）の確率過程（光子計数→酸生成→PEB拡散→現像しきい値）をモンテカルロで実装し、<strong>LER∝dose^(-1/2)というショットノイズ則</strong>と<strong>拡散長の内部最適</strong>を数値で示す。さらにMack溶解モデルから特性曲線γと側壁角を導出——同じ空中像でも化学で「坂」にも「壁」にもなる。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v g">−0.43</div><div class="k">LER vs dose のフィット指数（計数統計の理論 −0.5）</div></div>
+    <div class="tile"><div class="v accent">L_d=16<small> nm</small></div><div class="k">LERを最小化するPEB拡散長（少なすぎ→ノイズ、多すぎ→勾配死）</div></div>
+    <div class="tile"><div class="v g">γ 1.4→7.0</div><div class="k">Mack選択性n=2→16で特性曲線コントラスト5倍</div></div>
+    <div class="tile"><div class="v accent">76→85<small> °</small></div><div class="k">同じ空中像での側壁角（化学だけで坂→壁）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① CAR確率過程 — LERの正体は「数えられる光子」</h2>
+    <p class="sub">吸収光子はPoisson、酸生成は間引きPoisson、PEB拡散はガウシアンぼかし、現像はしきい値——この計数実験の連鎖の分散が行ごとのエッジ位置に化けるのがLER。モンテカルロ出力に対して<strong>LER∝dose^p のフィットで p=−0.43</strong>（計数統計の理論−0.5）を確認：感度を上げる（低ドーズ化）とラフネスで払う、というRLSトレードオフの根が数式でなく「実験」で出てくる。拡散長L_dの掃引では<strong>16nmに内部最適</strong>：ぼかしはショットノイズを平均化する（善）が像勾配も殺す（悪）。レジスト設計＝この三すくみのどこに座るかの選択。</p>
+    <div class="figure"><img src="assets/ff_car.png" alt="酸フィールドとエッジ、LER vs dose、拡散長の内部最適"></div>
+  </div>
+
+  <div class="card">
+    <h2>② Mack現像モデル — 溶解選択性nが側壁角を買う</h2>
+    <p class="sub">溶解レート r(m)=r_max(a+1)(1−m)ⁿ/(a+(1−m)ⁿ)+r_min（Mackモデル）と一次Dill露光 m(x,z)=exp(−CEI(x)e^(−αz)) から、各列の現像前線 t(x,z)=∫dz/r を積分してプロファイルを構成。<strong>閉ループ：ドーズ・トゥ・クリアE0で最明部の全膜厚クリア時間がちょうど現像時間（誤差&lt;1%、テスト）</strong>。同じレート模型から特性曲線γ（n=2→16でγ1.4→7.0）と側壁角（76→85°）が出る：<strong>「坂」か「壁」かは露光機ではなく溶解化学が決める</strong>——材料メーカーがリソの最後の1nmを握っている理由。</p>
+    <div class="figure"><img src="assets/ff_develop.png" alt="Mack溶解レート、特性曲線、n別レジストプロファイル"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="canon.html">KrF結像・プロセスウィンドウ（露光側）</a>・<a href="hitachi.html">CD-SEM計測（測る側）</a>・<a href="inspection.html">EUV転写性</a>。出所：<code class="inl">fujifilm/{car_stochastics, resist_develop}.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">fujifilm/car_stochastics.py</code>・<code class="inl">fujifilm/resist_develop.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開文献（レジスト確率論・Mack現像モデル・Dill露光式）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/fujifilm">keisuke58/wafer-proc-sim/fujifilm</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

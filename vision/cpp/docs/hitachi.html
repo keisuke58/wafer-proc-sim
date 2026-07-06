@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CD-SEM計測工学 — SE信号形成とバイアス補正</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#37474f; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#90a4ae; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#90a4ae; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#37474f; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line)}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">CD-SEM metrology · measuring nanometers with electrons, honestly</div>
+  <h1>CD-SEM計測工学 — 「測る」が「変える」を補正する</h1>
+  <p class="lead">リソグラフィの連鎖の終点は計測：<a href="canon.html">露光</a>→<a href="fujifilm.html">レジスト</a>が作ったエッジを、CD-SEMが数字にする。二次電子の信号形成（sec θの側壁ブルーム＝SEM画像の白エッジ）から実装し、CD-SEM運用の2大「正直な計測学」——<strong>LERのノイズバイアス除去</strong>（測定LER²=真LER²+ノイズ²）と<strong>e線シュリンクのゼロドーズ外挿</strong>（電子線がレジストを縮めながら測る）——を数値で検証する。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v b">+2.8<small> nm</small></div><div class="k">ビーム3nmのCD生バイアス（8nmなら+12.7）——校正して使う理由</div></div>
+    <div class="tile"><div class="v accent">2.51→1.76</div><div class="k">LER 3σ nm：naive→差分法バイアス除去（真値2.0）</div></div>
+    <div class="tile"><div class="v b">−2.2<small> nm</small></div><div class="k">16フレーム平均CDのシュリンク誤差（naive）</div></div>
+    <div class="tile"><div class="v g">−0.17<small> nm</small></div><div class="k">ゼロドーズ外挿の残差——「測る前」のCDを回収</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① SE信号形成 — 白いエッジの物理とビーム径バイアス</h2>
+    <p class="sub">傾いた面ほど二次電子が逃げやすい（〜sec θ、検出器コンプレッションつき）ので側壁が明るく光る——SEM画像でおなじみの白エッジをモデル化し、ガウシアンビームで畳み込み、フレーム数ぶんのPoisson電子ノイズを載せる。しきい値法のCD抽出は<strong>ビーム径とともに外側へ単調にバイアス</strong>（2nm:+1.3 → 8nm:+12.7nm、テストで単調性検証）：CD-SEMの絶対値は物理的に「生では信じない」ものであり、だから校正・マッチングが商売になる。</p>
+    <div class="figure"><img src="assets/ht_cdsem.png" alt="SEラインプロファイル、LERバイアス除去、シュリンク外挿"></div>
+  </div>
+
+  <div class="card">
+    <h2>② 正直な計測学 — ノイズバイアスとシュリンクの補正</h2>
+    <p class="sub"><strong>LER：</strong>行ごとのエッジ検出誤差は測定LERに<strong>二乗和で混入</strong>（naive 2.51nm vs 真値2.0nm）。同じエッジを2回走査し差分の半分散でノイズ床を推定→引き算（差分法）で1.76nm、8フレームなら1.97nmまで回収。<strong>シュリンク：</strong>e線照射でレジストが縮む（CD(k)=CD∞+A·e^(−k/k0)）ため、平均を増やすほどノイズは減るがダメージは増える——16フレーム素朴平均は<strong>−2.2nm</strong>ずれ、フレーム列の指数フィットで<strong>ゼロドーズに外挿すれば−0.17nm</strong>。「観測が対象を変える」を工学として処理する、計測メーカーのド真ん中の作法。</p>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="accretech.html">ISO粗さ・真円度</a>・<a href="keyence.html">画像寸法測定・%GRR</a>・<a href="metro.html">Gage R&amp;R</a>——「計測能力を定量する」スタック一式。出所：<code class="inl">hitachi/cdsem.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">hitachi/cdsem.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開文献（SE放出のトポグラフィコントラスト・LER差分法・シュリンク外挿）の再実装であり、特定製品の内部実装ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/hitachi">keisuke58/wafer-proc-sim/hitachi</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

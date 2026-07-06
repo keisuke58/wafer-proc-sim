@@ -1,0 +1,26 @@
+{
+  "mack": {
+    "n_sweep": {
+      "n2": {
+        "dose_to_clear": 0.198,
+        "gamma": 1.43,
+        "sidewall_deg": 76.0
+      },
+      "n8": {
+        "dose_to_clear": 0.466,
+        "gamma": 4.39,
+        "sidewall_deg": 82.9
+      },
+      "n16": {
+        "dose_to_clear": 0.566,
+        "gamma": 7.02,
+        "sidewall_deg": 85.0
+      }
+    },
+    "r_max": 120.0,
+    "r_min": 0.08,
+    "m_th": 0.6,
+    "t_dev_s": 45.0
+  },
+  "closed_loop_clear_time_err_pct": 8268.14
+}

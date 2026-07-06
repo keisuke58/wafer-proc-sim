@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 11社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 13社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -52,15 +52,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Portfolio map · one repo, eleven companies</div>
+  <div class="eyebrow">Portfolio map · one repo, thirteen companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>11社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（680+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
+  <p class="lead">1つのリポジトリで<strong>13社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（690+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">11<small>社</small></div><div class="k">専用ダッシュボード</div></div>
+    <div class="stat"><div class="v">13<small>社</small></div><div class="k">専用ダッシュボード</div></div>
     <div class="stat"><div class="v">100+</div><div class="k">実装カード（解析つき図表）</div></div>
-    <div class="stat"><div class="v">680+</div><div class="k">自動テスト（CI緑）</div></div>
-    <div class="stat"><div class="v">36</div><div class="k">レビュー済みPR</div></div>
+    <div class="stat"><div class="v">690+</div><div class="k">自動テスト（CI緑）</div></div>
+    <div class="stat"><div class="v">37</div><div class="k">レビュー済みPR</div></div>
     <div class="stat"><div class="v">1</div><div class="k">ブラウザ実動デモ</div></div>
   </div>
 
@@ -206,6 +206,32 @@
     </div>
     <div class="links"><a href="canon.html">canonダッシュボード</a></div>
     <div class="src">canon/{litho_imaging, nanoimprint}</div>
+  </div>
+
+  <div class="co" style="--co:#00794f">
+    <div class="role">Semiconductor Materials — フォトレジスト・電子材料</div>
+    <h2>富士フイルム<span style="font-size:12px;color:var(--muted)">｜レジストの中身：LERは化学で決まる（2カード）</span></h2>
+    <p class="story">化学増幅レジストの確率過程（光子計数→酸→PEB拡散→現像）をモンテカルロで実装し、LER∝dose^(-1/2)のショットノイズ則（フィット−0.43）と拡散長の内部最適（16nm）を数値検証。Mack溶解モデルからは特性曲線γと側壁角——同じ空中像が化学だけで「坂」にも「壁」にもなる。</p>
+    <div class="kpis">
+      <div class="kpi"><b>−0.43</b><span>LER∝dose^p のフィット指数（計数統計の理論−0.5）</span></div>
+      <div class="kpi"><b>L_d 16nm</b><span>LER最小化のPEB拡散長（RLS三すくみの内部最適）</span></div>
+      <div class="kpi"><b>76→85°</b><span>Mack選択性n=2→16の側壁角（γは1.4→7.0）</span></div>
+    </div>
+    <div class="links"><a href="fujifilm.html">fujifilmダッシュボード</a></div>
+    <div class="src">fujifilm/{car_stochastics, resist_develop}</div>
+  </div>
+
+  <div class="co" style="--co:#37474f">
+    <div class="role">CD-SEM / Metrology — 電子線寸法計測</div>
+    <h2>日立ハイテク<span style="font-size:12px;color:var(--muted)">｜「測る」が「変える」を補正する（2カード）</span></h2>
+    <p class="story">二次電子の側壁ブルーム（sec θ）から信号形成を実装し、ビーム径によるCD生バイアスの単調性を検証。LERのノイズバイアス（測定²=真²+ノイズ²）は差分法で除去し（2.51→1.76nm、真値2.0）、e線シュリンクは指数フィットのゼロドーズ外挿で「測る前のCD」を−0.17nmまで回収。</p>
+    <div class="kpis">
+      <div class="kpi"><b>+2.8nm</b><span>ビーム3nmのCD生バイアス（校正して使う理由）</span></div>
+      <div class="kpi"><b>2.51→1.76</b><span>LER 3σ：差分法によるノイズバイアス除去（真値2.0）</span></div>
+      <div class="kpi"><b>−2.2 vs −0.17nm</b><span>シュリンク：素朴平均 vs ゼロドーズ外挿</span></div>
+    </div>
+    <div class="links"><a href="hitachi.html">hitachiダッシュボード</a></div>
+    <div class="src">hitachi/cdsem</div>
   </div>
 
   <footer>
