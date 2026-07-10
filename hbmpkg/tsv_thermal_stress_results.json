@@ -1,0 +1,39 @@
+{
+  "config": {
+    "via_diam_um": 5.0,
+    "pitch_um": 40.0,
+    "unit_cell_radius_um": 22.57,
+    "delta_T_K": -225.0
+  },
+  "nominal": {
+    "cu_core_stress_MPa": 314.4,
+    "si_interface_hoop_stress_MPa": -322.2
+  },
+  "validation": {
+    "identical_materials_max_abs_stress_Pa": 0.0,
+    "dilute_limit_200um_vs_500um_pct_change": 0.031
+  },
+  "pitch_sweep": {
+    "20um": {
+      "si_interface_hoop_MPa": -333.6
+    },
+    "30um": {
+      "si_interface_hoop_MPa": -325.2
+    },
+    "40um": {
+      "si_interface_hoop_MPa": -322.2
+    },
+    "60um": {
+      "si_interface_hoop_MPa": -320.1
+    },
+    "80um": {
+      "si_interface_hoop_MPa": -319.4
+    },
+    "200um": {
+      "si_interface_hoop_MPa": -318.6
+    },
+    "500um": {
+      "si_interface_hoop_MPa": -318.5
+    }
+  }
+}
