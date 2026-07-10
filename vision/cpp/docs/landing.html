@@ -43,7 +43,7 @@
     <p class="eyebrow">切る・削る・磨く　×　高度知能化</p>
     <h1>wafer-proc-sim — ダイシング/研削シミュレーション &amp; 知能化検査</h1>
     <p class="lead">SiC/Siウェハのダイシング・研削を対象に、FEM物理モデル・GP/FNO代理モデル・ベイズ最適化・
-      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>18社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
+      そしてゼロから作ったC++画像処理検査系（wproc）までを一つのリポジトリに統合。<a href="companies.html"><strong>19社それぞれに専用ダッシュボード</strong></a>を用意——全体像は会社別サマリからどうぞ。以下はツール群が出力した実測結果です。</p>
   </header>
 
   <div class="nav">
@@ -125,6 +125,9 @@
     <a class="navcard" href="sumco.html">
       <div class="ic">💎</div><b>結晶成長（SUMCO向け）</b>
       <span>CZ熱収支限界 v_max∝1/√R（厳密−0.50）・Voronkov v/Gの完全シリコン窓（300mmで0.23×）</span></a>
+    <a class="navcard" href="hbm_stacking.html">
+      <div class="ic">🧊</div><b>HBM/3Dスタッキング（SK hynix・Micron・Samsung向け）</b>
+      <span>積層反り（ラミネート梁理論・自己剛性化）・TSV熱応力（コンポジット円筒厳密解）</span></a>
     <a class="navcard" href="kerf_annotated.html">
       <div class="ic">🔬</div><b>カーフ検査 解説</b>
       <span>欠陥サンプルの注釈つきウォークスルー（計測 vs 規格）</span></a>
@@ -171,6 +174,9 @@
 
   <h2 class="sec">前工程の物理 ― amat・kokusai・sumco<a href="amat.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 注入/PVD</a><a href="kokusai.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 熱処理</a><a href="sumco.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ 結晶成長</a></h2>
   <div class="gal" id="g-frontend"></div>
+
+  <h2 class="sec">HBM/3Dスタッキング ― hbmpkg（SK hynix・Micron・Samsung向け）<a href="hbm_stacking.html" style="font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px">→ ダッシュボード</a></h2>
+  <div class="gal" id="g-hbm"></div>
 
   <h2 class="sec">知能化検査・ビジョン</h2>
   <div class="gal" id="g-vision"></div>
@@ -280,6 +286,10 @@ const GAL = {
     ['kok_oxide.png','Deal-Grove酸化','ODE vs 解析解0.000%・ウェット36分 vs ドライ11時間'],
     ['kok_furnace.png','バッチ炉均一性','枯渇±17.4%→温度傾斜+21°Cで0.00%'],
     ['sumco_cz.png','CZ結晶成長','v_max∝R^-0.50厳密・完全Si窓300mmで0.23×'],
+  ],
+  'g-hbm': [
+    ['hbm_warpage.png','HBM積層反り','段数増で反り減少（自己剛性化）・接合層単体比較で225×'],
+    ['tsv_stress.png','TSV熱応力','コンポジット円筒厳密解・Si界面フープ応力-322MPa'],
   ],
   'g-vision': [
     ['vision_single_kerf.png','カーフ検査','単一ストリートの壁検出とサブピクセル幅計測'],

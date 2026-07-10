@@ -1,0 +1,43 @@
+{
+  "config": {
+    "delta_T_K": -225.0,
+    "die_width_mm": 5.0,
+    "die_um": 30.0,
+    "bump_underfill_um": 10.0,
+    "hybrid_bondline_um": 0.5
+  },
+  "validation": {
+    "single_layer_kappa_per_m": -9.313203068129599e-15,
+    "identical_layers_kappa_per_m": -1.5688145282257537e-15,
+    "fine_slice_vs_exact_pct_err": 0.00127
+  },
+  "package_level_bow_vs_height": {
+    "4-Hi": {
+      "kappa_per_m": 9.3411,
+      "bow_um": 29.195
+    },
+    "8-Hi": {
+      "kappa_per_m": 5.869,
+      "bow_um": 18.342
+    },
+    "12-Hi": {
+      "kappa_per_m": 3.6462,
+      "bow_um": 11.395
+    },
+    "16-Hi": {
+      "kappa_per_m": 2.3931,
+      "bow_um": 7.478
+    }
+  },
+  "isolated_unit_cell": {
+    "microbump_underfill": {
+      "kappa_per_m": -35.607,
+      "bow_um": -111.494
+    },
+    "hybrid_Cu_Cu_bond": {
+      "kappa_per_m": -0.1584,
+      "bow_um": -0.495
+    },
+    "curvature_ratio_bump_over_hybrid": 224.8
+  }
+}

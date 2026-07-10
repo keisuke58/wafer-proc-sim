@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会社別サマリ — 18社×専用ダッシュボードの全体像</title>
+<title>会社別サマリ — 19社×専用ダッシュボードの全体像</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
@@ -54,7 +54,7 @@
 <div class="wrap">
   <div class="eyebrow">Portfolio map · one repo, eighteen companies</div>
   <h1>会社別サマリ — どの会社に、何を、どの数字で示すか</h1>
-  <p class="lead">1つのリポジトリで<strong>18社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（720+テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。<a href="companies_en.html">English version</a>・<a href="litho_story.html">リソグラフィ4社横断ストーリー</a>もどうぞ。</p>
+  <p class="lead">1つのリポジトリで<strong>19社それぞれのド真ん中の技術</strong>を「物理モデル→アルゴリズム実装→定量評価→テスト→公開ダッシュボード」まで一気通貫で実装。全モジュール自作（numpy/scipy/PyTorch/C++17）、結果はJSONコミット済み・CI（728テスト）緑。各社1行のストーリーと看板数字だけ知りたい人はこのページで完結します。<a href="companies_en.html">English version</a>・<a href="litho_story.html">リソグラフィ4社横断ストーリー</a>もどうぞ。</p>
 
   <div class="stats">
     <div class="stat"><div class="v">18<small>社</small></div><div class="k">専用ダッシュボード</div></div>
@@ -297,6 +297,19 @@
     </div>
     <div class="links"><a href="sumco.html">sumcoダッシュボード</a></div>
     <div class="src">sumco/cz_growth</div>
+  </div>
+
+  <div class="co" style="--co:#7a2e8c">
+    <div class="role">HBM / 3D Stacking — SK hynix・Micron・Samsung</div>
+    <h2>HBM/3Dスタッキング<span style="font-size:12px;color:var(--muted)">｜積層反りとTSV熱応力（2カード）</span></h2>
+    <p class="story">ラミネート梁理論で積層反りをκ=2×2線形系の厳密解として求め、独立な20,000分割数値解と誤差0.001%で閉ループ。基板支配の幾何では段数を増やすほど反りが減る（自己剛性化）という直感に反する結果を正直に報告し、接合層単体比較でハイブリッド（Cu-Cu）ボンディングの反り優位性225倍を分離して示す。TSV熱応力はコンポジット円筒の軸対称熱弾性厳密解、材質同一で全応力ゼロという恒等式で検証。</p>
+    <div class="kpis">
+      <div class="kpi"><b>0.001%</b><span>反り厳密解 vs 20,000分割独立数値解の誤差</span></div>
+      <div class="kpi"><b>225×</b><span>接合層単体比較：バンプ vs ハイブリッド接合の曲率差</span></div>
+      <div class="kpi"><b>0.0</b><span>TSV熱応力：材質同一で全応力が厳密にゼロ</span></div>
+    </div>
+    <div class="links"><a href="hbm_stacking.html">hbm_stackingダッシュボード</a></div>
+    <div class="src">hbmpkg/{hbm_stacking, tsv_thermal_stress}</div>
   </div>
 
   <footer>
