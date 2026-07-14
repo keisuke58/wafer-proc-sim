@@ -79,7 +79,9 @@
     <h2>③ 物理シミュ × ML代理モデル — 重いエッチ計算を高速化し、逆設計する</h2>
     <p class="sub">プロセス装置開発の核心は「<strong>形の物理シミュレーション</strong>」だが、それはレシピ探索ループに入れるには遅すぎる。そこで<strong>フィーチャースケールのエッチ形状進化</strong>（イオン/中性/散乱の3フラックス＋ARDE、断面プロファイル hw(z) を時間発展）を5次元レシピ空間で掃引し、<strong>ガウス過程 代理モデル</strong>に レシピ→（底CD・深さ・BOW・側壁角）を学習させた。ホールドアウト<strong>R²>0.99</strong>で物理を再現しつつ、1評価あたり<strong>約145倍高速</strong>。この代理モデルこそが、数千候補を評価するベイズレシピ探索を可能にする。仕上げは<strong>逆設計</strong>：目標の底CD・深さを与え、代理モデル上でレシピを探索→本物の物理シミュで検証すると、<strong>CD誤差0.05%・深さ誤差0.51%</strong>で命中。「物理を理解した上で、MLで使えるようにする」——CFD/FEMとMLの両方を持つ人材の価値そのもの。</p>
     <div class="figure"><img src="assets/tel_etch_surrogate.png" alt="エッチ形状進化・GP代理モデルのパリティ・逆設計プロファイル"></div>
-    <p class="sub" style="margin-top:10px">数値の出所：<code class="inl">telproc/etch_surrogate.py</code>（物理シミュ＋GP代理モデル＋逆設計、結果JSONコミット済み）。研究の<strong>TMCMC（計算コスト76%削減）</strong>・<strong>不確かさ定量化</strong>と同じ「少ない試行で最適化する」思想の、エッチ形状への応用。</p>
+    <p class="sub" style="margin-top:12px">断面プロファイル hw(z) を回転させると、実際のエッチ穴（3D NANDホール/ビア）の<strong>立体形状</strong>になる。パッシベーション1つで BOWED（樽型）→ 垂直 → TAPERED（先細り）と3D形状が変わり、下部が細い（RIEラグ）のも見て取れる：</p>
+    <div class="figure"><img src="assets/tel_etch_3d.png" alt="エッチ穴の3D立体形状（BOWED/垂直/TAPERED）"></div>
+    <p class="sub" style="margin-top:10px">数値の出所：<code class="inl">telproc/etch_surrogate.py</code>（物理シミュ＋GP代理モデル＋逆設計＋3D可視化、結果JSONコミット済み）。研究の<strong>TMCMC（計算コスト76%削減）</strong>・<strong>不確かさ定量化</strong>と同じ「少ない試行で最適化する」思想の、エッチ形状への応用。</p>
   </div>
 
   <footer>

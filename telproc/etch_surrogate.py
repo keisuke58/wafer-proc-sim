@@ -299,6 +299,46 @@ def _plot(path, res):
     plt.close(fig)
 
 
+def _plot3d(path):
+    """Revolve the simulated 2-D profile into the real 3-D etched hole for
+    three passivation regimes (cutaway 3/4 turn)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    cases = [(0.10, "#c0392b", "low passiv. -> BOWED"),
+             (0.50, "#b4740a", "mid -> VERTICAL"),
+             (0.85, "#1a7a4a", "high -> TAPERED")]
+    base = (0.8, 1.1, 60.0, 200.0)          # ion_frac, flux, mask_w, time
+    th = np.linspace(0.0, 1.5 * np.pi, 90)
+    fig = plt.figure(figsize=(13.5, 5.0))
+    for i, (p, col, lab) in enumerate(cases):
+        r = simulate_profile((p,) + base)
+        z = r["z"]
+        hw = np.convolve(r["hw"], np.ones(3) / 3, mode="same")
+        Z, TH = np.meshgrid(z, th)
+        HW = np.meshgrid(hw, th)[0]
+        X, Y = HW * np.cos(TH), HW * np.sin(TH)
+        ax = fig.add_subplot(1, 3, i + 1, projection="3d")
+        ax.plot_surface(X, Y, -Z, rstride=2, cstride=2, color=col, alpha=0.9,
+                        linewidth=0, antialiased=True, shade=True)
+        ax.plot(hw[0] * np.cos(th), hw[0] * np.sin(th),
+                -z[0] * np.ones_like(th), color="0.25", lw=1.2)
+        ax.set_title(f"{lab}\ndepth {r['depth_nm']:.0f} nm, "
+                     f"bow {r['bow_nm']:.0f} nm", fontsize=10)
+        ax.set_xlabel("x [nm]"); ax.set_ylabel("y [nm]")
+        ax.set_zlabel("depth [nm]")
+        ax.view_init(elev=22, azim=-60)
+        m = max(hw.max(), 1)
+        ax.set_xlim(-m, m); ax.set_ylim(-m, m)
+        ax.set_box_aspect((1, 1, 2.2))
+    fig.suptitle("Feature-scale etched hole — 3-D shape by revolving the "
+                 "simulated profile (cutaway)", fontsize=12, y=0.99)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
 def main():
     res = run()
     with open(RESULTS_JSON, "w") as f:
@@ -306,6 +346,7 @@ def main():
     print(json.dumps(res, indent=2))
     os.makedirs(ASSETS, exist_ok=True)
     _plot(os.path.join(ASSETS, "tel_etch_surrogate.png"), res)
+    _plot3d(os.path.join(ASSETS, "tel_etch_3d.png"))
     print("figure ->", ASSETS)
 
 
