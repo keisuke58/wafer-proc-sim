@@ -11,9 +11,9 @@
     "sidewall_deg": 0.9997
   },
   "speedup": {
-    "sim_ms": 12.11,
-    "surrogate_ms": 0.0835,
-    "factor": 145
+    "sim_ms": 11.79,
+    "surrogate_ms": 0.0703,
+    "factor": 168
   },
   "inverse_design": {
     "target": {
