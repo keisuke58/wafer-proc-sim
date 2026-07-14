@@ -134,6 +134,7 @@ jobs:
           cp vision/cpp/docs/assets/nand_vth.png        _site/assets/ || echo "missing nand_vth"
           cp vision/cpp/docs/assets/nand_life.png       _site/assets/ || echo "missing nand_life"
           cp vision/cpp/docs/assets/tel_etch.png        _site/assets/ || echo "missing tel_etch"
+          cp vision/cpp/docs/assets/tel_etch_surrogate.png _site/assets/ || echo "missing tel_etch_surrogate"
           cp vision/cpp/docs/assets/tel_ald.png         _site/assets/ || echo "missing tel_ald"
           cp vision/cpp/docs/assets/acc_rough.png       _site/assets/ || echo "missing acc_rough"
           cp vision/cpp/docs/assets/acc_round.png       _site/assets/ || echo "missing acc_round"

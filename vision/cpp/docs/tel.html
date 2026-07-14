@@ -52,7 +52,7 @@
 <div class="wrap">
   <div class="eyebrow">Process equipment · etch profile evolution and ALD conformality</div>
   <h1>装置プロセス物理 — エッチの形とALDの届く深さ</h1>
-  <p class="lead">プロセス装置が売っているのは「形の制御」。<strong>高ARトレンチのプロファイル進化（ボーイング/テーパ/ARDE）</strong>と<strong>ALDの被覆前線とAR²ドーズ則</strong>という、エッチ&成膜の核心2テーマを縮約物理モデルで定量化した。</p>
+  <p class="lead">プロセス装置が売っているのは「形の制御」。<strong>高ARトレンチのプロファイル進化（ボーイング/テーパ/ARDE）</strong>と<strong>ALDの被覆前線とAR²ドーズ則</strong>という、エッチ&成膜の核心2テーマを縮約物理モデルで定量化。さらに、その<strong>物理シミュをML代理モデルで145倍高速化し、逆設計まで</strong>——CFD/FEM×MLの両輪を実装した。</p>
 
   <div class="tiles">
     <div class="tile"><div class="v accent">1<small> knob</small></div><div class="k">パッシベーション1つでBOW→垂直→TAPER</div></div>
@@ -75,8 +75,15 @@
     <p class="sub" style="margin-top:10px">関連（実装済み・別モジュール）：<code class="inl">optimization/tel_feol_bo.py</code>（FEOLプロセスのベイズ最適化）・<code class="inl">optimization/tel_tmcmc_calibration.py</code>（TMCMCキャリブレーション）・<code class="inl">vision/cpp/src/cmp.cpp</code>（CMP APC/EPD）。</p>
   </div>
 
+  <div class="card">
+    <h2>③ 物理シミュ × ML代理モデル — 重いエッチ計算を高速化し、逆設計する</h2>
+    <p class="sub">プロセス装置開発の核心は「<strong>形の物理シミュレーション</strong>」だが、それはレシピ探索ループに入れるには遅すぎる。そこで<strong>フィーチャースケールのエッチ形状進化</strong>（イオン/中性/散乱の3フラックス＋ARDE、断面プロファイル hw(z) を時間発展）を5次元レシピ空間で掃引し、<strong>ガウス過程 代理モデル</strong>に レシピ→（底CD・深さ・BOW・側壁角）を学習させた。ホールドアウト<strong>R²>0.99</strong>で物理を再現しつつ、1評価あたり<strong>約145倍高速</strong>。この代理モデルこそが、数千候補を評価するベイズレシピ探索を可能にする。仕上げは<strong>逆設計</strong>：目標の底CD・深さを与え、代理モデル上でレシピを探索→本物の物理シミュで検証すると、<strong>CD誤差0.05%・深さ誤差0.51%</strong>で命中。「物理を理解した上で、MLで使えるようにする」——CFD/FEMとMLの両方を持つ人材の価値そのもの。</p>
+    <div class="figure"><img src="assets/tel_etch_surrogate.png" alt="エッチ形状進化・GP代理モデルのパリティ・逆設計プロファイル"></div>
+    <p class="sub" style="margin-top:10px">数値の出所：<code class="inl">telproc/etch_surrogate.py</code>（物理シミュ＋GP代理モデル＋逆設計、結果JSONコミット済み）。研究の<strong>TMCMC（計算コスト76%削減）</strong>・<strong>不確かさ定量化</strong>と同じ「少ない試行で最適化する」思想の、エッチ形状への応用。</p>
+  </div>
+
   <footer>
-    数値の出所：<code class="inl">telproc/etch_ald.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    数値の出所：<code class="inl">telproc/etch_ald.py</code>・<code class="inl">telproc/etch_surrogate.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
     手法は公開標準（ARDE輸送制限・パッシベーション/散乱プロファイルモデル・Thiele数によるALD被覆解析）に基づく再実装であり、特定製品の内部実装ではありません。
     ソース：<a href="https://github.com/keisuke58/wafer-proc-sim">keisuke58/wafer-proc-sim</a> ／ <a href="./">← ダッシュボード一覧</a>
   </footer>
