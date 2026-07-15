@@ -1,0 +1,51 @@
+{
+  "dataset": {
+    "n_samples": 260,
+    "n_train": 210,
+    "n_test": 50
+  },
+  "surrogate_r2": {
+    "cd_bot_nm": 0.9995,
+    "depth_nm": 0.9964,
+    "bow_nm": 0.9952,
+    "sidewall_deg": 0.9997
+  },
+  "speedup": {
+    "sim_ms": 11.79,
+    "surrogate_ms": 0.0703,
+    "factor": 168
+  },
+  "inverse_design": {
+    "target": {
+      "cd_bot_nm": 45.0,
+      "depth_nm": 520.0
+    },
+    "found_recipe": {
+      "passivation": 0.596,
+      "ion_frac": 0.625,
+      "flux": 1.365,
+      "mask_w_nm": 43.798,
+      "time_s": 225.762
+    },
+    "verified_true": {
+      "cd_bot_nm": 45.0,
+      "depth_nm": 522.6
+    },
+    "cd_err_pct": 0.05,
+    "depth_err_pct": 0.51
+  },
+  "passivation_sweep": {
+    "passivation_0.1": {
+      "bow_nm": 15.7,
+      "sidewall_deg": 80.3
+    },
+    "passivation_0.5": {
+      "bow_nm": 8.3,
+      "sidewall_deg": 84.6
+    },
+    "passivation_0.8": {
+      "bow_nm": 3.1,
+      "sidewall_deg": 87.9
+    }
+  }
+}
