@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>医用画像CAD — 検査技術の医療転用とFROC評価</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#047857; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#43c99a; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#43c99a; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#047857; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Medical CADe · the inspection stack, aimed at lesions — and evaluated the way radiologists do</div>
+  <h1>医用画像CAD — ウェハ検査の技術を、病変検出へ</h1>
+  <p class="lead">富士フイルムは今や医療(CT・内視鏡・AI画像診断 REiLI）の会社。ウェハ上の異物を見つける数学は、組織中の病変を見つける数学と同じだ——局所背景をモデル化し、各画素を「どれだけ意外か」で採点する。半導体検査で作った検出パイプラインを、正解マスク付きの合成医用画像に持ち込み、<strong>放射線科医が実際に使う指標（FROC）</strong>で評価した。そして正直な転用の結論まで示す。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v accent">0.98</div><div class="k">スケール整合フィルタの画素AUROC（病変分離性能）</div></div>
+    <div class="tile"><div class="v g">79<small> %</small></div><div class="k">1画像あたり誤検出1個での病変感度（FROC）</div></div>
+    <div class="tile"><div class="v b">0.93→0.05</div><div class="k">生の半導体検出器：画素AUROCは良いがFROCで破綻</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 病変検出 — 検査技術の転用と、正しい検出器の選択</h2>
+    <p class="sub">合成医用画像（低周波の臓器場＋組織スペックル＋大きさ・コントラストがまちまちの病変、一部は<strong>淡い低コントラスト</strong>）に、3つの検出器を段階適用：(1)<strong>固定しきい値</strong>（素朴、AUROC0.68）、(2)半導体のダイ間差分で使った<strong>局所統計の適応z-score</strong>を<strong>そのまま転用</strong>（AUROC0.93）、(3)病変スケールに合わせた<strong>Laplacian-of-Gaussian 整合フィルタ</strong>（AUROC0.98）。評価はしきい値非依存の画素AUROCに加え、<strong>FROC曲線</strong>——病変感度 vs 1画像あたり誤検出数、CADの標準指標。</p>
+    <p class="sub"><strong>正直な転用の結論</strong>：半導体検出器は医用でそのまま勝たない。参照できる「健全なダイ」が無いため、局所z-scoreは組織テクスチャに誤反応し、画素AUROCは0.93と良く見えても<strong>臨床的に意味のある1誤検出/画像ではFROC感度が0.05に崩れる</strong>。医用で正しいのはスケール整合フィルタ（79%感度）。<strong>転用できるのは特定の検出器ではなく「正解付き合成→検出器比較→臨床指標で評価」という枠組みと、"無闇に流用せずスケールを合わせる"という判断力</strong>だ。この「画素AUROCは良いのにFROCで破綻」を自分で踏んで示せることこそ、医用画像研究で問われる素養。</p>
+    <div class="figure"><img src="assets/fujifilm_lesion_cad.png" alt="合成医用画像・病変正解・整合フィルタ検出・画素AUROC・FROC曲線"></div>
+    <p class="sub" style="margin-top:10px">関連（実装済み）：<a href="inspection.html">実写真51枚での欠陥検出 AUROC0.91</a>・<a href="fujifilm.html">CARレジスト確率論・Mack現像</a>。出所：<code class="inl">fujifilm_med/lesion_cad.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">fujifilm_med/lesion_cad.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開標準（局所ロバスト統計・Laplacian-of-Gaussian整合フィルタ・FROC評価）の再実装であり、実臨床データや特定製品ではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/fujifilm_med">keisuke58/wafer-proc-sim/fujifilm_med</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

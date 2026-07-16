@@ -1,0 +1,17 @@
+{
+  "n_images": 24,
+  "image_px": [
+    128,
+    128
+  ],
+  "pixel_auroc": {
+    "fixed |I-mean|": 0.6771,
+    "adaptive multi-scale z": 0.9346,
+    "LoG matched filter": 0.9799
+  },
+  "sensitivity_at_1fp_per_image": {
+    "fixed |I-mean|": 0.085,
+    "adaptive multi-scale z": 0.045,
+    "LoG matched filter": 0.792
+  }
+}
