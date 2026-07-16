@@ -1,0 +1,39 @@
+{
+  "wafer_thickness_um": 80.0,
+  "bosch_sidewall": {
+    "etch_per_cycle_um": 1.2,
+    "cycle_time_s": 6.0,
+    "throughput_min_per_street_pass": 6.7,
+    "passivation_sweep": {
+      "passivation_0.2": {
+        "scallop_amp_um": 0.349,
+        "sidewall_deg": 88.6,
+        "n_cycles": 67
+      },
+      "passivation_0.5": {
+        "scallop_amp_um": 0.241,
+        "sidewall_deg": 89.1,
+        "n_cycles": 67
+      },
+      "passivation_0.8": {
+        "scallop_amp_um": 0.134,
+        "sidewall_deg": 89.6,
+        "n_cycles": 67
+      }
+    }
+  },
+  "chipping_um": {
+    "blade": 15.12,
+    "plasma": 0.3,
+    "reduction_x": 50.4
+  },
+  "kerf_economics": {
+    "die_mm": 1.0,
+    "kerf_blade_um": 60.2,
+    "kerf_plasma_um": 8.0,
+    "dies_blade": 59872,
+    "dies_plasma": 66244,
+    "extra_dies": 6372,
+    "gain_pct": 10.64
+  }
+}

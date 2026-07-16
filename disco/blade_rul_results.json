@@ -1,0 +1,24 @@
+{
+  "eol_cuts": 6000,
+  "chipping": {
+    "fresh_um": 3.0,
+    "spec_um": 8.0
+  },
+  "rul_model": {
+    "model": "RandomForest(120)",
+    "features": [
+      "AE_rms",
+      "cut_count"
+    ],
+    "test_R2": 0.9503,
+    "test_MAE_cuts": 286.1
+  },
+  "replacement_economics": {
+    "optimal_replace_at_cuts": 4350,
+    "optimal_cost_per_good_die": 0.0008,
+    "run_to_failure_cost": 0.1631,
+    "replace_too_early_cost": 0.0008,
+    "savings_vs_failure_pct": 99.54,
+    "savings_vs_early_pct": 10.75
+  }
+}
