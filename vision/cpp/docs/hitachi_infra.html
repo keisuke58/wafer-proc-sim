@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社会インフラ予知保全 — 較正されたベイズ余寿命予測</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#c8102e; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#ff6b7a; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#8a97a8; --line:#242d39;
+    --accent:#ff6b7a; --good:#4fb483; --bad:#e5776b; --amber:#e0a63a;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);}
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#d9dfe7;
+    --accent:#c8102e; --good:#2e7d57; --bad:#c0392b; --amber:#b4740a;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:940px;margin:0 auto;padding:34px 22px 60px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;margin:.3em 0 .15em;letter-spacing:-.01em;line-height:1.15}
+  .lead{color:var(--muted);font-size:14.5px;max-width:70ch}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .accent{color:var(--accent)} .g{color:var(--good)} .b{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-top:20px}
+  .card h2{font-size:17px;margin:0 0 3px} .card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .figure{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .figure img{display:block;width:100%}
+  code.inl{font-family:var(--mono);font-size:12px;background:rgba(125,135,150,.14);padding:1px 5px;border-radius:4px}
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+  @media (max-width:680px){.tiles{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Infrastructure prognostics · a failure time you can trust — with how sure it is</div>
+  <h1>社会インフラ予知保全 — 「あと何回持つか」を確率で答える</h1>
+  <p class="lead">鉄道・発電・産業ドライブ（日立の領域）で本当に必要なのは「いつ壊れるか」ではなく「<strong>信頼できる故障時刻を、確信度つきで</strong>」——信頼区間こそが安全マージンと保全計画を決めるからだ。黙って自信過剰な点推定は、無いより悪い。劣化物理からベイズで<strong>余寿命の分布</strong>を出し、その分布が<strong>本当に正直か（較正）</strong>まで検証する。研究の不確かさ定量化（TMCMC）を社会インフラの安全設計へ。</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v g">~90<small> %</small></div><div class="k">90%信頼区間の実測カバレッジ（＝よく較正されている）</div></div>
+    <div class="tile"><div class="v accent">19→6</div><div class="k">故障接近で区間幅が縮小（寿命40%→80%観測）</div></div>
+    <div class="tile"><div class="v accent">分布</div><div class="k">点推定でなく余寿命の事後分布（安全マージン設計に必須）</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 較正されたベイズ余寿命予測 — 分布で答え、その正直さを証明する</h2>
+    <p class="sub">各設備の劣化を指数劣化モデル（log健全度 = a + b·t + ノイズ、個体差 a,b は母集団分布から）で表現し、故障＝しきい値到達とする。ノイズ込みの部分観測から<strong>共役ベイズ線形回帰</strong>で (a,b) の事後分布を得て、<strong>しきい値到達時刻へモンテカルロ伝播</strong>すると、余寿命の完全な事後分布——中央値＋90%信頼区間——が出る。母集団フィットが事前分布（経験ベイズ）。</p>
+    <p class="sub"><strong>安全にとって決定的なのは較正</strong>：多数のホールドアウト設備で、90%区間が本当に約90%の確率で真値を含むか（<strong>実測カバレッジ 0.88〜0.91 ≒ 名目90%</strong>）を検証し、さらに<strong>故障が近づくほど区間幅が19→6ステップと縮む</strong>ことを示す。素朴な最小二乗の点推定は平均的には当たるが<strong>不確かさをゼロで返す＝自信過剰</strong>——社会インフラでは危険。「予測を出す」だけでなく「<strong>どれだけ自信があるかまで正直に出す</strong>」のが、安全が命の領域での価値。</p>
+    <div class="figure"><img src="assets/hitachi_rul_uq.png" alt="劣化軌跡・余寿命事後分布の先鋭化・較正カバレッジと区間幅"></div>
+    <p class="sub" style="margin-top:10px">分野横断の関連（実装済み）：<a href="disco.html">ブレード余寿命ツイン</a>（本モジュールの装置版）・<a href="fujifilm_med.html">医用画像CAD</a>・<a href="hbm_stacking.html">構造熱応力</a>・<a href="tel.html">ベイズ最適化・代理モデル</a>。出所：<code class="inl">hitachi_infra/bearing_rul_uq.py</code>。</p>
+  </div>
+
+  <footer>
+    数値の出所：<code class="inl">hitachi_infra/bearing_rul_uq.py</code> の実測出力（合成データ・全アルゴリズム自作、結果JSONコミット済み）。
+    手法は公開標準（指数劣化プログノスティクス・共役ベイズ線形回帰・信頼区間の較正評価）の再実装であり、特定製品や実設備データではありません。
+    ソース：<a href="https://github.com/keisuke58/wafer-proc-sim/tree/master/hitachi_infra">keisuke58/wafer-proc-sim/hitachi_infra</a> ／ <a href="./">← ダッシュボード一覧</a>
+  </footer>
+</div>
+</body>
+</html>

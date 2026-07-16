@@ -1,0 +1,33 @@
+{
+  "model": "exponential degradation, conjugate Bayesian linear regression + MC threshold crossing",
+  "population": {
+    "mu_b": 0.02,
+    "sigma_noise": 0.08,
+    "fail_threshold_logH": 1.099
+  },
+  "n_test_per_point": 240,
+  "by_life_fraction": {
+    "life_40pct": {
+      "coverage_90ci": 0.883,
+      "mean_ci_width": 19.23,
+      "bayes_rmse": 5.68,
+      "naive_rmse": 6.72
+    },
+    "life_60pct": {
+      "coverage_90ci": 0.912,
+      "mean_ci_width": 9.6,
+      "bayes_rmse": 2.89,
+      "naive_rmse": 3.02
+    },
+    "life_80pct": {
+      "coverage_90ci": 0.879,
+      "mean_ci_width": 5.81,
+      "bayes_rmse": 1.84,
+      "naive_rmse": 1.88
+    }
+  },
+  "headline": {
+    "coverage_at_60pct_life": 0.912,
+    "ci_width_shrinks": true
+  }
+}
