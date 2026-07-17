@@ -1,0 +1,29 @@
+{
+  "model": "SQLite TSDB, InfluxDB-shaped (measurement/tags/fields/ts)",
+  "ingest": {
+    "rows": 2160,
+    "tools": 3,
+    "sensors": 3,
+    "samples_per_tool": 240,
+    "period_s": 60
+  },
+  "downsample": {
+    "bucket_s": 900,
+    "buckets_per_tool": 17
+  },
+  "anomaly": {
+    "alarm_level": 0.5,
+    "clean_tool_T1_alarm_buckets": 0,
+    "fault_tool_T3_alarm_buckets": 4,
+    "first_alarm_ts_offset_min": 181
+  },
+  "last_spindle_current": {
+    "T1": 12.586,
+    "T2": 12.722,
+    "T3": 12.579
+  },
+  "line_protocol_sample": [
+    "equipment,tool=T1,recipe=R2 spindle_current=12.0002,coolant_temp=20.0299,vibration_rms=0.2918 1700000000000000000",
+    "equipment,tool=T2,recipe=R2 spindle_current=11.8664,coolant_temp=19.9545,vibration_rms=0.2703 1700000000000000000"
+  ]
+}
