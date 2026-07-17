@@ -84,6 +84,38 @@
     <p class="sub" style="margin-top:10px">関連(実装済み):<a href="disco.html">DISCOダイシング/ブレード予知保全</a>・<a href="hitachi_infra.html">較正ベイズ余寿命</a>・CMP/研削/レーザーのAPC(Python/C++)。出所:<code class="inl">disco_apc_csharp/</code>(C#、mono/dotnet両対応、テスト同梱)。</p>
   </div>
 
+  <div class="card">
+    <h2>② 求人要件 → このページの実装(DISCO AIアルゴリズムエンジニア)</h2>
+    <p class="sub">この求人の「装置データから不良検出・レシピ補正・装置状態予測を作り、製品ソフトに実装まで一貫」に、1対1で対応します。</p>
+    <table>
+      <tr><th>求人の要件</th><th>このページの実装</th></tr>
+      <tr><td>動的レシピ補正(Run-to-Run制御)</td><td>EWMA R2Rコントローラ(<code class="inl">RunToRunController</code>)——歩留り17%→97%</td></tr>
+      <tr><td>不良検出・異常予兆アルゴリズム</td><td>EWMA管理図の異常監視(<code class="inl">EwmaAnomalyMonitor</code>)——故障即検知・誤警報0</td></tr>
+      <tr><td>評価環境の自動化(学習データ生成・シミュレーション)</td><td>再現可能な合成プロセス(<code class="inl">ProcessSimulator</code>, splitmix64)</td></tr>
+      <tr><td>製品ソフトへの実装(C#, Python等)</td><td>アルゴリズム中核を<strong>C#/.NET</strong>で実装(netstandard2.0)</td></tr>
+      <tr><td>ソフト開発工程(設計〜実装〜テスト)</td><td>依存ゼロのテスト<strong>11本全パス</strong>+pytest CI連携</td></tr>
+      <tr><td>物理シミュレーション経験(歓迎)</td><td>リポジトリ全体(FEM熱応力・破壊・余寿命)——別ページ参照</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>③ 仕組みと実装(C#コード抜粋)</h2>
+    <p class="sub"><strong>Run-to-Run:</strong> プロセス <code class="inl">y = offset + gain·u + noise</code> のドリフトする <code class="inl">offset</code> をEWMAで推定し、モデルを逆算して次の入力を決める。<strong>異常検知:</strong> 残差をEWMA管理図で監視し、時変管理限界を超えたらフラグ。以下は制御中核の実コード:</p>
+    <pre style="background:rgba(125,135,150,.10);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.5"><code>// 次ロットのレシピ入力: モデルを逆算して目標へ
+public double NextInput() =&gt; (_target - _offsetEstimate) / _gain;
+
+// 測定を1件反映: EWMAで offset 推定を更新(ノイズ耐性)
+public void Update(double input, double measuredOutput)
+{
+    double observedOffset = measuredOutput - _gain * input;   // A = y - b·u
+    _offsetEstimate = _initialised
+        ? _lambda * observedOffset + (1.0 - _lambda) * _offsetEstimate
+        : observedOffset;
+    _initialised = true;
+}</code></pre>
+    <p class="sub" style="margin-top:12px">ビルド/実行は <code class="inl">./build.sh</code>(dotnet / Mono 両対応)。テストは <code class="inl">tests/Tests.cs</code>(NuGet不要)と <code class="inl">tests/test_disco_apc_csharp.py</code>(CI用・Monoが無ければskip)。</p>
+  </div>
+
   <footer>
     数値の出所:<code class="inl">disco_apc_csharp/</code> のデモ実測出力(<code class="inl">disco_apc_results.json</code>、合成データ・アルゴリズム自作、SVG図はC#で生成)。
     手法は公開標準(EWMA Run-to-Run制御・EWMA管理図)の実装であり、特定製品や実装置データではありません。
