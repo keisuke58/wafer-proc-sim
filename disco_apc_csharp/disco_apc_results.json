@@ -1,0 +1,8 @@
+{
+  "lots": 200,
+  "target": 10, "usl": 11, "lsl": 9,
+  "fault_at_lot": 130,
+  "open_loop":   { "rmse": 4.6084, "cpk": -0.3345, "in_spec_pct": 17 },
+  "closed_loop": { "rmse": 0.4494, "cpk": 0.671, "in_spec_pct": 97 },
+  "anomaly": { "n_flags": 10, "first_flag_after_fault": 130, "false_alarms_pre_fault": 0, "warmup_sigma": 0.4081 }
+}
