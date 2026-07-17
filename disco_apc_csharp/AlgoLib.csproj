@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Algorithm library: Run-to-Run controller + EWMA anomaly monitor +
+       deterministic process simulator. Builds with `dotnet build` on any
+       platform, or with Mono `mcs` (see build.sh) where no .NET SDK exists. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>AlgoLib</AssemblyName>
+    <RootNamespace>Disco.Apc</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/*.cs" />
+  </ItemGroup>
+</Project>
