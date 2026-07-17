@@ -52,6 +52,7 @@
 </head>
 <body>
 <div class="wrap">
+  <p style="font-size:13px;margin:0 0 10px"><a href="./">← ポートフォリオ トップ</a> ・ <a href="disco_apc.html">APC（C#）</a></p>
   <div class="eyebrow">Equipment data platform · collect → roll up → alarm → feed APC</div>
   <h1>装置データの時系列基盤 — 収集→時間バケット集計→異常窓検知</h1>
   <p class="lead">求人の「リアルタイム収集」「収集・解析基盤の設計・開発」「時系列DB(InfluxDB/PostgreSQL)」に対応する、装置センサ時系列の収集・解析基盤。常に動くSQLite(標準ライブラリ)で実装しつつ、<strong>InfluxDBのデータモデル(measurement/tags/fields/ts)とライン プロトコル</strong>を忠実に再現——同じ取込がそのまま実DB(InfluxDB/TimescaleDB)に載る設計。異常窓は<a href="disco_apc.html">Run-to-Run APC</a>の予兆入力になる。</p>
