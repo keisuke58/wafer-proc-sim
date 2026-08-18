@@ -70,6 +70,7 @@ jobs:
           cp vision/cpp/docs/sumco.html            _site/sumco.html
           cp vision/cpp/docs/disco.html            _site/disco.html
           cp vision/cpp/docs/disco_tsdb.html       _site/disco_tsdb.html
+          cp vision/cpp/docs/ot_security.html       _site/ot_security.html
           cp vision/cpp/docs/hbm_stacking.html     _site/hbm_stacking.html
           cp vision/cpp/docs/disco_apc.html        _site/disco_apc.html
           cp vision/cpp/docs/fujifilm_med.html     _site/fujifilm_med.html
