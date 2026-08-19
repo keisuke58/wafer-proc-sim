@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>半導体Fab IT/OTセキュリティ構成(Purdueモデル)</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#c8d2dc;
+    --sys:#2e7cb8; --sys-ink:#ffffff;
+    --data:#e6a33e; --data-ink:#2a2113;
+    --org:#a9d18e; --org-ink:#1e2a16;
+    --fw:#3b424b; --fw-ink:#eef2f6;
+    --zone:#dce4ec; --zone-ink:#39424d;
+    --flow:#e07b26;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",Meiryo,sans-serif;
+    --mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#95a2b3; --line:#2b3542;
+    --sys:#3f92d0; --data:#e6a33e; --org:#7fb765; --fw:#4a525c; --zone:#212a34; --zone-ink:#c3ccd6;
+    --flow:#f0913a;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b23; --ink:#e7ecf3; --muted:#95a2b3; --line:#2b3542;
+    --sys:#3f92d0; --data:#e6a33e; --org:#7fb765; --fw:#4a525c; --zone:#212a34; --zone-ink:#c3ccd6; --flow:#f0913a;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#fff; --ink:#151a21; --muted:#5a6472; --line:#c8d2dc;
+    --sys:#2e7cb8; --data:#e6a33e; --org:#a9d18e; --fw:#3b424b; --zone:#dce4ec; --zone-ink:#39424d; --flow:#e07b26;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 18px 56px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:22px;margin:.3em 0 .3em;line-height:1.2}
+  .lead{color:var(--muted);font-size:14px;max-width:80ch}
+  figure{margin:20px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;overflow-x:auto}
+  figure svg{display:block;width:100%;height:auto;min-width:900px}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:10px}
+  /* semantic classes for SVG */
+  .sys{fill:var(--sys)} .sys-t{fill:var(--sys-ink)}
+  .data{fill:var(--data)} .data-t{fill:var(--data-ink)}
+  .org{fill:var(--org)} .org-t{fill:var(--org-ink)}
+  .fw{fill:var(--fw)} .fw-t{fill:var(--fw-ink)}
+  .zone{fill:var(--zone)} .zone-t{fill:var(--zone-ink)}
+  .card{fill:var(--surface);stroke:var(--line)}
+  .ink{fill:var(--ink)} .mut{fill:var(--muted)}
+  .edge{stroke:var(--line)}
+  .flow{stroke:var(--flow);fill:none}
+  .flowfill{fill:var(--flow)}
+  text{font-family:var(--sans)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Semiconductor Fab · IT/OT security architecture (Purdue model)</p>
+  <h1>半導体Fab IT/OTセキュリティ構成図(Purdueモデル)</h1>
+  <p class="lead">工場の情報系(IT)と装置・設備の制御系(OT)を、Purdueモデルの階層(L5〜L0)とセキュリティゾーンで分け、境界に<strong>ファイアウォール/IPS/IDS</strong>を置く。装置は<strong>GEM/SECS/HSMS</strong>でデータを吸い上げ、上位のMES/EDA/SPC→Enterprise IT→クラウドへ流れる。装置データ収集基盤(<a href="disco_tsdb.html">時系列基盤</a>)とセキュリティ(登録セキスペ)の交差点。<em>公開ガイドライン概念(METIドラフト)の自作再現・学習用。</em></p>
+
+  <figure>
+  <svg viewBox="0 0 1200 980" role="img" aria-label="Purdueモデルに基づく半導体FabのIT/OTセキュリティ構成。IT層(L4-L5 Enterprise IT・外部サービス)、IT/OT DMZ(L3.5)、Fab system(L3: SPC/EDA/MES/EAP/MCS/AMHS、設備FMCS/ISMS)、Fab(L2-L0: Controller・GEM/SECS/HSMS・OHT/Stocker・装置)、OT/現場(装置・設備メーカーの常駐/来訪エンジニア)を、ファイアウォールIPS/IDSで分離し、データが装置からクラウドへ上流に流れる構成。">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" class="flowfill"/>
+      </marker>
+    </defs>
+
+    <!-- ===== left axis: layers ===== -->
+    <rect x="8" y="70" width="26" height="470" rx="3" class="zone"/>
+    <text x="21" y="305" transform="rotate(-90 21 305)" text-anchor="middle" class="zone-t" font-size="12" font-weight="700">Third layer (IT)</text>
+    <rect x="8" y="548" width="26" height="300" rx="3" class="zone"/>
+    <text x="21" y="698" transform="rotate(-90 21 698)" text-anchor="middle" class="zone-t" font-size="12" font-weight="700">Second layer</text>
+    <rect x="8" y="856" width="26" height="96" rx="3" class="zone"/>
+    <text x="21" y="904" transform="rotate(-90 21 904)" text-anchor="middle" class="zone-t" font-size="12" font-weight="700">First layer</text>
+
+    <!-- ===== zone column ===== -->
+    <text x="80" y="52" text-anchor="middle" class="mut" font-size="11" font-weight="700">Purdue / Zone</text>
+    <g font-size="11" font-weight="700">
+      <rect x="40" y="70" width="86" height="86" rx="3" class="zone"/><text x="83" y="116" text-anchor="middle" class="zone-t">IT / L5</text>
+      <rect x="40" y="160" width="86" height="118" rx="3" class="zone"/><text x="83" y="223" text-anchor="middle" class="zone-t">L5–L4</text>
+      <rect x="40" y="282" width="86" height="42" rx="3" class="zone"/><text x="83" y="300" text-anchor="middle" class="zone-t">L3.5</text><text x="83" y="315" text-anchor="middle" class="zone-t" font-size="9">IT/OT DMZ</text>
+      <rect x="40" y="328" width="86" height="210" rx="3" class="zone"/><text x="83" y="428" text-anchor="middle" class="zone-t">L3</text><text x="83" y="443" text-anchor="middle" class="zone-t" font-size="9">Fab system</text>
+      <rect x="40" y="548" width="86" height="300" rx="3" class="zone"/><text x="83" y="695" text-anchor="middle" class="zone-t">L2–L0</text><text x="83" y="710" text-anchor="middle" class="zone-t" font-size="9">Fab</text>
+      <rect x="40" y="856" width="86" height="96" rx="3" class="zone"/><text x="83" y="908" text-anchor="middle" class="zone-t">OT</text>
+    </g>
+
+    <!-- ===== top communication network ===== -->
+    <rect x="140" y="20" width="900" height="34" rx="17" class="card"/>
+    <text x="590" y="41" text-anchor="middle" class="ink" font-size="12">Communication network (dedicated connection / internet)</text>
+    <rect x="1050" y="20" width="142" height="34" rx="6" class="sys"/>
+    <text x="1121" y="35" text-anchor="middle" class="sys-t" font-size="10">Remote maintenance /</text>
+    <text x="1121" y="48" text-anchor="middle" class="sys-t" font-size="10">monitoring service</text>
+
+    <!-- ===== IT L5 external services ===== -->
+    <rect x="150" y="72" width="200" height="30" rx="5" class="sys"/>
+    <text x="250" y="91" text-anchor="middle" class="sys-t" font-size="11">Cloud data analysis service</text>
+
+    <!-- internet gateway firewall -->
+    <rect x="150" y="126" width="820" height="22" rx="4" class="fw"/>
+    <text x="560" y="141" text-anchor="middle" class="fw-t" font-size="11" font-weight="700">Firewall / IPS / IDS  (Internet gateway)</text>
+    <rect x="150" y="108" width="120" height="16" rx="3" class="data"/><text x="210" y="120" text-anchor="middle" class="data-t" font-size="9.5">Data for analysis</text>
+
+    <!-- Enterprise IT container -->
+    <rect x="150" y="160" width="700" height="118" rx="8" class="card"/>
+    <text x="160" y="176" class="mut" font-size="10.5" font-weight="700">Enterprise IT</text>
+    <rect x="180" y="184" width="290" height="28" rx="5" class="sys"/><text x="325" y="202" text-anchor="middle" class="sys-t" font-size="11">Engineering system</text>
+    <rect x="500" y="184" width="320" height="28" rx="5" class="sys"/><text x="660" y="202" text-anchor="middle" class="sys-t" font-size="11">Customer mgmt. system</text>
+    <rect x="180" y="220" width="150" height="24" rx="5" class="data"/><text x="255" y="236" text-anchor="middle" class="data-t" font-size="10.5">Design data</text>
+    <rect x="360" y="220" width="460" height="28" rx="5" class="sys"/><text x="590" y="238" text-anchor="middle" class="sys-t" font-size="11">Supply chain system</text>
+    <rect x="180" y="252" width="230" height="18" rx="3" class="data"/><text x="295" y="265" text-anchor="middle" class="data-t" font-size="9.5">Production plan / results data</text>
+    <rect x="590" y="252" width="230" height="18" rx="3" class="data"/><text x="705" y="265" text-anchor="middle" class="data-t" font-size="9.5">Environmental performance data</text>
+
+    <!-- right: remote data + DB -->
+    <rect x="1050" y="160" width="142" height="20" rx="4" class="data"/><text x="1121" y="174" text-anchor="middle" class="data-t" font-size="9">Remote equip. maint. data</text>
+    <rect x="1050" y="186" width="142" height="20" rx="4" class="data"/><text x="1121" y="200" text-anchor="middle" class="data-t" font-size="9">Remote facility monitor data</text>
+    <g class="card"><ellipse cx="1085" cy="228" rx="26" ry="7"/><rect x="1059" y="228" width="52" height="34"/><ellipse cx="1085" cy="262" rx="26" ry="7"/></g>
+    <g class="card"><ellipse cx="1155" cy="228" rx="26" ry="7"/><rect x="1129" y="228" width="52" height="34"/><ellipse cx="1155" cy="262" rx="26" ry="7"/></g>
+
+    <!-- IT/OT DMZ firewall -->
+    <rect x="150" y="290" width="820" height="24" rx="4" class="fw"/>
+    <text x="560" y="306" text-anchor="middle" class="fw-t" font-size="11" font-weight="700">Firewall / IPS / IDS   (IT/OT DMZ · L3.5)</text>
+
+    <!-- ===== L3 Fab system (left) & Facilities (right) ===== -->
+    <!-- Fab system box -->
+    <rect x="150" y="328" width="620" height="208" rx="8" class="card"/>
+    <text x="160" y="344" class="mut" font-size="10.5" font-weight="700">Fab system — Server room / Clean room</text>
+    <rect x="180" y="352" width="70" height="26" rx="5" class="sys"/><text x="215" y="369" text-anchor="middle" class="sys-t" font-size="11">SPC</text>
+    <rect x="258" y="352" width="80" height="26" rx="5" class="sys"/><text x="298" y="369" text-anchor="middle" class="sys-t" font-size="11">EDA</text>
+    <rect x="346" y="352" width="220" height="26" rx="5" class="sys"/><text x="456" y="369" text-anchor="middle" class="sys-t" font-size="11">MES</text>
+    <!-- data row -->
+    <rect x="180" y="384" width="86" height="18" rx="3" class="data"/><text x="223" y="397" text-anchor="middle" class="data-t" font-size="8.5">Quality anal. data</text>
+    <rect x="270" y="384" width="80" height="18" rx="3" class="data"/><text x="310" y="397" text-anchor="middle" class="data-t" font-size="8.5">Diagnosis data</text>
+    <rect x="354" y="384" width="100" height="18" rx="3" class="data"/><text x="404" y="397" text-anchor="middle" class="data-t" font-size="8.5">Equipment recipe</text>
+    <rect x="458" y="384" width="108" height="18" rx="3" class="data"/><text x="512" y="397" text-anchor="middle" class="data-t" font-size="8.5">Process ctrl data</text>
+    <!-- EAP / MCS / AMHS -->
+    <rect x="180" y="414" width="90" height="26" rx="5" class="sys"/><text x="225" y="431" text-anchor="middle" class="sys-t" font-size="11">EAP</text>
+    <rect x="360" y="414" width="90" height="26" rx="5" class="sys"/><text x="405" y="431" text-anchor="middle" class="sys-t" font-size="11">MCS</text>
+    <rect x="460" y="420" width="90" height="26" rx="5" class="sys"/><text x="505" y="437" text-anchor="middle" class="sys-t" font-size="11">AMHS</text>
+    <rect x="180" y="448" width="120" height="18" rx="3" class="data"/><text x="240" y="461" text-anchor="middle" class="data-t" font-size="8.5">Equipment status data</text>
+    <rect x="360" y="452" width="130" height="18" rx="3" class="data"/><text x="425" y="465" text-anchor="middle" class="data-t" font-size="8.5">Transport control data</text>
+
+    <!-- Facilities box -->
+    <rect x="790" y="328" width="300" height="208" rx="8" class="card"/>
+    <text x="800" y="344" class="mut" font-size="10.5" font-weight="700">Facilities — control / security room</text>
+    <rect x="805" y="352" width="120" height="26" rx="5" class="sys"/><text x="865" y="369" text-anchor="middle" class="sys-t" font-size="11">FMCS</text>
+    <rect x="945" y="352" width="130" height="26" rx="5" class="sys"/><text x="1010" y="369" text-anchor="middle" class="sys-t" font-size="11">ISMS</text>
+    <rect x="805" y="384" width="120" height="18" rx="3" class="data"/><text x="865" y="397" text-anchor="middle" class="data-t" font-size="8.5">Facility data</text>
+    <rect x="945" y="384" width="130" height="18" rx="3" class="data"/><text x="1010" y="397" text-anchor="middle" class="data-t" font-size="8">Crime/disaster prev. data</text>
+    <g font-size="8.5">
+      <rect x="805" y="414" width="82" height="34" rx="4" class="zone"/><text x="846" y="434" text-anchor="middle" class="zone-t">Power / Water</text>
+      <rect x="895" y="414" width="82" height="34" rx="4" class="zone"/><text x="936" y="434" text-anchor="middle" class="zone-t">Air / Gas</text>
+      <rect x="985" y="414" width="90" height="34" rx="4" class="zone"/><text x="1030" y="430" text-anchor="middle" class="zone-t">Surveillance /</text><text x="1030" y="442" text-anchor="middle" class="zone-t">access</text>
+    </g>
+
+    <!-- ===== L2-L0 Fab (left) & Facilities (right) ===== -->
+    <rect x="150" y="548" width="620" height="300" rx="8" class="card"/>
+    <text x="160" y="564" class="mut" font-size="10.5" font-weight="700">Fab — Controller / Equipment</text>
+    <!-- GEM bus -->
+    <rect x="180" y="576" width="560" height="22" rx="4" class="data"/><text x="460" y="591" text-anchor="middle" class="data-t" font-size="11" font-weight="700">GEM / SECS / HSMS</text>
+    <rect x="180" y="606" width="150" height="18" rx="3" class="data"/><text x="255" y="619" text-anchor="middle" class="data-t" font-size="9">Equipment / tool log</text>
+    <!-- controllers -->
+    <rect x="180" y="632" width="120" height="24" rx="5" class="sys"/><text x="240" y="649" text-anchor="middle" class="sys-t" font-size="10.5">Controller</text>
+    <rect x="330" y="632" width="120" height="24" rx="5" class="sys"/><text x="390" y="649" text-anchor="middle" class="sys-t" font-size="10.5">Controller</text>
+    <rect x="480" y="632" width="70" height="24" rx="5" class="sys"/><text x="515" y="649" text-anchor="middle" class="sys-t" font-size="10">OHT</text>
+    <rect x="560" y="632" width="70" height="24" rx="5" class="sys"/><text x="595" y="649" text-anchor="middle" class="sys-t" font-size="10">OHT</text>
+    <!-- interbay / stocker labels -->
+    <text x="300" y="688" text-anchor="middle" class="mut" font-size="10">Interbay</text>
+    <text x="470" y="688" text-anchor="middle" class="mut" font-size="10">Interbay</text>
+    <text x="620" y="688" text-anchor="middle" class="mut" font-size="10">Stocker</text>
+    <!-- PC + equipment rows -->
+    <g font-size="9">
+      <!-- left cluster -->
+      <rect x="180" y="700" width="52" height="20" rx="3" class="zone"/><text x="206" y="714" text-anchor="middle" class="zone-t">PC</text>
+      <rect x="236" y="700" width="90" height="20" rx="3" class="sys"/><text x="281" y="714" text-anchor="middle" class="sys-t">Equipment</text>
+      <rect x="180" y="726" width="52" height="20" rx="3" class="zone"/><text x="206" y="740" text-anchor="middle" class="zone-t">PC</text>
+      <rect x="236" y="726" width="90" height="20" rx="3" class="sys"/><text x="281" y="740" text-anchor="middle" class="sys-t">Equipment</text>
+      <rect x="180" y="752" width="52" height="20" rx="3" class="zone"/><text x="206" y="766" text-anchor="middle" class="zone-t">PC</text>
+      <rect x="236" y="752" width="90" height="20" rx="3" class="sys"/><text x="281" y="766" text-anchor="middle" class="sys-t">Equipment</text>
+      <!-- right cluster -->
+      <rect x="470" y="700" width="90" height="20" rx="3" class="sys"/><text x="515" y="714" text-anchor="middle" class="sys-t">Equipment</text>
+      <rect x="564" y="700" width="52" height="20" rx="3" class="zone"/><text x="590" y="714" text-anchor="middle" class="zone-t">PC</text>
+      <rect x="470" y="726" width="90" height="20" rx="3" class="sys"/><text x="515" y="740" text-anchor="middle" class="sys-t">Equipment</text>
+      <rect x="564" y="726" width="52" height="20" rx="3" class="zone"/><text x="590" y="740" text-anchor="middle" class="zone-t">PC</text>
+      <rect x="470" y="752" width="90" height="20" rx="3" class="sys"/><text x="515" y="766" text-anchor="middle" class="sys-t">Equipment</text>
+      <rect x="564" y="752" width="52" height="20" rx="3" class="zone"/><text x="590" y="766" text-anchor="middle" class="zone-t">PC</text>
+    </g>
+
+    <!-- Facilities L2-L0 -->
+    <rect x="790" y="548" width="300" height="300" rx="8" class="card"/>
+    <text x="800" y="564" class="mut" font-size="10.5" font-weight="700">Facilities — controllers / sensors</text>
+    <rect x="805" y="576" width="120" height="24" rx="5" class="sys"/><text x="865" y="593" text-anchor="middle" class="sys-t" font-size="10.5">Controllers</text>
+    <rect x="945" y="576" width="130" height="24" rx="5" class="sys"/><text x="1010" y="593" text-anchor="middle" class="sys-t" font-size="10.5">Controllers</text>
+    <g font-size="9">
+      <rect x="805" y="612" width="120" height="20" rx="3" class="zone"/><text x="865" y="626" text-anchor="middle" class="zone-t">Sensors</text>
+      <rect x="945" y="612" width="130" height="20" rx="3" class="zone"/><text x="1010" y="626" text-anchor="middle" class="zone-t">Access gate</text>
+      <rect x="805" y="640" width="120" height="20" rx="3" class="zone"/><text x="865" y="654" text-anchor="middle" class="zone-t">Intrusion detectors</text>
+      <rect x="945" y="640" width="130" height="20" rx="3" class="zone"/><text x="1010" y="654" text-anchor="middle" class="zone-t">Surveillance cameras</text>
+      <rect x="805" y="668" width="120" height="20" rx="3" class="zone"/><text x="865" y="682" text-anchor="middle" class="zone-t">Alarms</text>
+      <rect x="945" y="668" width="130" height="20" rx="3" class="zone"/><text x="1010" y="682" text-anchor="middle" class="zone-t">Sensors</text>
+    </g>
+    <g font-size="8.5">
+      <rect x="805" y="700" width="86" height="30" rx="4" class="zone"/><text x="848" y="719" text-anchor="middle" class="zone-t">Transformer</text>
+      <rect x="899" y="700" width="80" height="30" rx="4" class="zone"/><text x="939" y="719" text-anchor="middle" class="zone-t">Heat source</text>
+      <rect x="987" y="700" width="88" height="30" rx="4" class="zone"/><text x="1031" y="715" text-anchor="middle" class="zone-t">Water drain</text><text x="1031" y="726" text-anchor="middle" class="zone-t">/ C room</text>
+      <rect x="805" y="736" width="120" height="24" rx="4" class="zone"/><text x="865" y="752" text-anchor="middle" class="zone-t">Lighting</text>
+      <rect x="945" y="736" width="130" height="24" rx="4" class="zone"/><text x="1010" y="752" text-anchor="middle" class="zone-t">Gas / Chemicals</text>
+    </g>
+
+    <!-- ===== First layer OT: people ===== -->
+    <rect x="150" y="864" width="470" height="34" rx="5" class="org"/>
+    <text x="385" y="879" text-anchor="middle" class="org-t" font-size="10">Stationed / visiting field & system engineers</text>
+    <text x="385" y="892" text-anchor="middle" class="org-t" font-size="10">from equipment manufacturers</text>
+    <rect x="640" y="864" width="450" height="34" rx="5" class="org"/>
+    <text x="865" y="879" text-anchor="middle" class="org-t" font-size="10">Stationed / visiting</text>
+    <text x="865" y="892" text-anchor="middle" class="org-t" font-size="10">facility manufacturer engineers</text>
+    <rect x="150" y="904" width="940" height="30" rx="5" class="org"/>
+    <text x="620" y="923" text-anchor="middle" class="org-t" font-size="11" font-weight="700">Device manufacturer (employees)</text>
+    <rect x="1050" y="864" width="142" height="70" rx="5" class="org"/>
+    <text x="1121" y="894" text-anchor="middle" class="org-t" font-size="10">Equip. &</text>
+    <text x="1121" y="908" text-anchor="middle" class="org-t" font-size="10">Facility</text>
+    <text x="1121" y="922" text-anchor="middle" class="org-t" font-size="10">manufacturers</text>
+
+    <!-- ===== data flow arrows (upstream) ===== -->
+    <g class="flow" stroke-width="2.4" marker-end="url(#ar)">
+      <line x1="300" y1="576" x2="300" y2="470"/>            <!-- equipment/GEM up to Fab system -->
+      <line x1="300" y1="328" x2="300" y2="314"/>            <!-- Fab system up through DMZ -->
+      <line x1="300" y1="290" x2="300" y2="252"/>            <!-- into Enterprise IT -->
+      <line x1="250" y1="184" x2="250" y2="148"/>            <!-- Enterprise IT up through gateway -->
+      <line x1="250" y1="126" x2="250" y2="102"/>            <!-- to cloud analysis -->
+      <line x1="865" y1="576" x2="865" y2="470"/>            <!-- facilities up -->
+      <line x1="1010" y1="352" x2="1010" y2="314"/>          <!-- security up through DMZ -->
+    </g>
+    <!-- downstream control (recipe) -->
+    <g class="flow" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar)">
+      <line x1="404" y1="402" x2="404" y2="576"/>            <!-- recipe/control down to equipment -->
+    </g>
+
+    <!-- ===== legend ===== -->
+    <g font-size="10.5">
+      <rect x="150" y="946" width="16" height="12" rx="2" class="sys"/><text x="172" y="956" class="ink">System</text>
+      <rect x="240" y="946" width="16" height="12" rx="2" class="data"/><text x="262" y="956" class="ink">Data</text>
+      <rect x="320" y="946" width="16" height="12" rx="2" class="org"/><text x="342" y="956" class="ink">Organization / personnel</text>
+      <line x1="520" y1="952" x2="548" y2="952" class="flow" stroke-width="2.4" marker-end="url(#ar)"/><text x="556" y="956" class="ink">Data flow (up = collect)</text>
+      <line x1="720" y1="952" x2="748" y2="952" class="flow" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="756" y="956" class="ink">Control / recipe (down)</text>
+    </g>
+  </svg>
+  </figure>
+  <figcaption>
+    Purdueモデルで IT(L4–L5)/ IT-OT DMZ(L3.5)/ OT(L3 Fab system → L2–L0 装置・設備)を分離し、各境界に Firewall/IPS/IDS を配置。装置データは <strong>GEM/SECS/HSMS</strong> で収集され、MES/EDA/SPC を経て Enterprise IT・クラウドへ上流(実線)。レシピ等の制御は下流(破線)。※公開ガイドライン概念(経産省ドラフト)の自作再現・学習/ポートフォリオ用途で、特定文書の複製ではありません。
+  </figcaption>
+</div>
+</body>
+</html>
